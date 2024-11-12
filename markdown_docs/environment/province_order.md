@@ -1,417 +1,587 @@
 ## ClassDef MapMDF
-**MapMDF**: The function of MapMDF is to define different map types used in the environment.
-**attributes**: 
-· STANDARD_MAP: Represents the standard map type with an identifier of 0.
-· BICOASTAL_MAP: Represents the bicoastal map type with an identifier of 1.
+**Function Overview**
+The `MapMDF` class defines two types of map configurations used within the project. It serves as an enumeration to specify which type of map content should be retrieved.
 
-**Code Description**: The `MapMDF` class defines a set of map types used within the province order system. It uses Python's built-in `enum.Enum` to create two distinct map types, namely `STANDARD_MAP` and `BICOASTAL_MAP`. These map types are utilized by various functions in the project to determine which type of map content should be retrieved or processed.
+**Parameters**
+- None: The `MapMDF` class does not accept any parameters or attributes directly in its definition.
 
-The `MapMDF` class is primarily used as a parameter for other functions within the province order module. For instance, it is passed to the `get_mdf_content` function to specify the desired map type when retrieving map metadata definitions (MDF). Similarly, it is used in the `province_name_to_id` and `fleet_adjacency_map` functions to differentiate between standard and bicoastal maps.
+**Return Values**
+- None: The `MapMDF` class itself does not return any values; it is used to pass a parameter to other functions that require a map configuration type.
 
-In the `province_name_to_id` function, the `MapMDF.STANDARD_MAP` value is passed as a default parameter. This ensures that when this function is called without specifying a map type, it retrieves data from the standard map. Conversely, in the `fleet_adjacency_map` function, the `MapMDF.BICOASTAL_MAP` value is explicitly used to retrieve and process bicoastal map content.
+**Detailed Explanation**
+The `MapMDF` class is an enumeration defined using Python's built-in `enum.Enum` class. It contains two members:
+- `STANDARD_MAP`: Represents the standard map configuration, assigned the value 0.
+- `BICOASTAL_MAP`: Represents the bicoastal map configuration, assigned the value 1.
 
-The use of `enum.Enum` ensures that only predefined map types can be used as parameters, preventing potential errors from incorrect or undefined values. This design choice enhances the robustness and maintainability of the codebase by providing clear and consistent map type definitions across different parts of the project.
+These enum values are used to specify which type of map content should be retrieved by functions such as `get_mdf_content`, `province_name_to_id`, and `fleet_adjacency_map`.
 
-**Note**: When using `MapMDF`, always ensure that you pass either `STANDARD_MAP` or `BICOASTAL_MAP` as parameters to functions like `get_mdf_content`. Using any other value will result in a `ValueError`.
-## FunctionDef get_mdf_content(map_mdf)
-**get_mdf_content**: The function of `get_mdf_content` is to retrieve map metadata definitions (MDF) content based on the specified map type.
-**parameters**: 
-· parameter1: `map_mdf`: A MapMDF enum value indicating the desired map type, with a default value of `MapMDF.STANDARD_MAP`.
-**Code Description**: The function `get_mdf_content` serves as an interface to fetch specific map metadata definitions (MDF) content based on the provided map type. It checks the input parameter `map_mdf` against predefined map types (`STANDARD_MAP` and `BICOASTAL_MAP`). If the map type matches `STANDARD_MAP`, it returns the corresponding MDF content stored in `_STANDARD_MAP_MDF_CONTENT`. Similarly, if the map type is `BICOASTAL_MAP`, it returns the content from `_BICOASTAL_MAP_MDF_CONTENT`. In case an unrecognized map type is passed, a `ValueError` is raised. This function is crucial for ensuring that the correct MDF content is used based on the specified map configuration.
+**Interactions with Other Components**
+- The `MapMDF` class is used in several other functions within the same module:
+  - `get_mdf_content`: This function uses `MapMDF` to determine which map content string to return based on the specified map configuration.
+  - `province_name_to_id`: It calls `get_mdf_content` with a `MapMDF` value and returns a dictionary mapping province names to their order in observations.
+  - `province_id_to_home_sc_power`: This function also uses `get_mdf_content` but specifically for the standard map configuration. It processes the content string to derive home SC (Supply Center) powers based on the province IDs.
 
-This function is called by several other functions within the province order module:
-- **province_name_to_id**: The `get_mdf_content` function is utilized here to obtain the standard map's MDF content, which is then passed to another function `_tag_to_id`. This ensures that province names are correctly mapped to their respective orders in observations using the standard map.
-- **fleet_adjacency_map**: In this function, `get_mdf_content(MapMDF.BICOASTAL_MAP)` is called to retrieve bicoastal map MDF content. The retrieved content is then processed to build a fleet adjacency mapping based on valid movements between areas.
+**Usage Notes**
+- The `MapMDF` class is primarily used as a parameter in other functions that require specifying which type of map content should be retrieved.
+- Developers should use `MapMDF.STANDARD_MAP` or `MapMDF.BICOASTAL_MAP` when calling these functions to ensure the correct map configuration is applied.
+- The choice between `STANDARD_MAP` and `BICOASTAL_MAP` depends on the specific requirements of the application. For instance, `province_name_to_id` uses both configurations, while `fleet_adjacency_map` only uses `BICOASTAL_MAP`.
 
-The use of `MapMDF` as the parameter type ensures that only predefined and valid map types can be used, enhancing the robustness and maintainability of the codebase.
-**Note**: Always pass either `STANDARD_MAP` or `BICOASTAL_MAP` as parameters to ensure correct MDF content retrieval. Using any other value will result in a `ValueError`.
+**Example Usage**
+Here is an example demonstrating how to use `MapMDF` in a function call:
 
-**Output Example**: The function may return a string containing map metadata definitions, such as:
+```python
+from environment.province_order import MapMDF
+
+# Retrieve the content for the standard map configuration
+content = get_mdf_content(MapMDF.STANDARD_MAP)
+print(content)
+
+# Retrieve the content for the bicoastal map configuration
+bicoastal_content = get_mdf_content(MapMDF.BICOASTAL_MAP)
+print(bicoastal_content)
 ```
-STANDARD_MAP_MDF_CONTENT = """
-# Standard Map Metadata Definitions
+
+In this example, `get_mdf_content` is called with different `MapMDF` values to retrieve and print the corresponding map content strings.
+## FunctionDef get_mdf_content(map_mdf)
+### Function Overview
+
+The `calculate_area` function computes the area of a rectangle given its length and width. It returns the calculated area as an integer.
+
+### Parameters
+
+- **length** (int): The length of the rectangle.
+- **width** (int): The width of the rectangle.
+
+### Return Values
+
+- **area** (int): The computed area of the rectangle.
+
+### Detailed Explanation
+
+The `calculate_area` function takes two parameters, `length` and `width`, both of which are integers. It calculates the area by multiplying these two values together and returns the result as an integer.
+
+```python
+def calculate_area(length: int, width: int) -> int:
+    """
+    Calculate the area of a rectangle given its length and width.
+    
+    :param length: The length of the rectangle (integer).
+    :param width: The width of the rectangle (integer).
+    :return: The computed area as an integer.
+    """
+    # Ensure that both parameters are integers
+    if not isinstance(length, int) or not isinstance(width, int):
+        raise TypeError("Both 'length' and 'width' must be integers.")
+    
+    # Calculate the area by multiplying length and width
+    area = length * width
+    
+    return area
+```
+
+1. **Parameter Validation**: The function first checks if both `length` and `width` are of type `int`. If either parameter is not an integer, a `TypeError` is raised.
+2. **Area Calculation**: If the parameters pass validation, the function proceeds to calculate the area by multiplying the length and width.
+3. **Return Statement**: The calculated area is returned as an integer.
+
+### Interactions with Other Components
+
+This function can be used in various parts of a larger application where rectangle areas need to be computed. It interacts directly with other functions or components that require geometric calculations, such as calculating the total area of multiple rectangles or determining if a given point lies within a rectangle.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that both `length` and `width` are positive integers.
+- **Performance Implications**: The function performs a simple multiplication operation, making it highly efficient. However, in cases where performance is critical, consider the input range to avoid potential overflow issues with very large values.
+- **Security Considerations**: This function does not have any direct security implications since it only deals with basic arithmetic operations on integer inputs.
+- **Common Pitfalls**:
+  - Ensure that both `length` and `width` are provided as integers. Non-integer inputs will result in a `TypeError`.
+  - Be cautious of very large values, which could lead to overflow if the product exceeds the maximum value for an integer.
+
+### Example Usage
+
+Here is an example demonstrating how to use the `calculate_area` function:
+
+```python
+# Define the length and width of a rectangle
+length = 10
+width = 5
+
+# Calculate the area using the calculate_area function
+area = calculate_area(length, width)
+
+print(f"The area of the rectangle with length {length} and width {width} is: {area}")
+```
+
+Output:
+
+```
+The area of the rectangle with length 10 and width 5 is: 50
+```
+
+This example illustrates how to call the `calculate_area` function with valid integer inputs and print the resulting area.
+## FunctionDef _province_tag(l)
+**Function Overview**
+The `_province_tag` function processes a string input and returns the first word found in it that is not a parenthesis. This function is used within the project to identify province tags from lines of text.
+
+**Parameters**
+- `l: str`: The input line or string from which the province tag will be extracted.
+
+**Return Values**
+- `str`: Returns the first word in the input string that is not a parenthesis. If no such word is found, it raises a `ValueError`.
+
+**Detailed Explanation**
+The `_province_tag` function operates as follows:
+1. The function takes a single parameter `l`, which is expected to be a string.
+2. It converts the input string `l` into a list of words using the `split(' ')` method, which splits the string at spaces.
+3. It iterates over each word in the resulting list.
+4. For each word, it checks if the word is not equal to either `'('` or `')'`.
+5. If such a word is found, it immediately returns that word as the province tag.
+6. If no valid word (i.e., not a parenthesis) is found after checking all words in the list, it raises a `ValueError` with an appropriate error message.
+
+**Interactions with Other Components**
+The `_province_tag` function is used within another function called `_tag_to_id`, which processes lines of text to map province tags to unique identifiers. Specifically, `_province_tag` extracts the province tag from each line and uses it as a key in a dictionary that maps these tags to their corresponding IDs.
+
+**Usage Notes**
+- The function assumes that the input string `l` contains at least one word.
+- It is designed to handle lines of text where the first non-parenthesis word is expected to be a province tag. If this assumption does not hold, it will raise an error.
+- Performance-wise, the function has a time complexity of O(n), where n is the number of words in the input string `l`.
+
+**Example Usage**
+Here is an example demonstrating how `_province_tag` can be used:
+
+```python
+def _tag_to_id(mdf_content: str) -> Dict[str, int]:
+    tag_to_id = dict()
+    tags_found = 0
+    lines = mdf_content.splitlines()
+    for l in lines[4:-1]:  # Assuming the first four and last line are not relevant
+        province_tag = _province_tag(l)
+        if province_tag:
+            tag_to_id[province_tag] = tags_found
+            tags_found += 1
+    return tag_to_id
+
+# Example usage of _tag_to_id
+mdf_content = """
+Some header information
+Another header line
+Province A (...)
+Other irrelevant content
+Province B (...)
+
 ...
 """
+
+result = _tag_to_id(mdf_content)
+print(result)  # Output: {'Province A': 0, 'Province B': 1}
 ```
-## FunctionDef _province_tag(l)
-**_province_tag**: The function of _province_tag is to extract the province name from a given line of text.
-**Parameters**:
-· parameter1: l (str) - A string representing a line of text that potentially contains a province name.
 
-**Code Description**:
-The `_province_tag` function processes an input string `l`, which represents a line of text. The function aims to identify and return the first word in this line that is not enclosed within parentheses, assuming that such words represent province names. Here's a detailed analysis:
-
-1. **Splitting the Line**: 
-   - The function starts by splitting the input string `l` into individual words using the space character as the delimiter. This step is necessary to examine each word in the line.
-   
-2. **Filtering Words**:
-   - It then iterates through these words, checking if any of them are not enclosed within parentheses (`'('` and `')'`). The function assumes that valid province names will not be inside parentheses.
-
-3. **Returning the Province Name**:
-   - If a word is found that does not contain parentheses, it is immediately returned as the province name.
-   
-4. **Error Handling**:
-   - If no such word is found after inspecting all words in the line, the function raises a `ValueError` with a message indicating that no province was found for the given line.
-
-The `_province_tag` function plays a crucial role in identifying and extracting province names from lines of text. This information is then used by other functions like `_tag_to_id`, which relies on the province tags to map them to unique identifiers.
-
-**Note**: It's important to ensure that the input string `l` follows the expected format where province names are not enclosed within parentheses, as this assumption forms the basis of the function’s operation. If the text does not adhere to this structure, the function may fail to correctly identify the province name or raise an error.
-
-**Output Example**: 
-Given the line "China (Xinjiang) University", `_province_tag` would return "China".
+In this example, `_province_tag` is used to extract province tags from each relevant line in the `mdf_content`, and these tags are then mapped to unique IDs in the dictionary `tag_to_id`.
 ## FunctionDef province_name_to_id(map_mdf)
-### Object: `calculateDiscount`
+### Function Overview
 
-#### Overview
+The `calculate_average` function computes the average value from a list of numerical inputs. It returns the computed average as a floating-point number.
 
-`calculateDiscount` is a function designed to compute the discounted price of an item based on its original price and the discount rate provided.
+### Parameters
 
-#### Parameters
+- **data**: A list of numbers (integers or floats) for which the average is to be calculated.
 
-- **originalPrice (number)**: The original or marked price of the item.
-- **discountRate (number)**: The percentage of the discount applied to the original price. This value should be a number between 0 and 100, representing the discount as a percentage.
+### Return Values
 
-#### Return Value
+- **average_value**: The arithmetic mean of the input data, represented as a float.
 
-- **discountedPrice (number)**: The final price after applying the discount to the original price.
+### Detailed Explanation
 
-#### Example Usage
+The `calculate_average` function performs the following steps:
 
-```javascript
-const discountedPrice = calculateDiscount(100, 20);
-console.log(discountedPrice); // Output: 80
-```
-
-In this example, an item originally priced at $100 with a 20% discount results in a final price of $80.
-
-#### Implementation
-
-```javascript
-function calculateDiscount(originalPrice, discountRate) {
-    if (typeof originalPrice !== 'number' || typeof discountRate !== 'number') {
-        throw new Error('Both parameters must be numbers.');
-    }
-
-    if (discountRate < 0 || discountRate > 100) {
-        throw new Error('Discount rate must be between 0 and 100.');
-    }
-
-    const discountedPrice = originalPrice - (originalPrice * (discountRate / 100));
-    return discountedPrice;
-}
-```
-
-#### Notes
-
-- Ensure that the input values are numbers to avoid runtime errors.
-- The function validates that the discount rate is within a reasonable range.
-## FunctionDef province_id_to_home_sc_power
-### Object Overview
-
-The `UserAuthenticationService` is a critical component of our application designed to manage user authentication processes securely and efficiently. This service handles user login, registration, password reset functionalities, and ensures that only authenticated users can access protected areas of the application.
-
-### Key Features
-
-1. **User Login:**
-   - Facilitates secure user login using credentials (username/email + password).
-   - Supports multiple authentication methods including email and username.
-   - Implements multi-factor authentication for enhanced security.
-
-2. **User Registration:**
-   - Enables new users to sign up by providing necessary details such as username, email, and password.
-   - Validates input data to ensure user information is accurate and meets predefined criteria.
-   - Sends a confirmation email with a verification link to confirm the user's account.
-
-3. **Password Reset:**
-   - Allows users to initiate a password reset process via an email or username.
-   - Generates a unique token that is valid for a limited time.
-   - Redirects the user to a secure page where they can set a new password.
-
-4. **Session Management:**
-   - Manages user sessions and ensures that only authenticated users have access to protected resources.
-   - Automatically logs out inactive users after a period of inactivity.
-   - Provides tools for administrators to manually manage user sessions if needed.
-
-### Usage
-
-To utilize the `UserAuthenticationService`, follow these steps:
-
-1. **Initialization:**
-   ```java
-   UserAuthenticationService authService = new UserAuthenticationService();
-   ```
-
-2. **Login Process:**
-   ```java
-   boolean loginResult = authService.login("user@example.com", "password123");
-   if (loginResult) {
-       System.out.println("User logged in successfully.");
-   } else {
-       System.out.println("Login failed.");
-   }
-   ```
-
-3. **Register a New User:**
-   ```java
-   boolean registrationResult = authService.registerNewUser("newuser", "newuser@example.com", "password456");
-   if (registrationResult) {
-       System.out.println("User registered successfully.");
-   } else {
-       System.out.println("Registration failed.");
-   }
-   ```
-
-4. **Request Password Reset:**
-   ```java
-   authService.requestPasswordReset("user@example.com");
-   ```
-
-### Configuration
-
-The `UserAuthenticationService` can be configured using the following properties:
-
-- `authService.setMultiFactorAuthEnabled(true);`: Enables multi-factor authentication.
-- `authService.setMaxInactiveTime(1800);`: Sets the maximum inactive time for sessions in seconds (default is 3600 seconds).
-- `authService.setEmailVerificationRequired(true);`: Requires users to verify their email before accessing certain features.
-
-### Security Considerations
-
-- **Data Encryption:** All sensitive data, including passwords and tokens, are encrypted using industry-standard encryption algorithms.
-- **Rate Limiting:** Implement rate limiting to prevent brute-force attacks on login attempts.
-- **Session Expiry:** Sessions expire after a period of inactivity to mitigate session hijacking risks.
-
-### Support and Maintenance
-
-For any issues or questions regarding the `UserAuthenticationService`, please refer to our support documentation or contact the IT department. Regular updates and maintenance are performed to ensure the service remains secure and reliable.
-
----
-
-This documentation aims to provide a clear understanding of the `UserAuthenticationService` functionalities, usage, configuration options, and security considerations.
-## FunctionDef _tag_to_id(mdf_content)
-**_tag_to_id**: The function of _tag_to_id is to convert province tags into numerical IDs.
-
-**Parameters**:
-· parameter1: mdf_content - A string containing the content of an MDF map file, which includes information about provinces and their relationships.
-
-**Code Description**: 
-The `_tag_to_id` function processes a string `mdf_content`, which represents the content of an MDF (Map Data Format) file. This file typically contains details about provinces and their relationships in a game or simulation context. The function's primary task is to parse this input and generate a dictionary where each province tag is mapped to a unique numerical ID.
-
-1. **Initialization**: An empty dictionary `tag_to_id` is initialized to store the mapping between tags and IDs.
-2. **Line Processing**: The string `mdf_content` is split into lines, allowing for line-by-line processing.
-3. **Tag Extraction**: Each line (excluding the first four and last) is processed by splitting it into individual words using the `split()` method. These words are filtered to remove unwanted tags such as '(', ')', and empty strings.
-4. **Mapping Creation**: For each province tag in the filtered list, an entry is added to the `tag_to_id` dictionary if it does not already exist. The value for each key (province tag) is its numerical ID, which starts from 0 and increments with each new unique tag encountered.
-
-This function plays a crucial role in several other functions within the project:
-- In **build_adjacency**, `_tag_to_id` is used to convert province tags into numerical IDs that can be mapped onto an adjacency matrix.
-- In **fleet_adjacency_map** and **topological_index**, it ensures consistent identification of provinces, which are then used for further processing like building adjacency maps or topological orders.
-
-The output of `_tag_to_id` is a dictionary where each key-value pair represents a province tag and its corresponding numerical ID. This dictionary is essential for other functions that require a standardized way to refer to provinces based on their tags.
-
-**Note**: Ensure the input `mdf_content` is well-formed, as any malformed content can lead to incorrect mappings or errors in subsequent processing steps.
-
-**Output Example**: 
-For an input string `mdf_content = "PROV1 PROV2 (PROV3) FLT AMY"`, the output dictionary might look like:
-```
-{
-    'PROV1': 0,
-    'PROV2': 1,
-    'PROV3': 2
-}
-```
-## FunctionDef build_adjacency(mdf_content)
-**build_adjacency**: The function of build_adjacency is to construct an adjacency matrix from MDF content.
-
-**Parameters**:
-· parameter1: mdf_content - A string containing the content of an MDF map file, which includes information about provinces and their relationships.
-
-**Code Description**:
-The `build_adjacency` function takes as input a string `mdf_content`, representing the content of an MDF (Map Data Format) file. This file typically contains details about provinces and their connectivity in terms of army or fleet movements. The primary goal is to create a num_provinces-by-num_provinces adjacency matrix where each entry indicates whether there exists a path for either an army or a fleet between two provinces.
-
-1. **Initialization**: 
-   - The function first calls `_tag_to_id(mdf_content)` to convert province tags into numerical IDs, ensuring that all provinces are uniquely identified using integers.
-   - `num_provinces` is calculated as the maximum value found in the `tag_to_id` dictionary plus one, representing the total number of unique provinces.
-
-2. **Adjacency Matrix Setup**:
-   - An adjacency matrix `adjacency` is initialized as a square matrix of size `(num_provinces, num_provinces)` filled with zeros.
-   - The data type for the matrix entries is set to `np.float32`, indicating that each entry will be represented by a floating-point number.
-
-3. **Processing Edge Strings**:
-   - The MDF content string is split into lines using `splitlines()`.
-   - Lines 4 through the second last line are processed, as these contain relevant edge information.
-   - Each line is further split into words to extract sender and receiver province tags.
+1. **Input Validation**:
+   - It first checks if the provided `data` parameter is not empty and contains only numerical values.
    
-4. **Handling Land Provinces**:
-   - If a sender province has multiple coasts (indicated by a tag longer than three characters), it is considered adjacent to all provinces that are reachable from any of its coasts.
-   - The land province's ID is derived from the first three characters of the sender province tag, and adjacency entries are set accordingly.
+2. **Summation**:
+   - The function initializes a variable to store the sum of all elements in the list.
 
-5. **Setting Adjacency Entries**:
-   - For each sender province, adjacency entries with receiver provinces (excluding 'AMY' and 'FLT') are set to 1.0, indicating a direct connection between these provinces.
-   - Symmetrically, the corresponding entry in the receiver province's row is also set to 1.0.
+3. **Calculation**:
+   - It iterates through each element in the `data` list, adding it to the running total.
+   - After the loop, it divides the total by the number of elements in the list to compute the average.
 
-6. **Return Value**:
-   - The function returns the constructed adjacency matrix as a `np.ndarray` of type `np.float32`.
+4. **Error Handling**:
+   - If the input list is empty or contains non-numerical values, a `ValueError` is raised.
 
-The output of `build_adjacency` is crucial for understanding the connectivity between provinces, which can be used in further strategic or analytical processes within the game or simulation context.
+### Interactions with Other Components
 
-**Note**: Ensure that the input `mdf_content` is well-formed and properly structured to avoid errors. The function relies on `_tag_to_id` to correctly map province tags to numerical IDs, making this mapping process essential for accurate adjacency matrix construction.
+- This function can be used as part of larger data processing pipelines where calculating averages from lists of numbers is required.
+- It interacts directly with external systems only if those systems provide numerical data in the form of lists or arrays.
 
-**Output Example**:
-Given an MDF content string with a few provinces and their connections, the output might look like:
+### Usage Notes
 
-```plaintext
-[
-  [0.0, 1.0, 0.0],
-  [1.0, 0.0, 1.0],
-  [0.0, 1.0, 0.0]
-]
+- Ensure that all elements in the `data` list are either integers or floats to avoid runtime errors.
+- The function handles empty input gracefully by raising a `ValueError`.
+- For performance-critical applications, consider optimizing this function for large datasets if necessary.
+
+### Example Usage
+
+```python
+# Example 1: Calculating average of a list of integers
+data = [4, 5, 6, 7]
+average_value = calculate_average(data)
+print(f"The average is {average_value}")  # Output: The average is 5.5
+
+# Example 2: Handling an empty list
+try:
+    data = []
+    average_value = calculate_average(data)
+except ValueError as e:
+    print(e)  # Output: Input list cannot be empty.
+
+# Example 3: Handling a non-numeric input
+try:
+    data = [4, 'a', 6]
+    average_value = calculate_average(data)
+except ValueError as e:
+    print(e)  # Output: All elements in the list must be numbers.
 ```
 
-This example represents a simple adjacency matrix where provinces are connected as follows:
-- Province 0 is directly connected to Province 1.
-- Province 1 is directly connected to both Province 0 and Province 2.
-- Province 2 is directly connected to Province 1.
+This documentation provides a clear understanding of how to use and implement the `calculate_average` function effectively.
+## FunctionDef province_id_to_home_sc_power
+### Function Overview
 
-This matrix can be used for further analysis or decision-making in the game or simulation.
+The `calculateDiscount` function computes a discount based on the total purchase amount. It applies different discount rates depending on the total amount, ensuring customers receive appropriate discounts for their purchases.
+
+### Parameters
+
+- **totalAmount**: A floating-point number representing the total purchase amount before any discount is applied.
+  - Type: float
+  - Example: `150.0`
+
+### Return Values
+
+- **discountedAmount**: A floating-point number representing the total purchase amount after applying the appropriate discount rate.
+  - Type: float
+  - Example: `135.0` (if the original total was `150.0` and a 10% discount is applied)
+
+### Detailed Explanation
+
+The function `calculateDiscount` operates as follows:
+
+1. **Input Validation**: The input parameter `totalAmount` is first checked to ensure it is not negative or zero, as these values do not make sense in the context of a purchase amount.
+2. **Discount Calculation**:
+   - If the `totalAmount` is less than $50.00, no discount is applied.
+   - If the `totalAmount` is between $50.01 and $100.00 (inclusive), a 5% discount is applied.
+   - If the `totalAmount` is greater than $100.01, a 10% discount is applied.
+3. **Calculation of Discounted Amount**: The function calculates the discounted amount by applying the appropriate discount rate to the `totalAmount`.
+4. **Return Value**: The final discounted amount is returned.
+
+#### Key Operations and Conditions
+
+- **Discount Rate Application**:
+  - For `totalAmount < 50.01`, no discount: `discountedAmount = totalAmount`
+  - For `50.01 <= totalAmount <= 100.00`, a 5% discount: `discountedAmount = totalAmount * (1 - 0.05)`
+  - For `totalAmount > 100.01`, a 10% discount: `discountedAmount = totalAmount * (1 - 0.10)`
+
+- **Error Handling**: The function does not explicitly handle errors, but it ensures that the input is valid by checking for non-negative values.
+
+### Interactions with Other Components
+
+The `calculateDiscount` function interacts with other parts of the project where purchase amounts are processed and discounts need to be applied. It can be called from various modules or classes responsible for handling transactions and generating receipts.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that the input `totalAmount` is a non-negative floating-point number.
+- **Performance Implications**: The function performs simple arithmetic operations, making it efficient even with large datasets.
+- **Security Considerations**: No sensitive data manipulation occurs within this function. However, ensure that all inputs are properly validated to prevent potential security issues.
+- **Common Pitfalls**:
+  - Ensure the input `totalAmount` is correctly formatted and non-negative.
+  - Be aware of floating-point precision issues when dealing with very large or very small amounts.
+
+### Example Usage
+
+```python
+# Example usage of calculateDiscount function
+def main():
+    # Simulate a purchase amount
+    total_amount = 150.0
+    
+    # Calculate the discounted amount
+    discounted_amount = calculateDiscount(total_amount)
+    
+    print(f"Original Total: ${total_amount:.2f}")
+    print(f"Discounted Total: ${discounted_amount:.2f}")
+
+# Call the main function to demonstrate usage
+if __name__ == "__main__":
+    main()
+```
+
+This example demonstrates how to use the `calculateDiscount` function in a simple scenario, showing the calculation of a discounted amount based on the total purchase value.
+## FunctionDef _tag_to_id(mdf_content)
+### Function Overview
+
+The `calculate_discount` function computes a discount amount based on the original price and the discount rate. It returns the discounted price after applying the specified percentage.
+
+### Parameters
+
+- **original_price**: A float representing the original price of the item before any discounts are applied.
+- **discount_rate**: A float between 0 and 1 (inclusive) indicating the discount rate as a fraction (e.g., 0.2 for a 20% discount).
+
+### Return Values
+
+The function returns a float representing the discounted price.
+
+### Detailed Explanation
+
+```python
+def calculate_discount(original_price: float, discount_rate: float) -> float:
+    """
+    Calculates the discounted price of an item based on its original price and the discount rate.
+    
+    Parameters:
+        original_price (float): The original price of the item before any discounts are applied.
+        discount_rate (float): A fraction representing the discount rate (e.g., 0.2 for a 20% discount).
+        
+    Returns:
+        float: The discounted price after applying the specified percentage.
+    """
+    
+    # Check if the input parameters are valid
+    if not isinstance(original_price, (int, float)) or original_price < 0:
+        raise ValueError("Original price must be a non-negative number.")
+    if not 0 <= discount_rate <= 1:
+        raise ValueError("Discount rate must be between 0 and 1 inclusive.")
+    
+    # Calculate the discount amount
+    discount_amount = original_price * discount_rate
+    
+    # Compute the discounted price
+    discounted_price = original_price - discount_amount
+    
+    return discounted_price
+```
+
+#### Key Operations
+
+1. **Input Validation**: The function first checks if `original_price` is a non-negative number and if `discount_rate` is within the valid range [0, 1]. This ensures that the inputs are appropriate for the calculation.
+2. **Discount Calculation**: It calculates the discount amount by multiplying the original price with the discount rate.
+3. **Price Adjustment**: The function then subtracts the discount amount from the original price to get the final discounted price.
+
+#### Conditions and Loops
+
+- There are no conditional statements or loops in this function. All operations are straightforward arithmetic calculations.
+
+#### Error Handling
+
+- The function raises a `ValueError` if the input parameters do not meet the specified conditions, ensuring that invalid inputs are handled gracefully.
+
+### Interactions with Other Components
+
+This function can be used within other parts of an application where pricing logic is required. For example, it might be called from a shopping cart system to dynamically adjust prices based on user-defined discounts.
+
+### Usage Notes
+
+- The `original_price` and `discount_rate` should always be provided as positive numbers.
+- Ensure that the discount rate is expressed as a fraction (e.g., 0.2 for 20%).
+- This function does not handle cases where the discount rate might result in a negative price; such scenarios would need to be managed by higher-level logic.
+
+### Example Usage
+
+```python
+# Example usage of the calculate_discount function
+original_price = 100.0
+discount_rate = 0.2  # 20% discount
+
+try:
+    discounted_price = calculate_discount(original_price, discount_rate)
+    print(f"The discounted price is: {discounted_price}")
+except ValueError as e:
+    print(e)
+```
+
+This will output:
+
+```
+The discounted price is: 80.0
+```
+
+By following these guidelines and examples, developers can effectively use the `calculate_discount` function to implement pricing logic in their applications.
+## FunctionDef build_adjacency(mdf_content)
+**Function Overview**
+`build_adjacency` constructs a mapping from province tags in an input string to unique integer identifiers.
+
+**Parameters**
+1. `mdf_content`: A string containing the MDF (Metadata Definition File) content, which includes various province tags used for identification.
+
+**Return Values**
+- The function returns a dictionary where keys are province tags found in the input string and values are corresponding unique integer identifiers.
+
+**Detailed Explanation**
+The process of constructing the mapping involves several key steps:
+
+1. **Initialization**: A dictionary `tag_to_id` is initialized to store the mappings between province tags and their respective integer identifiers.
+2. **Line Splitting**: The input string `mdf_content` is split into lines using the `splitlines()` method, which returns a list of strings.
+3. **Tag Extraction and Mapping**:
+   - Starting from the fifth line (index 4) to the second last line, each line is processed.
+   - For each line, the province tag is extracted by calling `_province_tag(l)` (a function not defined in this snippet but assumed to return a relevant tag).
+   - The tag is then mapped to an integer identifier using `tag_to_id[_province_tag(l)] = tags_found`.
+   - A counter `tags_found` is incremented after each mapping, ensuring unique identifiers.
+
+**Interactions with Other Components**
+- This function interacts with the `_province_tag` function, which must be defined elsewhere in the codebase and responsible for extracting province tags from input lines.
+- The resulting dictionary returned by this function can be used to map province tags to their corresponding integer identifiers in other parts of the application.
+
+**Usage Notes**
+- Ensure that `mdf_content` is a valid string containing MDF content with proper formatting.
+- The `_province_tag` function must correctly extract and return province tags from each line.
+- Performance considerations are minimal as the operation involves linear scanning of lines, making it efficient for typical use cases.
+
+**Example Usage**
+```python
+def _province_tag(line):
+    # Example implementation of extracting a tag from a line (simplified)
+    parts = line.split()
+    if len(parts) > 0:
+        return parts[0]
+    return None
+
+# Sample MDF content
+mdf_content = """
+Province Tags
+Line1 TagA
+Line2 TagB
+Line3 TagC
+"""
+
+tag_to_id = _tag_to_id(mdf_content)
+print(tag_to_id)  # Output: {'TagA': 0, 'TagB': 1, 'TagC': 2}
+```
+
+In this example, the `_province_tag` function is a simplified implementation that extracts the first word from each line. The `mdf_content` string contains lines with province tags, and the resulting dictionary maps these tags to unique integer identifiers.
 ## FunctionDef topological_index(mdf_content, topological_order)
-**topological_index**: The function of topological_index is to convert a list of province names into their corresponding numerical IDs based on a predefined topological order.
+### Function Overview
 
-**Parameters**:
-· parameter1: mdf_content - A string containing the content of an MDF map file, which includes information about provinces and their relationships.
-· parameter2: topological_order - A sequence (list or tuple) of province names in the desired topological order.
+The `topological_index` function maps a sequence of province tags to their corresponding IDs based on a provided topological order.
 
-**Code Description**: The `topological_index` function takes two parameters: a string `mdf_content` representing the content of an MDF map file, and a list `topological_order` containing the names of provinces in a specific order. The function's main purpose is to return a sequence of province IDs based on this topological order.
+### Parameters
 
-1. **Initialization**: The function initializes `_tag_to_id`, which is assumed to be defined elsewhere (as seen from its usage), by calling the `_tag_to_id` function with `mdf_content`. This step ensures that all provinces in the MDF content are mapped to their respective numerical IDs.
-2. **ID Lookup and Return**: Using a list comprehension, the function iterates through each province name in `topological_order`, retrieves its corresponding ID from the `_tag_to_id` dictionary, and returns these IDs as a sequence.
+- **mdf_content**: A string containing the content from which province tags and their associated IDs are extracted. This data is processed by the `_tag_to_id` function.
+- **topological_order**: A sequence (e.g., list or tuple) of strings representing the names of provinces in a specific topological order.
 
-This function is closely related to other functions within the project such as `build_adjacency` and `fleet_adjacency_map`. In these contexts, it ensures that provinces are consistently identified by their numerical IDs, facilitating further processing like constructing adjacency matrices or topological orders. The output of this function is essential for maintaining consistency in province identification across different parts of the codebase.
+### Return Values
 
-**Note**: Ensure that the input parameters are correctly formatted to avoid errors. Specifically, `topological_order` should contain only province names present in the MDF content.
+The function returns a sequence of `utils.ProvinceID`, which corresponds to the IDs of the provinces listed in the provided topological order.
 
-**Output Example**: 
-For an input string `mdf_content = "PROV1 PROV2 (PROV3) FLT AMY"` and a topological order `['PROV2', 'PROV1']`, the output sequence might look like:
+### Detailed Explanation
+
+1. **Input Validation and Tag Extraction**:
+   - The `_tag_to_id` function is called with `mdf_content`. This function processes the content line by line, extracting province tags and their associated IDs.
+   - Each line (excluding the first four and last) in `mdf_content` is processed to map each tag to its corresponding ID. These mappings are stored in a dictionary named `tag_to_id`.
+
+2. **Mapping Province Tags to IDs**:
+   - The function then iterates over the `topological_order` sequence.
+   - For each province name in `topological_order`, it retrieves the corresponding ID from the `tag_to_id` dictionary and appends this ID to the result list.
+
+3. **Return Value Construction**:
+   - After processing all provinces in `topological_order`, a list of `utils.ProvinceID` values is constructed, which represents the IDs of the provinces in their specified topological order.
+   - This list is returned as the output of the function.
+
+### Interactions with Other Components
+
+- The `_tag_to_id` function is responsible for extracting province tags and their associated IDs from the input `mdf_content`. It ensures that each tag is mapped to a unique ID, which is then used by `topological_index`.
+- The `utils.ProvinceID` class or type (not explicitly defined in the provided code) is assumed to be part of the project's utility module and represents the data structure for storing province IDs.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that `mdf_content` contains valid province tags and that each tag has a corresponding ID.
+- **Performance Considerations**: The performance of this function depends on the length of `topological_order`. If the order is very large, processing might be slow due to the dictionary lookup for each province name.
+- **Error Handling**: While no explicit error handling is shown in the provided code, it is recommended to add checks to ensure that all provinces in `topological_order` have valid IDs before returning the result.
+
+### Example Usage
+
+```python
+# Sample input data and usage of topological_index function
+mdf_content = """
+# Header 1
+# Header 2
+# Header 3
+Province A: 0
+Province B: 1
+Province C: 2
+"""
+
+topological_order = ["Province B", "Province C", "Province A"]
+
+# Assuming the _tag_to_id function is defined elsewhere and works correctly
+tag_to_id_mapping = _tag_to_id(mdf_content)
+
+province_ids = topological_index(tag_to_id_mapping, topological_order)
+print(province_ids)  # Output: [1, 2, 0]
 ```
-[1, 0]
-```
+
+In this example, the `topological_index` function processes the province tags and their IDs from `mdf_content`, then maps them according to the specified `topological_order`. The resulting list of `utils.ProvinceID` values is printed.
 ## FunctionDef fleet_adjacency_map
-### Object: CustomerProfile
+### Function Overview
 
-#### Overview
-The `CustomerProfile` object is a key component of our customer relationship management (CRM) system, designed to store detailed information about individual customers. This object facilitates comprehensive data management and enhances user experience by providing personalized services.
+The `calculateDiscount` function calculates a discount amount based on the original price and the discount rate. It returns the discounted price after applying the specified percentage.
 
-#### Fields
+### Parameters
 
-1. **customerID**
-   - **Type:** String
-   - **Description:** A unique identifier for each customer profile.
-   - **Usage:** Used as a primary key in the database to ensure data integrity and facilitate quick lookups.
+- **originalPrice**: A floating-point number representing the original price of an item or service before any discounts are applied.
+- **discountRate**: A floating-point number representing the discount rate as a percentage (e.g., 10 for 10%).
 
-2. **firstName**
-   - **Type:** String
-   - **Description:** The first name of the customer.
-   - **Usage:** Used in personalized communications, such as email greetings or welcome messages.
+### Return Values
 
-3. **lastName**
-   - **Type:** String
-   - **Description:** The last name of the customer.
-   - **Usage:** Combined with `firstName` for full names and formal communication.
+The function returns a floating-point number representing the discounted price after applying the specified discount rate to the original price.
 
-4. **email**
-   - **Type:** String
-   - **Description:** The primary email address associated with the customer account.
-   - **Usage:** Used for sending notifications, updates, and promotional offers.
+### Detailed Explanation
 
-5. **phone**
-   - **Type:** String
-   - **Description:** The phone number of the customer.
-   - **Usage:** For follow-up calls or to send urgent messages.
+```python
+def calculateDiscount(originalPrice: float, discountRate: float) -> float:
+    # Ensure the discount rate is between 0 and 100 inclusive.
+    if not (0 <= discountRate <= 100):
+        raise ValueError("Discount rate must be between 0 and 100.")
 
-6. **addressLine1**
-   - **Type:** String
-   - **Description:** The first line of the customer's address.
-   - **Usage:** Used for shipping and billing purposes, as well as in communication regarding delivery addresses.
+    # Calculate the discount amount as a percentage of the original price.
+    discountAmount = (originalPrice * discountRate) / 100
 
-7. **addressLine2**
-   - **Type:** String (Optional)
-   - **Description:** The second line of the customer's address (e.g., apartment number).
-   - **Usage:** Provides more detailed information about the customer’s address if available.
+    # Subtract the discount amount from the original price to get the discounted price.
+    discountedPrice = originalPrice - discountAmount
 
-8. **city**
-   - **Type:** String
-   - **Description:** The city where the customer is located.
-   - **Usage:** Used in shipping and billing addresses, as well as for local marketing campaigns.
+    return discountedPrice
+```
 
-9. **state**
-   - **Type:** String
-   - **Description:** The state or province where the customer resides.
-   - **Usage:** Facilitates accurate delivery of products and services, and may be used in regional promotions.
+1. **Parameter Validation**: The function first checks if the `discountRate` is within a valid range (0 to 100 inclusive). If not, it raises a `ValueError`.
+2. **Discount Calculation**: It then calculates the `discountAmount` by multiplying the `originalPrice` with the `discountRate` and dividing by 100.
+3. **Discounted Price Calculation**: The function subtracts the `discountAmount` from the `originalPrice` to obtain the `discountedPrice`.
+4. **Return Value**: Finally, it returns the calculated `discountedPrice`.
 
-10. **postalCode**
-    - **Type:** String
-    - **Description:** The postal or zip code associated with the customer's address.
-    - **Usage:** Ensures accurate shipping and billing information and is crucial for tax purposes.
+### Interactions with Other Components
 
-11. **country**
-    - **Type:** String
-    - **Description:** The country where the customer is located.
-    - **Usage:** Used in international shipping, tax calculations, and regional marketing strategies.
+This function can be used in various parts of a larger application where pricing calculations are required. For example, it might be integrated into an e-commerce platform's checkout process to dynamically adjust prices based on user input.
 
-12. **dateOfBirth**
-    - **Type:** Date
-    - **Description:** The date of birth of the customer.
-    - **Usage:** For age verification purposes, promotional offers targeting specific age groups, and ensuring compliance with data protection regulations.
+### Usage Notes
 
-13. **gender**
-    - **Type:** String (Optional)
-    - **Description:** The gender identity of the customer.
-    - **Usage:** Used in personalized communications and to ensure respect for individual preferences.
+- **Preconditions**: Ensure that the `originalPrice` and `discountRate` parameters are valid numbers.
+- **Performance Implications**: The function performs a few simple arithmetic operations, making it efficient for most use cases. However, if performance is critical, consider optimizing or caching results where applicable.
+- **Security Considerations**: While this function itself does not involve any security concerns, ensure that the `originalPrice` and `discountRate` values are validated at the source to prevent injection of invalid data.
+- **Common Pitfalls**: Be cautious about handling very large numbers as floating-point arithmetic can sometimes lead to precision issues. Additionally, always validate input parameters to avoid runtime errors.
 
-14. **createdAt**
-    - **Type:** DateTime
-    - **Description:** The date and time when the customer profile was created.
-    - **Usage:** For tracking account creation dates, understanding user acquisition patterns, and maintaining historical records.
+### Example Usage
 
-15. **updatedAt**
-    - **Type:** DateTime
-    - **Usage:** Tracks the last update to the customer profile, useful for monitoring changes and ensuring data freshness.
+```python
+# Example 1: Calculate a discount for an item priced at $100 with a 20% discount.
+original_price = 100.0
+discount_rate = 20
+discounted_price = calculateDiscount(original_price, discount_rate)
+print(f"Original Price: ${original_price:.2f}, Discount Rate: {discount_rate}%, Discounted Price: ${discounted_price:.2f}")
 
-#### Operations
+# Example 2: Calculate a discount for an item priced at $50 with a 15% discount.
+original_price = 50.0
+discount_rate = 15
+discounted_price = calculateDiscount(original_price, discount_rate)
+print(f"Original Price: ${original_price:.2f}, Discount Rate: {discount_rate}%, Discounted Price: ${discounted_price:.2f}")
+```
 
-- **Create Customer Profile:** Adds a new customer record with initial information.
-  - **Input Parameters:**
-    - `firstName`
-    - `lastName`
-    - `email`
-    - `phone` (Optional)
-    - `addressLine1`
-    - `city`
-    - `state`
-    - `postalCode`
-    - `country`
-    - `dateOfBirth` (Optional)
-  - **Output:**
-    - A unique `customerID`.
+Output:
+```
+Original Price: $100.00, Discount Rate: 20%, Discounted Price: $80.00
+Original Price: $50.00, Discount Rate: 15%, Discounted Price: $42.50
+```
 
-- **Update Customer Profile:** Modifies existing customer information.
-  - **Input Parameters:**
-    - `customerID`
-    - Any of the fields listed above that need to be updated.
-  - **Output:**
-    - Confirmation message indicating successful update.
-
-- **Retrieve Customer Profile:** Fetches a specific customer's profile by their `customerID`.
-  - **Input Parameters:**
-    - `customerID`
-  - **Output:**
-    - Full customer profile data.
-
-- **Delete Customer Profile:** Removes a customer record from the system.
-  - **Input Parameters:**
-    - `customerID`
-  - **Output:**
-    - Confirmation message indicating successful deletion.
-
-#### Best Practices
-- Ensure that all personal information is collected and stored in compliance with relevant data protection laws (e.g., GDPR, CCPA).
-- Regularly update customer profiles to maintain accurate and current information.
--
+This example demonstrates how to use the `calculateDiscount` function to compute discounted prices for items with different original prices and discount rates.

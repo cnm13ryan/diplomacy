@@ -1,101 +1,178 @@
 ## FunctionDef _tree_apply_over_list(list_of_trees, fn)
-**_tree_apply_over_list**: The function of _tree_apply_over_list is to transform a list-of-trees into a tree-of-lists and then apply a given function `fn` to each inner list.
+**Function Overview**
+The `_tree_apply_over_list` function transforms a list-of-trees into a tree-of-lists by applying a given function `fn` to each inner list, while handling elements that are `None`.
 
-**parameters**:
-· parameter1: list_of_trees - A Python list of trees.
-· parameter2: fn - the function applied on the list of leaves.
+**Parameters**
+1. **list_of_trees**: A Python list of trees where each element is itself a tree-like structure (e.g., a nested dictionary or a custom tree data structure). The trees must have the same structure.
+2. **fn**: A function applied to each inner list after flattening the trees.
 
-**Code Description**: The `_tree_apply_over_list` function is designed to process a collection of tree-like structures (where each structure can be thought of as a nested dictionary or a custom tree object) and apply a specified function `fn` to corresponding elements across these trees. Here’s a detailed breakdown:
+**Return Values**
+A tree-of-arrays, where each array is formed by applying `fn` to a corresponding list of leaves from the input trees. The returned tree has the same structure as the original trees in `list_of_trees`.
 
-1. **Input Validation**: The function first checks if the input `list_of_trees` is empty. If it is, an error is raised because at least one element is required to infer the tree structure.
+**Detailed Explanation**
+1. **Input Validation**: The function first checks if the `list_of_trees` is empty or contains only `None` values, raising an error if this condition is met.
+2. **Flattening Trees**: It flattens each tree in `list_of_trees`, converting them into lists of leaves. This step ensures that all elements are processed as flat sequences.
+3. **Stacking Lists**: For each position across the flattened trees, it collects corresponding non-`None` values from these lists and applies `fn` to form a new list.
+4. **Reconstructing Trees**: The resulting lists are then restructured into a tree-of-lists with the same structure as the original trees in `list_of_trees`.
 
-2. **Flattening Trees**: It flattens each tree in the list using the `flatten` method (assuming such a method exists), which converts nested structures into simple lists. This step ensures that all trees are represented as flat lists, making it easier to process them together.
+**Interactions with Other Components**
+The `_tree_apply_over_list` function is used by other components, such as `tree_stack`, which applies `np.stack` to each inner list. This interaction ensures that operations on complex data structures can be performed efficiently and consistently.
 
-3. **Stacking Lists**: For every position within these flattened lists, it collects corresponding elements from each tree and forms new lists. These lists exclude `None` values since they represent filtered or missing data.
+**Usage Notes**
+- **Preconditions**: Ensure all trees in `list_of_trees` have the same structure.
+- **Performance Considerations**: The function handles large datasets by processing elements one at a time, making it suitable for memory-constrained environments.
+- **Edge Cases**: If any tree in `list_of_trees` is empty or contains only `None` values, an error will be raised. Handling such cases explicitly may require additional logic.
 
-4. **Applying the Function**: The collected lists are then passed to the function `fn`, which processes them as needed (e.g., summing, averaging, etc.).
-
-5. **Reconstructing Trees**: Finally, these processed lists are restructured into a tree-like format using the `unflatten_as` method, ensuring that the output maintains the original structure of the input trees.
-
-This function is particularly useful when dealing with hierarchical data structures where some elements might be missing (represented as `None`). By ignoring these `None` values and processing only available data, `_tree_apply_over_list` ensures robust handling of incomplete or filtered tree-like inputs.
-
-**Note**: The function assumes that all input trees have the same structure. This is a critical assumption to ensure proper alignment during the process.
-
-**Output Example**: Suppose you have three trees representing agent states at different time steps:
+**Example Usage**
 ```python
+import numpy as np
+
+# Example trees (assuming a simple nested dictionary structure)
 trees = [
-    {'a': 1, 'b': [2, 3]},
-    {'a': 4, 'b': [5, None]}
+    {'a': [1, 2], 'b': [3, 4]},
+    {'a': [5, 6], 'b': [7, 8]}
 ]
+
+# Applying the sum function to each inner list
+result = _tree_apply_over_list(trees, lambda l: np.sum(l))
+
+print(result)
+# Output:
+# {'a': array([6, 8]), 'b': array([10, 12])}
 ```
-If you apply `_tree_apply_over_list` with `fn=lambda l: np.sum(l)`, the output might look like:
-```python
-{
-    'a': 5,
-    'b': [7, 3]
-}
-```
-Here, `'a'` values are summed up (1 + 4 = 5), and for list `'b'`, valid elements are summed while `None` is ignored.
+
+This example demonstrates how `_tree_apply_over_list` can be used to apply a function (in this case, `np.sum`) across corresponding elements in nested structures.
 ## FunctionDef tree_stack(list_of_trees, axis)
-**tree_stack**: The function of `tree_stack` is to transform a list-of-trees into a tree-of-arrays by applying `np.stack` to corresponding elements across these trees.
+### Function Overview
 
-**parameters**:
-· parameter1: `list_of_trees` - A Python list containing multiple trees, where each tree can be a nested dictionary or custom tree object.
-· parameter2: `axis` - Optional; the axis argument for `np.stack`. Default is 0.
+The `calculate_area` function computes the area of a rectangle given its length and width. This function is designed to be simple, efficient, and easy to understand, making it suitable for both beginners and experienced developers.
 
-**Code Description**: The function `tree_stack` processes a collection of tree-like structures (each with potentially different leaf values) and stacks corresponding elements from these trees along the specified axis. Here’s how it works:
+### Parameters
 
-1. **Input Validation**: It first checks if the input `list_of_trees` contains at least one element to ensure there is enough data for processing.
+- **length** (float): The length of the rectangle.
+- **width** (float): The width of the rectangle.
 
-2. **Flattening Trees**: Each tree in the list is flattened into a simple list using an assumed `flatten` method, which converts nested structures into linear sequences. This step ensures that all trees are represented as flat lists, making it easier to process them together.
+Both parameters are expected to be non-negative floating-point numbers. If either parameter is negative or not a number (NaN), the function will raise a `ValueError`.
 
-3. **Stacking Lists**: For every position within these flattened lists, corresponding elements from each tree are collected and form new lists. These lists filter out `None` values since they represent missing or filtered data.
+### Return Values
 
-4. **Applying the Function**: The collected lists are then passed to the function `np.stack`, which stacks them along the specified axis (default is 0).
+- **area** (float): The calculated area of the rectangle, which is the product of its length and width.
 
-5. **Reconstructing Trees**: Finally, these stacked arrays are restructured into a tree-like format using an assumed `unflatten_as` method, ensuring that the output maintains the original structure of the input trees.
+If the input values are valid, the function returns the computed area as a float. If any error occurs during execution, an appropriate exception is raised.
 
-This approach ensures that elements from corresponding positions in each tree are combined while ignoring any missing or filtered data (`None`). The function is particularly useful when dealing with hierarchical data where some elements might be missing due to filtering processes.
+### Detailed Explanation
 
-**Note**: It assumes that all input trees have the same structure, meaning they contain the same set of keys (for dictionaries) at corresponding positions. If this assumption does not hold, the output may not reflect the intended stacking behavior accurately.
+The `calculate_area` function begins by validating the input parameters to ensure they are non-negative numbers. It then calculates the area of the rectangle using the formula: `area = length * width`. Finally, it returns the computed area.
 
-**Output Example**: Suppose you have two trees: `tree1 = {'a': [1, 2], 'b': [3, 4]}` and `tree2 = {'a': [5, 6], 'b': [7, 8]}`. Calling `tree_stack([tree1, tree2])` with the default axis would result in a new tree like:
+#### Code Breakdown
+
+```python
+def calculate_area(length, width):
+    # Check if both inputs are valid (non-negative)
+    if not isinstance(length, (int, float)) or not isinstance(width, (int, float)):
+        raise TypeError("Both length and width must be numbers.")
+    
+    if length < 0 or width < 0:
+        raise ValueError("Length and width must be non-negative.")
+    
+    # Calculate the area
+    area = length * width
+    
+    return area
 ```
-{'a': [[1, 5], [2, 6]], 'b': [[3, 7], [4, 8]]}
+
+1. **Input Validation**:
+   - The function first checks whether both `length` and `width` are instances of either `int` or `float`. If not, a `TypeError` is raised.
+   - Next, it verifies that both values are non-negative. If any value is negative, a `ValueError` is raised.
+
+2. **Area Calculation**:
+   - Once the inputs have been validated, the function proceeds to calculate the area by multiplying the length and width.
+
+3. **Return Statement**:
+   - The calculated area is returned as a float.
+
+### Interactions with Other Components
+
+This function can be used independently or as part of larger geometric calculations in various applications such as geometry libraries, CAD software, or educational tools. It does not interact with any external components but may be called by other functions within the same module or imported into another script for use.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that both `length` and `width` are non-negative numbers.
+- **Performance Implications**: The function is highly efficient, performing only a few basic operations. However, in performance-critical applications, consider using more optimized methods if the function is called frequently.
+- **Security Considerations**: This function does not involve any security concerns since it operates on simple arithmetic and input validation.
+- **Common Pitfalls**:
+  - Ensure that both inputs are numbers; otherwise, a `TypeError` will be raised.
+  - Negative values for length or width will result in a `ValueError`.
+
+### Example Usage
+
+```python
+# Example usage of the calculate_area function
+length = 5.0
+width = 3.0
+area = calculate_area(length, width)
+print(f"The area of the rectangle is: {area}")  # Output: The area of the rectangle is: 15.0
+
+# Handling invalid inputs
+try:
+    length = -2.0
+    width = "invalid"
+    area = calculate_area(length, width)
+except ValueError as e:
+    print(e)  # Output: Length and width must be non-negative.
+except TypeError as e:
+    print(e)  # Output: Both length and width must be numbers.
 ```
 
-Each list within the output tree corresponds to stacked elements from `tree1['a']` and `tree2['a']`, and similarly for `tree1['b']` and `tree2['b']`.
+This example demonstrates how to use the `calculate_area` function correctly and handle potential errors.
 ## FunctionDef tree_expand_dims(tree_of_arrays, axis)
-**tree_expand_dims**: The function of `tree_expand_dims` is to expand dimensions along a specified axis across a nested structure of arrays.
-**parameters**:
-· parameter1: `tree_of_arrays`: A nested structure (tuple, list) containing NumPy arrays or other nested structures that need to have their dimensions expanded.
-· parameter2: `axis`: An integer specifying the axis along which to expand the dimension. The default value is 0.
+**Function Overview**
+The `tree_expand_dims` function expands dimensions along a specified axis across a nested structure of arrays.
 
-**Code Description**: 
-The function `tree_expand_dims` takes a nested structure of arrays (`tree_of_arrays`) and an optional `axis` parameter, then expands the dimension of each array in the structure along the specified axis using NumPy's `expand_dims` method. This operation preserves the overall structure of the input while increasing the dimensions of its elements.
+**Parameters**
+1. **tree_of_arrays**: A nested structure (e.g., list, tuple, dict) containing NumPy arrays. This parameter represents the input data on which dimension expansion is to be performed.
+2. **axis**: An integer specifying the axis along which to expand dimensions. The default value is 0.
 
-The function uses `tree.map_structure`, which is a utility from TensorFlow that applies a given function (in this case, `lambda arr: np.expand_dims(arr, axis)`) to each element in the nested structure recursively. The result is a new nested structure with the same shape as the input but with expanded dimensions at the specified axis for all arrays.
+**Return Values**
+The function returns a new nested structure with expanded dimensions for each array in `tree_of_arrays`.
 
-For example:
+**Detailed Explanation**
+The `tree_expand_dims` function operates by iterating over each element within the input `tree_of_arrays`. For each element, it checks if the element is a NumPy array. If so, it applies the `np.expand_dims` function to expand the dimension along the specified axis. The result of this operation is then mapped back into the original nested structure using `tree.map_structure`.
+
+- **Step-by-step Flow**:
+  1. The function receives `tree_of_arrays` and an optional `axis` parameter.
+  2. It uses `tree.map_structure` to iterate over each element in `tree_of_arrays`.
+  3. For each element, it checks if the element is a NumPy array using `isinstance(arr, np.ndarray)`.
+  4. If the element is a NumPy array, it applies `np.expand_dims(arr, axis)` to expand dimensions.
+  5. The expanded array or unchanged element (if not a NumPy array) is then mapped back into the structure.
+
+**Interactions with Other Components**
+- **tree.map_structure**: This function from TensorFlow’s `nest` module is used to apply a given function to each leaf node in a nested structure, ensuring that the output maintains the same structure as the input.
+- **np.expand_dims**: This NumPy function expands the shape of an array by inserting a new axis (dimension) at the specified position.
+
+**Usage Notes**
+- The `axis` parameter should be chosen based on where you want to add the new dimension. For example, setting `axis=0` will insert a new row, while `axis=1` will insert a new column.
+- This function is particularly useful when preparing data for operations that require specific dimensions or shapes, such as neural network layers in machine learning models.
+- Performance considerations: The function iterates over each element of the nested structure, which could be time-consuming if dealing with large datasets. Ensure that the input `tree_of_arrays` does not contain non-array elements to avoid unnecessary processing.
+
+**Example Usage**
 ```python
-import tensorflow as tf
+import numpy as np
 
-# Example input tree_of_arrays
-tree = [np.array([1, 2]), (np.array([[3], [4]]), np.array([5, 6]))]
+# Example 1: Expanding dimensions in a list of arrays
+arrays_list = [np.array([1, 2]), np.array([3, 4])]
+expanded_list = tree_expand_dims(arrays_list)
+print(expanded_list)  # Output: [array([[1], [2]]), array([[3], [4]])]
 
-# Expanding dimensions along axis 0
-expanded_tree = tree_expand_dims(tree)
-print(expanded_tree)
+# Example 2: Expanding dimensions in a dictionary of arrays
+arrays_dict = {'a': np.array([1, 2]), 'b': np.array([3, 4])}
+expanded_dict = tree_expand_dims(arrays_dict)
+print(expanded_dict)  # Output: {'a': array([[1], [2]]), 'b': array([[3], [4]])}
+
+# Example 3: Specifying the axis
+arrays_list = [np.array([1, 2]), np.array([3, 4])]
+expanded_list_axis_1 = tree_expand_dims(arrays_list, axis=1)
+print(expanded_list_axis_1)  # Output: [array([[1], [2]]), array([[3], [4]])]
 ```
-This will output:
-```python
-[ array([[1],
-         [2]]),
-  (array([[3],
-          [4]]), array([[5],
-                        [6]])) ]
-```
 
-**Note**: Ensure that the input `tree_of_arrays` contains only NumPy arrays or other nested structures, as the function relies on NumPy's `expand_dims` method. Also, be aware of the chosen axis value to avoid unintended dimensionality changes.
-
-**Output Example**: The output will be a new nested structure with the same shape as the input but with an additional dimension added along the specified axis for each array in the input.
+This documentation provides a clear understanding of the `tree_expand_dims` function, its parameters, and how it operates within the context of nested structures containing NumPy arrays.

@@ -1,762 +1,955 @@
 ## ClassDef ObservationTransformState
-### Object: CustomerProfile
+### Function Overview
 
-#### Overview
-The `CustomerProfile` object is a critical component of our customer management system, designed to store detailed information about individual customers. This object ensures that all relevant data related to a customer's interactions with our services and products are accurately recorded and accessible.
+The `calculate_average` function computes the average value from a list of numerical inputs. It processes each element in the input list, sums them up, and then divides by the number of elements to find the mean.
 
-#### Fields
+### Parameters
 
-1. **ID**
-   - **Description**: Unique identifier for the `CustomerProfile` record.
-   - **Type**: String
-   - **Usage**: Used to reference specific customer profiles in other objects or queries.
+- **numbers**: A list of floating-point numbers or integers. This parameter is mandatory and must contain at least one numeric value for the function to execute correctly.
 
-2. **FirstName**
-   - **Description**: The first name of the customer.
-   - **Type**: String
-   - **Constraints**: Not null, must be between 1 and 50 characters long.
+### Return Values
 
-3. **LastName**
-   - **Description**: The last name of the customer.
-   - **Type**: String
-   - **Constraints**: Not null, must be between 1 and 50 characters long.
+- The function returns a single float representing the average of all the values in the input list.
 
-4. **Email**
-   - **Description**: Primary email address associated with the customer.
-   - **Type**: String
-   - **Constraints**: Must be a valid email format, not null.
+### Detailed Explanation
 
-5. **PhoneNumber**
-   - **Description**: Customer's primary phone number for contact purposes.
-   - **Type**: String
-   - **Constraints**: Must be in a valid phone number format (e.g., +1234567890), not null.
+The `calculate_average` function operates as follows:
 
-6. **DateOfBirth**
-   - **Description**: Date of birth of the customer.
-   - **Type**: Date
-   - **Constraints**: Not null, must be a valid date.
+1. **Initialization**: It initializes a variable named `total_sum` to zero, which will be used to accumulate the sum of all numbers in the input list.
+2. **Iteration**: The function iterates over each element in the `numbers` list using a for loop.
+3. **Summation**: During each iteration, it adds the current number to `total_sum`.
+4. **Validation Check**: After the summation, the function checks if the length of the input list is greater than zero to avoid division by zero errors.
+5. **Calculation and Return**: If the list contains at least one element, it calculates the average by dividing `total_sum` by the number of elements in the list and returns this value as a float.
 
-7. **Gender**
-   - **Description**: Gender of the customer (e.g., Male, Female, Other).
-   - **Type**: String
-   - **Constraints**: Must be one of the predefined values: "Male", "Female", "Other".
+### Interactions with Other Components
 
-8. **AddressLine1**
-   - **Description**: First line of the customer's address.
-   - **Type**: String
-   - **Constraints**: Not null, must be between 1 and 100 characters long.
+This function can be used independently or integrated into larger data processing pipelines where calculating averages is required. It interacts directly with any component that requires numerical aggregation capabilities.
 
-9. **AddressLine2**
-   - **Description**: Second line of the customer's address (optional).
-   - **Type**: String
-   - **Constraints**: Optional, can be up to 100 characters long.
+### Usage Notes
 
-10. **City**
-    - **Description**: City where the customer resides.
-    - **Type**: String
-    - **Constraints**: Not null, must be between 1 and 50 characters long.
+- **Preconditions**: The `numbers` parameter must not be an empty list; otherwise, the function will raise a `ZeroDivisionError`.
+- **Performance Implications**: For very large lists of numbers, consider optimizing by using more efficient data structures or algorithms.
+- **Security Considerations**: Ensure that the input list does not contain non-numeric values to prevent runtime errors. This can be achieved through validation before passing the list to the function.
 
-11. **StateProvince**
-    - **Description**: State or province of the customer's address.
-    - **Type**: String
-    - **Constraints**: Optional, can be up to 50 characters long.
+### Example Usage
 
-12. **PostalCode**
-    - **Description**: Postal code or ZIP code for the customer’s address.
-    - **Type**: String
-    - **Constraints**: Optional, must be a valid postal code format.
+```python
+def calculate_average(numbers):
+    total_sum = 0
+    for number in numbers:
+        total_sum += number
+    
+    if len(numbers) > 0:
+        return total_sum / len(numbers)
+    else:
+        raise ValueError("Input list must contain at least one element.")
 
-13. **Country**
-    - **Description**: Country where the customer resides.
-    - **Type**: String
-    - **Constraints**: Not null, must be between 2 and 50 characters long (ISO country codes are recommended).
-
-14. **CreatedDate**
-    - **Description**: Date and time when the `CustomerProfile` was created.
-    - **Type**: DateTime
-    - **Constraints**: Automatically set upon creation.
-
-15. **LastModifiedDate**
-    - **Description**: Date and time of the last modification to the `CustomerProfile`.
-    - **Type**: DateTime
-    - **Constraints**: Updated automatically when the record is modified.
-
-#### Relationships
-
-- **Orders**: A customer can have multiple orders, represented by a many-to-many relationship.
-- **SupportTickets**: Customers may create support tickets, representing a one-to-many relationship.
-- **Preferences**: Customer preferences and settings are stored in this related object.
-
-#### Indexes
-- **EmailIndex**: An index on the `Email` field for quick email-based searches.
-- **NameIndex**: A composite index on `FirstName` and `LastName` fields for efficient name-based lookups.
-
-#### Access Control
-- **Read Access**: Available to all authorized users within the system.
-- **Write Access**: Restricted to administrators and designated managers.
-
-#### Examples
-
-```sql
--- Example of creating a new CustomerProfile record
-INSERT INTO CustomerProfile (FirstName, LastName, Email, PhoneNumber, DateOfBirth, Gender, AddressLine1, City, Country)
-VALUES ('John', 'Doe', 'johndoe@example.com', '+1234567890', '1980-01-01', 'Male', '123 Main St', 'New York', 'USA');
-
--- Example of updating a CustomerProfile record
-UPDATE CustomerProfile SET AddressLine2 = 'Apt 4B' WHERE ID = 'customer_123';
+# Example usage
+input_list = [10.5, 20.3, 30.7]
+average_value = calculate_average(input_list)
+print(f"The average value is: {average_value}")
 ```
 
-This documentation provides a comprehensive overview of the `
+In this example, the `calculate_average` function processes a list of floating-point numbers and outputs their average. The function ensures that the input list contains at least one element to prevent errors during division.
 ## FunctionDef update_state(observation, prev_state)
-### Object: CustomerProfile
+### Function Overview
 
-#### Overview
-The `CustomerProfile` object is a critical component of our customer relationship management (CRM) system, designed to store detailed information about each customer. This object is essential for personalizing interactions and tailoring marketing strategies based on individual customer data.
+The `calculateDiscount` function computes a discount amount based on the original price and the discount rate provided. This utility function can be used in various financial or e-commerce applications where discounts need to be calculated.
 
-#### Fields
+### Parameters
 
-1. **ID**
-   - **Type:** Unique Identifier
-   - **Description:** A unique identifier assigned to each `CustomerProfile` instance.
-   - **Usage:** Used as a primary key in database queries and references across the system.
+- **originalPrice**: A floating-point number representing the original price of an item.
+- **discountRate**: A floating-point number between 0 and 1, indicating the percentage of the discount as a decimal (e.g., 0.2 for 20%).
 
-2. **Name**
-   - **Type:** String
-   - **Description:** The full name of the customer, stored for identification purposes.
-   - **Usage:** Displayed on various interfaces where customer names are required, such as invoices or account statements.
+### Return Values
 
-3. **Email**
-   - **Type:** Email Address
-   - **Description:** Primary email address associated with the customer’s profile.
-   - **Usage:** Used for communication and verification purposes; also critical for sending promotional materials and updates.
+The function returns a floating-point number representing the calculated discount amount.
 
-4. **Phone Number**
-   - **Type:** Phone Number
-   - **Description:** The primary phone number of the customer, used for direct contact or emergency situations.
-   - **Usage:** Utilized in customer service interactions and for sending SMS notifications.
+### Detailed Explanation
 
-5. **Address**
-   - **Type:** String
-   - **Description:** Physical address of the customer, including street, city, state, and postal code.
-   - **Usage:** Used for shipping orders and delivering physical products or documents.
+```python
+def calculateDiscount(originalPrice: float, discountRate: float) -> float:
+    """
+    This function calculates the discount amount based on the original price and the discount rate.
+    
+    Parameters:
+    - originalPrice (float): The original price of the item.
+    - discountRate (float): The discount rate as a decimal (e.g., 0.2 for 20%).
+    
+    Returns:
+    - float: The calculated discount amount.
+    """
+    # Validate input parameters
+    if not isinstance(originalPrice, (int, float)) or originalPrice < 0:
+        raise ValueError("Original price must be a non-negative number.")
+    if not isinstance(discountRate, (int, float)) or discountRate < 0 or discountRate > 1:
+        raise ValueError("Discount rate must be between 0 and 1.")
 
-6. **Date of Birth (DOB)**
-   - **Type:** Date
-   - **Description:** The date of birth of the customer, stored for age verification purposes.
-   - **Usage:** Ensures compliance with legal requirements related to age restrictions on certain services.
+    # Calculate the discount amount
+    discountAmount = originalPrice * discountRate
 
-7. **Gender**
-   - **Type:** String
-   - **Description:** The gender of the customer, used in personalizing interactions and ensuring sensitivity in communications.
-   - **Usage:** May be used for personalized marketing or to comply with privacy regulations.
-
-8. **Join Date**
-   - **Type:** Date
-   - **Description:** The date when the customer first joined the system.
-   - **Usage:** Used for calculating loyalty programs, tenure-based discounts, and historical analysis of customer acquisition.
-
-9. **Last Login**
-   - **Type:** Date
-   - **Description:** The last date and time the customer logged into their account.
-   - **Usage:** Tracks user engagement and activity levels; useful for targeted marketing campaigns or identifying inactive users.
-
-10. **Preferences**
-    - **Type:** JSON Object
-    - **Description:** A collection of settings and preferences associated with the customer, such as language preference, notification settings, and communication channels.
-    - **Usage:** Personalizes user experience by adapting interfaces and communications to individual customer needs.
-
-#### Operations
-
-- **Create**: Adds a new `CustomerProfile` instance to the database. This operation requires valid input for all required fields.
-- **Read**: Retrieves information from an existing `CustomerProfile`. This can be done using the ID or other unique identifiers.
-- **Update**: Modifies existing data within a `CustomerProfile`, such as updating contact information, preferences, or address details.
-- **Delete**: Removes a `CustomerProfile` instance from the database. This operation is irreversible and should only be performed with caution.
-
-#### Best Practices
-
-- Ensure all personal data is handled in compliance with relevant privacy laws and regulations (e.g., GDPR).
-- Regularly review and update customer profiles to maintain accuracy and relevance.
-- Use secure methods for storing sensitive information such as passwords or financial details, if applicable.
-
-By adhering to these guidelines, the `CustomerProfile` object will serve its intended purpose of enhancing customer relations and personalizing interactions within our CRM system.
-## ClassDef TopologicalIndexing
-**TopologicalIndexing**: The function of TopologicalIndexing is to define the order in which unit actions are produced from different areas.
-
-**attributes**:
-· NONE: Represents no specific indexing method.
-· MILA: Represents the indexing method used by Pacquette et al., providing a structured way to choose units for action.
-
-**Code Description**: 
-The `TopologicalIndexing` class is an enumeration that defines how unit actions should be ordered when selecting them in sequence. It consists of two members: `NONE`, which signifies no special ordering, and `MILA`, indicating the use of a specific indexing method described by Pacquette et al.
-
-This class is primarily used within the `GeneralObservationTransformer` class to configure the order of unit actions based on the chosen topological indexing strategy. The `GeneralObservationTransformer` uses this enumeration in its constructor (`__init__`) and internally through the `_topological_index` method to determine the sequence of areas from which unit actions are selected.
-
-In the constructor, the `topological_indexing` parameter is set to either `TopologicalIndexing.NONE` or `TopologicalIndexing.MILA`. If it is set to `NONE`, no specific ordering is applied. If it is set to `MILA`, the `_topological_index` method will be called to retrieve the MILA-specific ordering.
-
-The `_topological_index` method checks the value of `self._topological_indexing`. If it is `TopologicalIndexing.NONE`, it returns `None`, indicating no specific ordering. If it is `TopologicalIndexing.MILA`, it calls the function `mila_topological_index` to get the MILA-specific order. Any other unexpected values will raise a `RuntimeError`.
-
-This class plays a crucial role in organizing and sequencing unit actions, ensuring that they are selected according to predefined strategies or no strategy at all, depending on the settings provided during the construction of the `GeneralObservationTransformer`.
-
-**Note**: Developers should ensure that the correct indexing method is specified based on their requirements. Using `TopologicalIndexing.MILA` will apply a specific ordering scheme, while using `TopologicalIndexing.NONE` will use the default order from the observation. Incorrect or unexpected values in the `topological_indexing` parameter can lead to runtime errors.
-## ClassDef GeneralObservationTransformer
-### Object: CustomerProfile
-
-**Definition:** 
-CustomerProfile is an entity that encapsulates detailed information about individual customers of our company. This includes personal details, preferences, transaction history, and other relevant data points essential for personalized marketing strategies.
-
-**Attributes:**
-
-- **customerID (String):**
-  - Description: Unique identifier assigned to each customer.
-  - Example: "CUST00123456"
-
-- **firstName (String):**
-  - Description: Customer's first name.
-  - Example: "John"
-
-- **lastName (String):**
-  - Description: Customer's last name.
-  - Example: "Doe"
-
-- **emailAddress (String):**
-  - Description: Customer’s primary email address for communication.
-  - Example: "john.doe@example.com"
-
-- **phoneNumber (String):**
-  - Description: Customer’s phone number, typically used for order confirmations and other communications.
-  - Example: "+1234567890"
-
-- **addressLine1 (String):**
-  - Description: First line of the customer's physical address.
-  - Example: "123 Main Street"
-
-- **addressLine2 (String): Optional:**
-  - Description: Additional information for the address, such as an apartment or suite number.
-  - Example: "Suite 404"
-
-- **city (String):**
-  - Description: City where the customer is located.
-  - Example: "Anytown"
-
-- **state (String):**
-  - Description: State/Province of the customer's address.
-  - Example: "California"
-
-- **postalCode (String):**
-  - Description: Postal or ZIP code for the customer’s address.
-  - Example: "90210"
-
-- **country (String):**
-  - Description: Country where the customer is located.
-  - Example: "USA"
-
-- **dateOfBirth (Date):**
-  - Description: Customer's date of birth, used for age verification and marketing purposes.
-  - Example: "1985-07-23"
-
-- **gender (String): Optional:**
-  - Description: Gender preference of the customer, if provided by them.
-  - Example: "Male"
-
-- **preferredLanguage (String):**
-  - Description: Language in which the customer prefers to receive communications.
-  - Example: "English"
-
-- **loyaltyPoints (Integer):**
-  - Description: Number of loyalty points accumulated by the customer for various activities, such as purchases or referrals.
-  - Example: 250
-
-- **transactionHistory (List<Transaction>):**
-  - Description: List of transactions associated with the customer, including purchase details and dates.
-  - Example: A list containing multiple transaction objects.
-
-- **preferences (Map<String, String>): Optional:**
-  - Description: Custom preferences set by the customer for marketing campaigns or product recommendations.
-  - Example: {"emailNotifications": "true", "marketingEmails": "false"}
-
-**Methods:**
-
-- **getCustomerID(): String**
-  - Description: Returns the unique identifier of the customer.
-  
-- **setCustomerID(String id): void**
-  - Description: Sets a new unique identifier for the customer.
-
-- **getEmailAddress(): String**
-  - Description: Returns the primary email address associated with the customer.
-
-- **setEmailAddress(String email): void**
-  - Description: Updates the primary email address of the customer.
-
-- **addTransaction(Transaction transaction): void**
-  - Description: Adds a new transaction to the customer’s transaction history.
-  
-- **getTransactionHistory(): List<Transaction>**
-  - Description: Returns the list of transactions associated with the customer.
-
-- **updatePreference(String key, String value): void**
-  - Description: Updates or sets a custom preference for the customer.
-
-**Usage Example:**
-
-```java
-CustomerProfile profile = new CustomerProfile();
-profile.setFirstName("John");
-profile.setLastName("Doe");
-profile.setEmailAddress("john.doe@example.com");
-
-Transaction transaction1 = new Transaction(100.50, "2023-04-15");
-Transaction transaction2 = new Transaction(75.99, "2023-05-20");
-
-profile.addTransaction(transaction1);
-profile.addTransaction(transaction2);
-
-System.out.println(profile.getTransactionHistory());
+    return discountAmount
 ```
 
-**Notes:**
-- Ensure all personal data is handled securely and in compliance with relevant privacy laws.
-- Regularly update customer information to maintain accuracy.
+#### Key Operations and Logic
+
+1. **Input Validation**:
+   - The function first checks if `originalPrice` is a non-negative number by ensuring it is of type `int` or `float` and greater than or equal to zero.
+   - It also ensures that the `discountRate` is between 0 and 1, inclusive.
+
+2. **Discount Calculation**:
+   - The discount amount is calculated as the product of `originalPrice` and `discountRate`.
+
+3. **Error Handling**:
+   - If either input parameter fails validation, a `ValueError` is raised with an appropriate error message.
+
+### Interactions with Other Components
+
+This function can be used in various contexts where discounts need to be applied. For example, it might be integrated into a larger system that processes transactions or calculates final prices after applying multiple discounts.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that `originalPrice` and `discountRate` are valid numerical values.
+- **Performance Implications**: The function is simple and efficient, making it suitable for real-time applications where performance is not a critical concern.
+- **Security Considerations**: Since the function does not perform any external operations or access sensitive data, security risks are minimal. However, ensure that input parameters are validated to prevent potential issues.
+- **Common Pitfalls**:
+  - Ensure that `discountRate` is provided as a decimal (e.g., use 0.2 for 20% rather than 20).
+  - Avoid passing negative values or non-numerical types for the input parameters.
+
+### Example Usage
+
+```python
+# Example usage of the calculateDiscount function
+original_price = 100.0
+discount_rate = 0.2
+
+try:
+    discount_amount = calculateDiscount(original_price, discount_rate)
+    print(f"Original Price: ${original_price:.2f}")
+    print(f"Discount Rate: {discount_rate * 100}%")
+    print(f"Discount Amount: ${discount_amount:.2f}")
+except ValueError as e:
+    print(e)
+```
+
+This example demonstrates how to use the `calculateDiscount` function, including handling potential errors.
+## ClassDef TopologicalIndexing
+**Function Overview**
+`TopologicalIndexing` is an enumeration class used to define the order in which unit actions are produced from different areas during the game. It provides two options: `NONE`, which uses the default ordering, and `MILA`, which follows a specific ordering as described by Pacquette et al.
+
+**Parameters**
+
+- **topological_indexing**: An instance of `TopologicalIndexing` that determines the order in which unit actions are chosen during sequence selection. It can be either `TopologicalIndexing.NONE` or `TopologicalIndexing.MILA`.
+
+**Return Values**
+None
+
+**Detailed Explanation**
+The `TopologicalIndexing` class is an enumeration (enum) with two members: `NONE` and `MILA`. These values represent different strategies for ordering unit actions during the game. The `_topological_index` method returns a list of areas based on the selected topological indexing strategy.
+
+1. **Initialization**: When initializing the `GeneralObservationTransformer`, the `topological_indexing` parameter is set to either `TopologicalIndexing.NONE` or `TopologicalIndexing.MILA`.
+2. **Order Determination**:
+    - If `topological_indexing` is `TopologicalIndexing.NONE`, the method returns `None`, indicating that no specific ordering strategy is applied.
+    - If `topological_indexing` is `TopologicalIndexing.MILA`, the method calls the function `mila_topological_index` to determine the order of areas.
+
+**Interactions with Other Components**
+- The `GeneralObservationTransformer` uses the value of `topological_indexing` to decide how unit actions should be ordered during sequence selection.
+- The ordering strategy is crucial for maintaining consistency in the game's logic and ensuring that actions are processed in a predefined manner.
+
+**Usage Notes**
+- **Limitations**: The class only supports two specific ordering strategies: `NONE` and `MILA`. Any other value will raise a `RuntimeError`.
+- **Performance Considerations**: The choice of ordering strategy can impact performance, especially if the game involves complex sequences or large numbers of actions.
+- **Best Practices**: Use `TopologicalIndexing.MILA` when you need to follow the specific ordering as described by Pacquette et al. for consistency and adherence to a particular algorithm.
+
+**Example Usage**
+```python
+from enum import Enum
+
+class TopologicalIndexing(Enum):
+    NONE = 0
+    MILA = 1
+
+# Example of setting up the topological indexing strategy
+topological_indexing_strategy = TopologicalIndexing.MILA
+
+if topological_indexing_strategy == TopologicalIndexing.NONE:
+    # No specific ordering is applied
+    print("Using default ordering")
+elif topological_indexing_strategy == TopologicalIndexing.MILA:
+    # Apply MILA ordering
+    areas_order = mila_topological_index()
+    print(f"Areas ordered using MILA: {areas_order}")
+else:
+    raise RuntimeError('Unexpected Branch')
+```
+
+This example demonstrates how to use the `TopologicalIndexing` enum to determine and apply different ordering strategies during game sequence selection.
+## ClassDef GeneralObservationTransformer
+### Function Overview
+
+The `calculate_average` function computes the average value from a list of numerical inputs. It returns the calculated average as a floating-point number.
+
+### Parameters
+
+- **data**: A list of numeric values (integers or floats). This parameter is mandatory and must contain at least one element to avoid division by zero errors.
+
+### Return Values
+
+- Returns a float representing the computed average value from the input data.
+
+### Detailed Explanation
+
+The `calculate_average` function performs the following steps:
+
+1. **Input Validation**: The function first checks if the provided list contains any elements. If not, it raises a `ValueError`.
+2. **Summation and Counting**: It iterates through each element in the list to calculate the sum of all values and count the number of elements.
+3. **Average Calculation**: Once the total sum and count are determined, the function divides the sum by the count to compute the average value.
+4. **Return Value**: The computed average is returned as a floating-point number.
+
+Here is the detailed code:
+
+```python
+def calculate_average(data):
+    """
+    Calculate the average of a list of numeric values.
+
+    :param data: A list of integers or floats.
+    :return: A float representing the average value from the input data.
+    """
+    if not data:
+        raise ValueError("Input list must contain at least one element")
+
+    total_sum = 0
+    count = 0
+
+    for item in data:
+        total_sum += item
+        count += 1
+
+    if count == 0:
+        return 0.0  # Avoid division by zero
+
+    average_value = total_sum / count
+    return float(average_value)
+```
+
+### Interactions with Other Components
+
+This function can be used independently or integrated into larger data processing pipelines where averaging is required. It interacts directly with the input list and returns a single floating-point value.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that the `data` parameter contains at least one element to avoid runtime errors.
+- **Performance Implications**: The function has a time complexity of O(n), where n is the number of elements in the input list. This is efficient for most practical use cases but may be slow with extremely large datasets.
+- **Security Considerations**: There are no direct security concerns, but ensure that the data passed to this function is validated and sanitized if used in a web application or other contexts where user input might be involved.
+
+### Example Usage
+
+Here is an example of how to use the `calculate_average` function:
+
+```python
+# Example 1: Average calculation with positive integers
+data = [4, 5, 6]
+average = calculate_average(data)
+print(f"The average is: {average}")  # Output: The average is: 5.0
+
+# Example 2: Handling an empty list (raises ValueError)
+empty_data = []
+try:
+    average = calculate_average(empty_data)
+except ValueError as e:
+    print(e)  # Output: Input list must contain at least one element
+```
+
+This documentation provides a comprehensive understanding of the `calculate_average` function, including its parameters, return values, and usage examples.
 ### FunctionDef __init__(self)
-**__init__**: The function of __init__ is to configure the fields that the transformer will return.
+### Function Overview
 
-**parameters**:
-· rng_key: A Jax random number generator key, for use if an observation transformation is ever stochastic.
-· board_state: Flag for whether to include the current board state in the observation.
-· last_moves_phase_board_state: Flag for whether to include the board state at the start of the last moves phase.
-· actions_since_last_moves_phase: Flag for whether to include the actions since the last moves phase.
-· season: Flag for whether to include the current season in the observation.
-· build_numbers: Flag for whether to include the number of builds/disbands each player has.
-· topological_indexing: When choosing unit actions in sequence, the order they are chosen is determined by the order step_observations sort the areas by. This config determines that ordering.
-· areas: Flag for whether to include a vector of length NUM_AREAS, which is True in the area that the next unit-action will be chosen for.
-· last_action: Flag for whether to include the action chosen in the previous unit-action selection in the input.
-· legal_actions_mask: Flag for whether to include a mask of which actions are legal.
-· temperature: Flag for whether to include a sampling temperature in the neural network input.
+The `calculate_average` function computes the average value from a list of numbers. It takes a single parameter and returns the computed average.
 
-**Code Description**: The `__init__` method of the `GeneralObservationTransformer` class is responsible for initializing the transformer with specific configurations. Each parameter represents a flag that determines which fields will be included in the final observation output. For example, setting `board_state` to True includes the current board state in the transformation.
+### Parameters
 
-The `topological_indexing` parameter plays a crucial role in determining the sequence of unit actions based on predefined strategies or no strategy at all. If set to `TopologicalIndexing.MILA`, it will use the MILA-specific ordering scheme, as defined by the `mila_topological_index` function. Setting it to `TopologicalIndexing.NONE` means that no specific ordering is applied.
+- **numbers**: A list of floating-point or integer values representing the data points for which the average is to be calculated.
 
-The method initializes several instance variables such as `_board_state`, `_last_moves_phase_board_state`, and others based on the provided parameters. These variables are used internally within the transformer to construct the final observation output according to the specified configurations.
+### Return Values
 
-**Note**: Developers should ensure that the correct indexing method is specified based on their requirements. Using `TopologicalIndexing.MILA` will apply a specific ordering scheme, while using `TopologicalIndexing.NONE` will use the default order from the observation. Incorrect or unexpected values in the `topological_indexing` parameter can lead to runtime errors.
+- The function returns a float representing the average of the input numbers.
 
-**Output Example**: The method does not return any value but initializes the instance variables of the class based on the provided parameters. For example, if `board_state=True`, then `_board_state` will be set to True; otherwise, it will be False. Similarly, other flags are initialized accordingly.
+### Detailed Explanation
+
+The `calculate_average` function operates as follows:
+
+1. **Input Validation**:
+   - The function first checks if the input list, `numbers`, is not empty.
+   
+2. **Summation and Counting**:
+   - It initializes two variables: `total_sum` to accumulate the sum of all numbers in the list and `count` to keep track of the number of elements.
+   - A loop iterates through each element in the `numbers` list, adding its value to `total_sum` and incrementing `count`.
+
+3. **Average Calculation**:
+   - After the loop completes, it calculates the average by dividing `total_sum` by `count`.
+   
+4. **Return Statement**:
+   - The calculated average is returned as a float.
+
+### Example Code
+
+```python
+def calculate_average(numbers):
+    if not numbers:  # Check if the list is empty
+        return None  # Return None if the input list is empty
+    
+    total_sum = 0
+    count = 0
+    
+    for number in numbers:
+        total_sum += number
+        count += 1
+    
+    average = total_sum / count
+    return float(average)
+
+# Example usage
+data_points = [4.5, 3.2, 6.8, 7.1]
+result = calculate_average(data_points)
+print("The calculated average is:", result)  # Output: The calculated average is: 5.35
+```
+
+### Interactions with Other Components
+
+- **No External Dependencies**: This function operates independently and does not rely on any external components or libraries.
+- **Integration Points**: It can be integrated into larger data processing pipelines where calculating the average of a dataset is required.
+
+### Usage Notes
+
+- **Preconditions**:
+  - The `numbers` parameter must be a non-empty list. If an empty list is passed, the function returns `None`.
+  
+- **Performance Considerations**:
+  - The time complexity of this function is O(n), where n is the number of elements in the input list.
+  - For very large datasets, consider using more efficient algorithms or data structures to improve performance.
+
+- **Security Considerations**:
+  - This function does not handle potential security issues such as injection attacks. Ensure that the `numbers` parameter comes from a trusted source.
+
+- **Common Pitfalls**:
+  - Passing an empty list can lead to division by zero errors if the function is used in contexts where non-empty lists are expected.
+  - Floating-point arithmetic might introduce small rounding errors, especially with large datasets or very precise values.
+
+### Example Usage
+
+```python
+# Example usage of calculate_average
+data_points = [4.5, 3.2, 6.8, 7.1]
+result = calculate_average(data_points)
+print("The calculated average is:", result)  # Output: The calculated average is: 5.35
+
+# Handling an empty list
+empty_list = []
+average_of_empty = calculate_average(empty_list)
+print("Average of an empty list:", average_of_empty)  # Output: Average of an empty list: None
+```
+
+This documentation provides a clear understanding of the `calculate_average` function, its parameters, return values, and usage scenarios. It also highlights important considerations for developers to ensure proper integration and usage in their projects.
 ***
 ### FunctionDef initial_observation_spec(self, num_players)
-**initial_observation_spec**: The function of initial_observation_spec is to define the specification for the output of the initial observation transformation.
-**parameters**:
-· parameter1: num_players (int) - The number of players in the game.
+**Function Overview**
+The `initial_observation_spec` function returns a specification dictionary defining the structure of the initial observation output from the `GeneralObservationTransformer`. This specification includes various components such as board state, actions since the last moves phase, and build numbers.
 
-**Code Description**: 
-The `initial_observation_spec` method returns a dictionary that defines the structure and type of arrays expected as the output from the `initial_observation_transform`. This function is crucial for setting up how the initial state of the observation should be structured before any gameplay actions occur. It checks several conditions to include different types of information in this specification, such as board states, last moves phase board states, actions since the last moves phase, current season, and build numbers.
+**Parameters**
 
-1. **Board State**: If `self.board_state` is enabled, it includes a key 'board_state' with an array that represents the state of each area on the board in terms of provinces.
-2. **Last Moves Phase Board State**: Similarly, if `self.last_moves_phase_board_state` is true, it adds another key 'last_moves_phase_board_state', which also contains information about the board state during a previous phase.
-3. **Actions Since Last Moves Phase**: If `self.actions_since_last_moves_phase` is active, this function includes an array under the key 'actions_since_last_moves_phase' that tracks actions taken since the last moves phase.
-4. **Season**: The current season of the game is included as an integer in the dictionary with the key 'season'.
-5. **Build Numbers**: If `self.build_numbers` is set, it adds a key 'build_numbers' to the dictionary, representing the number of builds each player has.
+- **num_players**: An integer representing the number of players in the game. This parameter is used to define the shape of certain arrays within the returned dictionary.
 
-This method ensures that all necessary data for initializing the observation are clearly defined and structured correctly before any game state transitions or actions occur.
+**Return Values**
+The function returns a `collections.OrderedDict` where each key-value pair represents a specific component of the initial observation and its corresponding data specification. The values are instances of `specs.Array`, which describe the shape, dtype (data type), and other properties of the array.
 
-**Note**: Ensure that the conditions (`if self.board_state`, `self.last_moves_phase_board_state`, etc.) are met based on the current implementation in the class. Misconfiguration of these flags could lead to incomplete or incorrect initial observations being generated.
+**Detailed Explanation**
 
-**Output Example**: A possible return value from this function might look like:
+1. **Initialization**: An empty `OrderedDict` is created to store the specifications.
+2. **Board State Check**: If `self.board_state` is set to `True`, a key-value pair for 'board_state' is added to the dictionary. The value is an instance of `specs.Array` with shape `(utils.NUM_AREAS, utils.PROVINCE_VECTOR_LENGTH)` and data type `np.float32`.
+3. **Last Moves Phase Board State Check**: If `self.last_moves_phase_board_state` is set to `True`, a key-value pair for 'last_moves_phase_board_state' is added similarly to the board state.
+4. **Actions Since Last Moves Phase Check**: If `self.actions_since_last_moves_phase` is set to `True`, a key-value pair for 'actions_since_last_moves_phase' is added with an array of shape `(utils.NUM_AREAS, 3)` and data type `np.int32`.
+5. **Season Check**: If `self.season` is set to `True`, a key-value pair for 'season' is added as an instance of `specs.Array` with shape `()` (scalar) and data type `np.int32`.
+6. **Build Numbers Check**: If `self.build_numbers` is set to `True`, a key-value pair for 'build_numbers' is added, representing the number of builds each player has made since the last moves phase. The value is an array of shape `(num_players,)` and data type `np.int32`.
+
+The function iterates through these checks and adds relevant keys and values to the dictionary only if their corresponding conditions are met.
+
+**Interactions with Other Components**
+- This function interacts with other components in the project, such as `observation_spec`, which uses this specification to generate actual observation outputs.
+- The `GeneralObservationTransformer` class likely has attributes like `board_state`, `last_moves_phase_board_state`, and others that control whether these keys are included in the initial observation.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that the necessary attributes (`board_state`, `last_moves_phase_board_state`, etc.) are correctly set before calling this function.
+- **Performance Considerations**: The number of checks performed (up to 5) can impact performance, especially if many conditions are always false. Optimize by setting only relevant flags.
+- **Security Considerations**: No direct security implications, but ensure that the data types and shapes specified match expected inputs to avoid runtime errors.
+
+**Example Usage**
+
 ```python
-OrderedDict([
-    ('board_state', specs.Array((50, 4), dtype=np.float32)),
-    ('last_moves_phase_board_state', specs.Array((50, 4), dtype=np.float32)),
-    ('actions_since_last_moves_phase', specs.Array((50, 3), dtype=np.int32)),
-    ('season', specs.Array((), dtype=np.int32)),
-    ('build_numbers', specs.Array((10,), dtype=np.int32))
-])
+from collections import OrderedDict
+import numpy as np
+
+class GeneralObservationTransformer:
+    def __init__(self):
+        self.board_state = True  # Example initialization
+        self.last_moves_phase_board_state = False
+        self.actions_since_last_moves_phase = True
+        self.season = True
+        self.build_numbers = True
+
+def initial_observation_spec(self, num_players: int) -> OrderedDict:
+    """Returns a spec for the output of initial_observation_transform."""
+    spec = collections.OrderedDict()
+
+    if self.board_state:
+        spec['board_state'] = specs.Array(shape=(utils.NUM_AREAS, utils.PROVINCE_VECTOR_LENGTH), dtype=np.float32)
+    
+    if self.last_moves_phase_board_state:
+        spec['last_moves_phase_board_state'] = specs.Array(shape=(utils.NUM_AREAS, 3), dtype=np.int32)
+    
+    if self.actions_since_last_moves_phase:
+        spec['actions_since_last_moves_phase'] = specs.Array(shape=(utils.NUM_AREAS, 3), dtype=np.int32)
+    
+    if self.season:
+        spec['season'] = specs.Array(shape=(), dtype=np.int32)
+    
+    if self.build_numbers:
+        spec['build_numbers'] = specs.Array(shape=(num_players,), dtype=np.int32)
+
+# Example call
+transformer = GeneralObservationTransformer()
+specification = transformer.initial_observation_spec(num_players=4)
+print(specification)
 ```
-This example assumes that the board has 50 areas and each area's state is represented by a vector of length 4. The number of players in the game is 10, and actions are represented as vectors of length 3 (indicating three possible actions).
+
+This example demonstrates how to use the `initial_observation_spec` function within a class context, showing how it dynamically constructs the specification based on the attributes of the `GeneralObservationTransformer`.
 ***
 ### FunctionDef initial_observation_transform(self, observation, prev_state)
-### Object: CustomerProfile
+### Function Overview
 
-#### Overview
-The `CustomerProfile` object is a fundamental component of our customer relationship management (CRM) system, designed to store and manage detailed information about individual customers. This object serves as the primary data source for various CRM functionalities, including customer service interactions, marketing campaigns, and sales tracking.
+The `calculate_average` function computes the average value from a list of numerical inputs. It processes the input data, calculates the mean, and returns the result.
 
-#### Fields
+### Parameters
 
-1. **ID**
-   - **Type**: Unique Identifier
-   - **Description**: A unique identifier assigned to each `CustomerProfile`. This field is immutable once created.
-   
-2. **FirstName**
-   - **Type**: String
-   - **Description**: The first name of the customer. Required for all profiles.
-   
-3. **LastName**
-   - **Type**: String
-   - **Description**: The last name of the customer. Required for all profiles.
-   
-4. **Email**
-   - **Type**: Email Address
-   - **Description**: The primary email address associated with the customer's account. This field is required and must be a valid email format.
-   
-5. **Phone**
-   - **Type**: Phone Number
-   - **Description**: The primary phone number for the customer. Optional but recommended for better contact options.
-   
-6. **AddressLine1**
-   - **Type**: String
-   - **Description**: The first line of the customer's address. Required if `Address` is provided.
-   
-7. **AddressLine2**
-   - **Type**: String
-   - **Description**: The second line of the customer's address, such as an apartment number or suite. Optional.
-   
-8. **City**
-   - **Type**: String
-   - **Description**: The city where the customer resides. Required if `State` and `ZipCode` are provided.
-   
-9. **State**
-   - **Type**: String
-   - **Description**: The state or province of the customer's address. Required if `City` and `ZipCode` are provided.
-   
-10. **Country**
-    - **Type**: String
-    - **Description**: The country where the customer resides. Required if `State` is provided.
-    
-11. **ZipCode**
-    - **Type**: String
-    - **Description**: The postal or zip code of the customer's address. Required if `City` and `State` are provided.
-   
-12. **DateOfBirth**
-    - **Type**: Date
-    - **Description**: The date of birth of the customer. Optional but can be used for age-based marketing campaigns.
-    
-13. **Gender**
-    - **Type**: String
-    - **Description**: The gender of the customer. Optional and provided for better personalization.
-    
-14. **JoinedDate**
-    - **Type**: Date
-    - **Description**: The date when the customer joined or was created in the system. Immutable once set.
-    
-15. **LastContactedDate**
-    - **Type**: Date
-    - **Description**: The last date of contact with the customer. Used for tracking engagement and follow-ups.
-   
-16. **PreferredCommunicationMethod**
-    - **Type**: String
-    - **Description**: The preferred method of communication (e.g., email, phone). Optional but helps in tailoring communications.
+- **data**: A list of floating-point numbers or integers representing the values to be averaged.
 
-#### Methods
+### Return Values
 
-- **CreateCustomerProfile**
-  - **Description**: Creates a new `CustomerProfile` object with the provided details.
-  - **Parameters**:
-    - `FirstName`: String
-    - `LastName`: String
-    - `Email`: Email Address
-    - `Phone`: Phone Number (Optional)
-  - **Return Value**: `CustomerProfile`
-  
-- **UpdateCustomerProfile**
-  - **Description**: Updates an existing `CustomerProfile` with new information.
-  - **Parameters**:
-    - `ID`: Unique Identifier
-    - `FirstName`: String (Optional)
-    - `LastName`: String (Optional)
-    - `Email`: Email Address (Optional)
-    - `Phone`: Phone Number (Optional)
-    - `AddressLine1`: String (Optional)
-    - `AddressLine2`: String (Optional)
-    - `City`: String (Optional)
-    - `State`: String (Optional)
-    - `Country`: String (Optional)
-    - `ZipCode`: String (Optional)
-    - `DateOfBirth`: Date (Optional)
-    - `Gender`: String (Optional)
-  - **Return Value**: `CustomerProfile`
+- Returns the calculated average as a floating-point number.
 
-- **GetCustomerProfile**
-  - **Description**: Retrieves a specific `CustomerProfile` by its unique identifier.
-  - **Parameters**:
-    - `ID`: Unique Identifier
-  - **Return Value**: `CustomerProfile`
+### Detailed Explanation
 
-- **DeleteCustomerProfile**
-  - **Description**: Deletes an existing `CustomerProfile`.
-  - **Parameters**:
-    - `ID`: Unique Identifier
-  - **Return Value**: Boolean (True if successful, False otherwise)
+The `calculate_average` function performs the following steps:
 
-#### Example Usage
+1. **Input Validation**: The function first checks if the input `data` is a non-empty list.
+2. **Summation and Counting**: It iterates through each element in the `data` list, summing up all values and counting the number of elements.
+3. **Calculation of Average**: After computing the total sum and count, it calculates the average by dividing the sum by the count.
+4. **Return Result**: Finally, the function returns the calculated average.
+
+Here is a detailed breakdown of the code:
 
 ```python
-# Creating a new customer profile
-new_profile = CreateCustomerProfile(
-    FirstName="John",
-    LastName="D
+def calculate_average(data):
+    # Step 1: Input Validation
+    if not isinstance(data, list) or len(data) == 0:
+        raise ValueError("Input must be a non-empty list.")
+    
+    # Step 2: Summation and Counting
+    total_sum = 0.0
+    count = 0
+    for value in data:
+        if not isinstance(value, (int, float)):
+            raise TypeError(f"List elements must be numeric, found {type(value)}")
+        total_sum += value
+        count += 1
+    
+    # Step 3: Calculation of Average
+    if count == 0:
+        return 0.0  # Avoid division by zero
+    average = total_sum / count
+    
+    # Step 4: Return Result
+    return average
+```
+
+### Interactions with Other Components
+
+- **Input Validation**: The function interacts with the input data to ensure it is in a valid format before proceeding.
+- **Error Handling**: It raises specific exceptions for invalid inputs, such as non-list types or empty lists.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that the `data` parameter is a list of numeric values (integers or floats).
+- **Performance Implications**: The function has a time complexity of O(n), where n is the number of elements in the input list. This is efficient for most practical use cases.
+- **Security Considerations**: The function does not perform any security checks on the input data, so it should be used with trusted inputs to avoid potential issues.
+- **Common Pitfalls**: Ensure that all elements in the `data` list are numeric; otherwise, a `TypeError` will be raised.
+
+### Example Usage
+
+Here is an example of how to use the `calculate_average` function:
+
+```python
+# Example 1: Valid input
+numbers = [10.5, 20.3, 30.7]
+average_value = calculate_average(numbers)
+print(f"The average value is {average_value}")  # Output: The average value is 20.4
+
+# Example 2: Empty list input
+empty_list = []
+try:
+    result = calculate_average(empty_list)
+except ValueError as e:
+    print(e)  # Output: Input must be a non-empty list.
+
+# Example 3: Invalid data type in the list
+invalid_data = [10.5, "twenty", 30.7]
+try:
+    result = calculate_average(invalid_data)
+except TypeError as e:
+    print(e)  # Output: List elements must be numeric, found <class 'str'>
+```
+
+This documentation provides a comprehensive understanding of the `calculate_average` function, its parameters, return values, and usage scenarios.
 ***
 ### FunctionDef step_observation_spec(self)
-**step_observation_spec**: The function of `step_observation_spec` is to return a specification dictionary that defines the structure and data type of the output generated by `step_observation_transform`.
+**Function Overview**
+The `step_observation_spec` function returns a specification dictionary defining the structure of the output from the step observation transformation. This specification is used by other parts of the system to understand the expected format and shape of the transformed observations.
 
-**parameters**: 
-· self: A reference to the instance of the class.
+**Parameters**
 
-**Code Description**: 
-The method `step_observation_spec` returns a dictionary (`OrderedDict`) specifying the format of the observation returned after each step. This specification is used to ensure that the transformed observations conform to expected structures before being passed into network policies or other components of the system. Here’s a detailed breakdown:
+- **No Input Parameters**: The function does not take any parameters or attributes directly passed in its call signature. Instead, it relies on instance variables defined within the `GeneralObservationTransformer` class.
 
-1. **Initial Spec Construction**: The method starts by initializing an `OrderedDict` named `spec`, which will hold the key-value pairs representing different parts of the observation.
+**Return Values**
+The function returns a dictionary (`spec`) that is an ordered mapping from string keys to `specs.Array` objects. Each key corresponds to a specific component of the observation and its associated shape and data type.
 
-2. **Conditional Inclusion Based on Attributes**:
-   - If `self.areas` is not empty, it includes a key `'areas'` with a value type defined as `specs.Array(shape=(utils.NUM_AREAS,), dtype=bool)`. This means that if areas are relevant to the current step observation, this key will be included in the spec.
-   - If `self.last_action` is set, it adds a key `'last_action'` of type `specs.Array(shape=(), dtype=np.int32)` to track the last action taken by the player.
-   - If `self.legal_actions_mask` exists, it includes a key `'legal_actions_mask'` with an array shape `(action_utils.MAX_ACTION_INDEX,)` and data type `np.uint8`, which is used to mask legal actions.
-   - If `self.temperature` is provided, it adds a key `'temperature'` of type `specs.Array(shape=(1,), dtype=np.float32)` to specify the sampling temperature for unit actions.
+**Detailed Explanation**
 
-3. **Return Value**: The method returns this constructed `spec` dictionary, which defines the structure and data types of the step observation output.
+1. **Initialization**: The function initializes an empty list, `output`, which will be used to store the specifications for each component of the observation.
+2. **Adding Components**:
+    - For each component in the predefined `self.components` list, it constructs a specification dictionary (`spec_dict`) with keys corresponding to the component name and values specifying its shape and data type.
+3. **Output Construction**: The constructed `spec_dict` is appended to the `output` list for each component.
+4. **Final Output**: Finally, the function returns an ordered dictionary created from the `output` list using `OrderedDict`, ensuring that the order of components matches their predefined sequence.
 
-**Note**: This function is crucial as it ensures that all components of the system are aware of the expected format of observations after each step, facilitating seamless integration and processing within the broader framework.
+The key steps can be summarized as follows:
+- Iterate over a predefined list of observation components (`self.components`).
+- For each component, create a specification dictionary with keys for name and value.
+- Append these dictionaries to an output list in the specified order.
+- Convert the output list into an `OrderedDict` to maintain the order.
 
-**Output Example**: 
+**Interactions with Other Components**
+
+- The `step_observation_spec` function interacts with other parts of the system by providing specifications that are used during the transformation process. These specifications ensure consistency and correctness when transforming raw observations into a structured format.
+- It is called within the broader context of observation processing, where it works in conjunction with methods like `step_observation_transform` to produce the final transformed observations.
+
+**Usage Notes**
+
+- **Preconditions**: The function assumes that the instance variable `self.components` is properly initialized and contains all necessary component names.
+- **Performance Considerations**: While simple, this function can be called multiple times during the observation processing pipeline. Ensure that the list of components (`self.components`) is not excessively large to avoid unnecessary overhead.
+- **Security Considerations**: This function does not involve any security-sensitive operations. However, ensure that the component names and their specifications are correctly managed to prevent potential misconfigurations.
+
+**Example Usage**
+
+Here is a simple example demonstrating how `step_observation_spec` might be used within a broader context:
+
 ```python
-{
-    'areas': specs.Array(shape=(utils.NUM_AREAS,), dtype=bool),
-    'last_action': specs.Array(shape=(), dtype=np.int32),
-    'legal_actions_mask': specs.Array(shape=(action_utils.MAX_ACTION_INDEX,), dtype=np.uint8),
-    'temperature': specs.Array(shape=(1,), dtype=np.float32)
-}
+from collections import OrderedDict
+
+class GeneralObservationTransformer:
+    def __init__(self):
+        self.components = ['position', 'velocity', 'acceleration']
+    
+    def step_observation_spec(self):
+        output = []
+        for component in self.components:
+            spec_dict = {
+                'name': component,
+                'value': (1,)  # Example shape, actual shapes depend on the specific components
+            }
+            output.append(spec_dict)
+        
+        return OrderedDict(output)
+
+# Usage example
+transformer = GeneralObservationTransformer()
+specification = transformer.step_observation_spec()
+print(specification)
 ```
 
-This example output shows a possible structure of the step observation spec, where all relevant keys are included based on the current state and attributes of the class instance.
+This example initializes a `GeneralObservationTransformer` instance and calls `step_observation_spec`, printing the resulting specification dictionary.
 ***
 ### FunctionDef step_observation_transform(self, transformed_initial_observation, legal_actions, slot, last_action, area, step_count, previous_area, temperature)
-**step_observation_transform**: The function of step_observation_transform is to convert raw step observations from the diplomacy environment into network inputs.
-**Parameters**:
-· transformed_initial_observation: Initial observation made with the same configuration as used during the game, represented as a dictionary where keys are strings and values are jax.numpy.ndarray objects.
-· legal_actions: Legal actions for all players in this turn, represented as a sequence of jax.numpy.ndarray objects.
-· slot: The player_id we are creating the observation for.
-· last_action: The player's last action (used for teacher forcing), which is used to guide the current action selection process.
-· area: The specific area to create an action for; can be a build phase flag or a valid area index.
-· step_count: How many unit actions have been created so far, indicating the sequence position of the current action being processed.
-· previous_area: The area for the previous unit action, used for context in certain scenarios but is unused here as it's deleted from the function.
-· temperature: The sampling temperature for unit actions, influencing how stochastic or deterministic the action selection process will be.
+### Function Overview
 
-**Code Description**: This function processes each step of a player’s turn by analyzing the current state of the game (through `transformed_initial_observation`) and determining feasible actions (`legal_actions`). It then constructs an observation tailored specifically to the network's requirements for that particular step. The function considers various factors such as the sequence of actions taken previously, the specific area being acted upon, and the overall game state to generate a detailed and contextually relevant input for the neural network.
+The `calculate_average` function computes the average value from a list of numeric values. It accepts a single parameter and returns the calculated average as a floating-point number.
 
-The process involves several key steps:
-1. **Initial Setup**: Determines if `previous_area` is needed, often setting it to an invalid flag value.
-2. **Action Analysis**: For each action step (indicated by `area`), it identifies the appropriate last action using either forced actions or a search through all possible actions (`last_action`).
-3. **Transformation Logic**: Applies transformation logic based on the identified parameters and current state, creating a structured observation that can be fed into the network.
-4. **Context Management**: Keeps track of previous areas to provide historical context for the model.
+### Parameters
 
-This function is called within the broader `step_observation_transform` process during the game's turn sequence, ensuring each step is appropriately prepared before being evaluated by the neural network.
+- **data**: A list of numeric values (integers or floats). This is the input data for which the average needs to be computed.
 
-**Note**: Ensure that all parameters are correctly passed and validated; incorrect values can lead to improper observations or errors. Additionally, the use of `previous_area` is currently marked as unused but might be relevant in future implementations.
+### Return Values
 
-**Output Example**: The function returns a structured observation dictionary (similar to `transformed_initial_observation`) tailored for the current action step, which could include elements like player resources, opponent positions, and available actions. This output will vary based on the specific game state and configuration provided.
+- **average_value**: The computed average value, represented as a float. If the input list `data` is empty, the function returns 0.0.
+
+### Detailed Explanation
+
+The `calculate_average` function operates as follows:
+
+1. **Input Validation**:
+   - The function first checks if the provided `data` parameter is an empty list.
+   - If the list is empty, it immediately returns 0.0 to avoid division by zero and provide a meaningful default value.
+
+2. **Summation of Values**:
+   - A variable `total_sum` is initialized to store the sum of all elements in the `data` list.
+   - The function iterates through each element in the `data` list, adding its value to `total_sum`.
+
+3. **Calculation of Average**:
+   - After computing the total sum, the function calculates the average by dividing the `total_sum` by the length of the `data` list.
+
+4. **Return Statement**:
+   - The computed average is returned as a float.
+
+### Example Usage
+
+Here is an example usage of the `calculate_average` function:
+
+```python
+# Importing necessary module
+import math
+
+def calculate_average(data):
+    # Input validation
+    if not data:
+        return 0.0
+    
+    # Summation of values
+    total_sum = sum(data)
+    
+    # Calculation of average
+    length_of_data = len(data)
+    average_value = total_sum / length_of_data
+    
+    return average_value
+
+# Example usage
+data_points = [10, 20, 30, 40, 50]
+average = calculate_average(data_points)
+print("The calculated average is:", average)  # Output: The calculated average is: 30.0
+
+empty_data = []
+average_empty = calculate_average(empty_data)
+print("Average for empty list is:", average_empty)  # Output: Average for empty list is: 0.0
+```
+
+### Interactions with Other Components
+
+- **External Dependencies**: This function does not depend on any external libraries or modules other than the built-in `sum` and `len` functions.
+- **Internal Dependencies**: The function interacts internally with Python's built-in data structures (lists) and arithmetic operations.
+
+### Usage Notes
+
+- **Preconditions**:
+  - Ensure that the input list contains only numeric values to avoid type-related errors during summation.
+  - Handling empty lists is crucial as it prevents division by zero, which would otherwise result in a runtime error.
+
+- **Performance Implications**:
+  - The function performs well for small to moderately sized datasets. For very large datasets, consider the potential impact on memory and performance.
+
+- **Security Considerations**:
+  - There are no direct security concerns with this function as it operates purely on numeric data.
+  
+- **Common Pitfalls**:
+  - Ensure that all elements in the `data` list are of a numeric type to avoid runtime errors during summation. Using non-numeric types can lead to unexpected behavior or exceptions.
+
+By following these guidelines and understanding the underlying logic, developers can effectively use and integrate the `calculate_average` function into their projects.
 ***
 ### FunctionDef observation_spec(self, num_players)
-### Object: `Customer`
+### Function Overview
 
-#### Overview
+The `calculate_discount` function computes a discounted price based on the original price and a specified discount rate. This function is commonly used in financial or e-commerce applications where pricing adjustments are necessary.
 
-The `Customer` object is a fundamental entity within our system, representing an individual or organization that interacts with our services. It serves as the primary data model for customer-related information and plays a crucial role in various business processes such as sales, marketing, and support.
+### Parameters
 
-#### Fields
+- **original_price**: A floating-point number representing the initial price of an item.
+- **discount_rate**: A floating-point number between 0 and 1 (inclusive) indicating the percentage of the original price to be discounted. For example, a discount rate of 0.2 represents a 20% discount.
 
-- **ID**: Unique identifier for each customer record.
-- **Name**: Full name of the customer (required).
-- **Email**: Customer's email address (required).
-- **Phone**: Customer's phone number.
-- **Address**: Physical address of the customer.
-- **Created At**: Timestamp indicating when the customer record was created.
-- **Updated At**: Timestamp indicating when the customer record was last updated.
-- **Status**: Current status of the customer account (e.g., active, inactive).
-- **Subscription Plan**: The subscription plan associated with the customer.
+### Return Values
 
-#### Methods
+- **discounted_price**: A floating-point number representing the final price after applying the discount.
 
-- **Create Customer**: Adds a new customer to the system. Requires `Name`, `Email`, and optionally `Phone` and `Address`.
-  - Example Usage:
-    ```python
-    customer = Customer.create(name="John Doe", email="john.doe@example.com", phone="+1234567890")
-    ```
+### Detailed Explanation
 
-- **Get Customer**: Retrieves a specific customer by their ID.
-  - Example Usage:
-    ```python
-    customer = Customer.get(id=123)
-    ```
+The `calculate_discount` function performs the following steps:
 
-- **Update Customer**: Updates an existing customer's information. Requires the `ID` and fields to be updated.
-  - Example Usage:
-    ```python
-    customer.update(name="Jane Doe", status="active")
-    ```
+1. **Parameter Validation**:
+   - The function first checks if the `original_price` is a valid positive number.
+   - It also ensures that the `discount_rate` is within the range [0, 1].
 
-- **Delete Customer**: Removes a customer from the system by their ID.
-  - Example Usage:
-    ```python
-    customer.delete(id=123)
-    ```
+2. **Discount Calculation**:
+   - If both parameters are valid, the function calculates the discount amount by multiplying the original price with the discount rate.
+   - The discounted price is then computed as the difference between the original price and the discount amount.
 
-#### Relationships
+3. **Return Value**:
+   - The final discounted price is returned to the caller.
 
-- **Orders**: A customer can have multiple orders, represented as a one-to-many relationship.
-- **Support Tickets**: A customer can submit support tickets, forming another one-to-many relationship.
+4. **Error Handling**:
+   - If either `original_price` or `discount_rate` is invalid, the function raises a `ValueError`.
 
-#### Validation Rules
+### Interactions with Other Components
 
-- `Name` and `Email` are required fields.
-- `Phone` is optional but should be in a valid format if provided.
-- `Address` is optional.
+- This function interacts with other parts of the application where pricing adjustments are required.
+- It may be called from various modules such as checkout processes, inventory management systems, or promotional campaigns.
 
-#### Examples of Usage
+### Usage Notes
 
-1. **Adding a New Customer**:
-   ```python
-   new_customer = Customer.create(name="Alice Smith", email="alice.smith@example.com", phone="+9876543210")
-   ```
+- Ensure that both input parameters (`original_price` and `discount_rate`) are valid before calling this function to avoid runtime errors.
+- The discount rate should always be a value between 0 and 1. A rate of 0 indicates no discount, while a rate of 1 would result in the item being free.
 
-2. **Updating an Existing Customer's Status**:
-   ```python
-   customer = Customer.get(id=456)
-   customer.update(status="inactive")
-   ```
+### Example Usage
 
-3. **Deleting a Customer**:
-   ```python
-   customer = Customer.get(id=789)
-   customer.delete()
-   ```
+```python
+def calculate_discount(original_price: float, discount_rate: float) -> float:
+    if original_price <= 0 or not (0 <= discount_rate <= 1):
+        raise ValueError("Invalid input parameters.")
+    
+    discount_amount = original_price * discount_rate
+    discounted_price = original_price - discount_amount
+    
+    return discounted_price
 
-#### Notes
+# Example usage
+original_price = 100.0
+discount_rate = 0.2
+try:
+    final_price = calculate_discount(original_price, discount_rate)
+    print(f"The final price after a {discount_rate * 100}% discount is: ${final_price:.2f}")
+except ValueError as e:
+    print(e)
 
-- Ensure that all fields are properly validated before creating or updating records to maintain data integrity.
-- Regularly review and update the `Status` field based on customer activity and interactions.
+# Output: The final price after a 20% discount is: $80.00
+```
 
-This documentation provides a comprehensive guide for managing customer data within our system, ensuring accurate and efficient operations.
+This example demonstrates how to use the `calculate_discount` function correctly and handle potential errors.
 ***
 ### FunctionDef zero_observation(self, num_players)
-**zero_observation**: The function of `zero_observation` is to generate an initial observation where all values are set to zero based on the number of players.
-**Parameters**:
-· parameter1: num_players (int) - The number of players for which the initial observation needs to be generated.
+**Function Overview**
+The `zero_observation` function generates a zero-filled observation structure based on the specified number of players. This function is part of the `GeneralObservationTransformer` class, which handles the transformation and specification of observations in an environment.
 
-**Code Description**: 
-The `zero_observation` function within the `GeneralObservationTransformer` class is responsible for creating an initial observation where all values are set to zero. This is particularly useful in scenarios such as reinforcement learning environments, where an agent might need a starting state that is filled with zeros to initialize its observations.
+**Parameters**
 
-1. **Initial Observation Generation**: The function starts by calling the `observation_spec` method of the class instance. This method returns a tuple containing three elements:
-   - Initial observation spec.
-   - Step observation specs.
-   - Sequence lengths.
+- **num_players**: An integer representing the number of players for whom the initial observation needs to be generated. The function uses this parameter to determine the size of the zero-filled arrays or dictionaries that represent the observations.
 
-2. **Mapping Structure**: The core functionality of the `zero_observation` function lies in the line `return tree.map_structure(lambda spec: spec.generate_value(), self.observation_spec(num_players))`. Here, it uses the `tree.map_structure` utility to apply a lambda function to each element within the structure returned by `observation_spec`.
+**Return Values**
+The `zero_observation` function returns a structured output consisting of three components:
+1. A dictionary containing initial observations.
+2. A nested structure representing step-by-step observations for each player.
+3. An array indicating the sequence lengths for each observation.
 
-3. **Generating Values**: The lambda function takes each specification (`spec`) from the observation spec and calls its `generate_value()` method. This ensures that for every field in the initial observation, an array filled with zeros is generated based on the shape defined by the specifications.
+**Detailed Explanation**
 
-4. **Functional Relationship with Callees**:
-   - **observation_spec**: The `zero_observation` function relies on `observation_spec` to determine the structure and shapes of the observations. It uses this information to generate initial zero-filled arrays for each field.
-   - This relationship is crucial as it ensures that the generated zeros are appropriately shaped according to the environment's requirements.
+The `zero_observation` function operates as follows:
 
-**Note**: 
-- Ensure that the `observation_spec` method correctly defines the shape and type of the observation fields, so that `generate_value()` can produce the correct initial zero-filled arrays.
-- The `num_players` parameter should be an integer representing the number of players in the game or environment. This is necessary to generate observations with the appropriate dimensions.
+1. **Initial Observation Specification**: The function first calls `self.observation_spec(num_players)` to obtain a specification of the initial observation structure. This includes details such as the shape and data type of arrays required for observations.
+2. **Mapping Structure**: Using `tree.map_structure`, the function applies a lambda function to each element in the returned observation specification. The lambda function generates zero-filled values based on the given specifications.
+3. **Return Values**: The result is a structured output containing:
+   - A dictionary with initial observations, where each key corresponds to an observation type and its value is a zero-filled array of appropriate shape.
+   - A nested structure representing step-by-step observations for each player, which are also zero-filled arrays adjusted for the number of players and action dimensions.
+   - An integer array indicating the sequence lengths for each observation.
 
-**Output Example**: 
-If `num_players = 2`, and assuming each player's observation consists of a vector of length 3, the output might look like:
+**Interactions with Other Components**
+The `zero_observation` function interacts with other parts of the project by generating initial and step-by-step observations. It relies on the `observation_spec` method to define the structure of these observations, ensuring consistency across different components of the environment.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that the input `num_players` is a positive integer.
+- **Performance Considerations**: The function may be computationally intensive if the number of players or observation dimensions is large. Optimize by minimizing unnecessary computations and leveraging efficient data structures.
+- **Security Considerations**: This function does not involve any security-sensitive operations, but ensure that all input parameters are validated to prevent potential issues.
+
+**Example Usage**
+
+Here is a simple example demonstrating how `zero_observation` can be used:
+
 ```python
-{
-    'player_1': np.array([0., 0., 0.]),
-    'player_2': np.array([0., 0., 0.])
-}
+from collections import namedtuple
+import tree
+
+# Assuming GeneralObservationTransformer and observation_spec method are defined elsewhere
+class GeneralObservationTransformer:
+    def __init__(self):
+        self.observation_spec = lambda: {
+            'initial': (10, 5),  # Example shape for initial observations
+            'step': [(3, 4) for _ in range(10)]  # Example step-by-step observation structure
+        }
+
+    def zero_observation(self, num_players):
+        return tree.map_structure(lambda x: [0] * (num_players * x[0]), self.observation_spec())
+
+# Create an instance of the transformer
+transformer = GeneralObservationTransformer()
+
+# Generate observations for 5 players
+initial_observations, step_observations, sequence_lengths = transformer.zero_observation(5)
+
+print("Initial Observations:", initial_observations)
+print("Step Observations:", step_observations)
+print("Sequence Lengths:", sequence_lengths)
 ```
-This example assumes that each player's observation is a simple vector of zeros. The actual structure and dimensions will depend on the specific `observation_spec` returned by the `GeneralObservationTransformer`.
+
+In this example, the `zero_observation` function generates zero-filled observations for 5 players based on predefined observation specifications. The output includes initial and step-by-step observations as well as sequence lengths.
 ***
 ### FunctionDef observation_transform(self)
-### Object: CustomerProfile
+### Function Overview
 
-**Overview:**
-The `CustomerProfile` object is a crucial component of our customer relationship management (CRM) system, designed to store and manage detailed information about individual customers. This object facilitates comprehensive customer segmentation, personalized marketing campaigns, and enhanced customer service.
+The `calculate_discount` function computes a discount amount based on a given purchase price and a specified discount rate. This utility function can be used in various financial applications, such as e-commerce platforms or accounting systems.
 
-**Fields:**
+### Parameters
 
-| Field Name | Data Type | Description |
-|------------|-----------|-------------|
-| `id`       | String    | Unique identifier for the customer profile. Automatically generated upon creation. |
-| `name`     | String    | Full name of the customer. Required field. |
-| `email`    | String    | Customer's email address. Required and must be unique within the system. |
-| `phone`    | String    | Customer's phone number, optionally formatted with country code. Optional but recommended for direct communication. |
-| `address`  | Object    | Contains nested fields (street, city, state, zip) to store customer’s physical address. Optional. |
-| `dateOfBirth` | Date     | The date of birth of the customer. Used for age verification and personalized offers. Optional. |
-| `gender`   | String    | Gender of the customer. Options include 'Male', 'Female', 'Other'. Optional. |
-| `segmentId`| Integer   | Identifier linking to a segment in which this customer belongs. Helps in targeted marketing campaigns. Optional. |
-| `createdAt`| DateTime  | Timestamp indicating when the profile was created. Read-only field. |
-| `updatedAt`| DateTime  | Timestamp indicating the last update made to the profile. Read-only field. |
+- **purchase_price**: A float representing the original price of an item before applying any discounts.
+- **discount_rate**: A float indicating the percentage discount to apply. For example, a value of 0.15 would represent a 15% discount.
 
-**Operations:**
+### Return Values
 
-- **Create**: Add a new customer profile.
-- **Read**: Retrieve an existing customer profile by its unique identifier (`id`).
-- **Update**: Modify fields of an existing customer profile.
-- **Delete**: Remove a customer profile from the system.
+- **discount_amount**: A float representing the calculated discount amount based on the `purchase_price` and `discount_rate`.
 
-**Example Usage:**
+### Detailed Explanation
+
+The `calculate_discount` function performs the following steps:
+
+1. **Parameter Validation**:
+   - The function first checks if both `purchase_price` and `discount_rate` are provided. If either is missing, it raises a `ValueError`.
+   
+2. **Discount Calculation**:
+   - It then calculates the discount amount by multiplying the `purchase_price` with the `discount_rate`.
+
+3. **Return Value**:
+   - The calculated discount amount is returned as the output.
+
+#### Key Operations
+
+- **Parameter Validation**: Ensures that both required parameters are present and valid.
+  ```python
+  if purchase_price is None or discount_rate is None:
+      raise ValueError("Both 'purchase_price' and 'discount_rate' must be provided.")
+  ```
+
+- **Discount Calculation**:
+  - The calculation involves a simple multiplication operation to determine the discount amount.
+  ```python
+  discount_amount = purchase_price * discount_rate
+  ```
+
+#### Conditions, Loops, and Error Handling
+
+- **Error Handling**: 
+  - The function uses `ValueError` to handle cases where either of the required parameters is missing. This ensures that invalid inputs are caught early.
+
+### Interactions with Other Components
+
+This function can be integrated into larger systems where it might be called from various parts of an application, such as during checkout processes or inventory management systems. It does not interact directly with external components but could potentially be part of a broader financial processing module.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that both `purchase_price` and `discount_rate` are non-negative values.
+- **Performance Implications**: The function is very lightweight and should not impact performance significantly.
+- **Security Considerations**: There are no security concerns associated with this function as it does not involve any external data sources or sensitive operations.
+- **Common Pitfalls**:
+  - Ensure that the `discount_rate` is expressed as a decimal (e.g., 0.15 for 15%).
+  - Avoid passing negative values for either parameter, which could lead to incorrect calculations.
+
+### Example Usage
+
+Here is an example of how the `calculate_discount` function can be used in a Python script:
+
 ```python
-# Creating a new CustomerProfile instance
-new_profile = {
-    "name": "John Doe",
-    "email": "johndoe@example.com",
-    "phone": "+1234567890",
-    "address": {
-        "street": "123 Elm St",
-        "city": "Springfield",
-        "state": "IL",
-        "zip": "62704"
-    },
-    "dateOfBirth": "1990-01-01",
-    "gender": "Male",
-    "segmentId": 5
-}
+def calculate_discount(purchase_price, discount_rate):
+    if purchase_price is None or discount_rate is None:
+        raise ValueError("Both 'purchase_price' and 'discount_rate' must be provided.")
+    
+    discount_amount = purchase_price * discount_rate
+    
+    return discount_amount
 
-# Inserting the new profile into the system
-customer_profile.insert(new_profile)
-
-# Retrieving a customer profile by ID
-existing_profile = customer_profile.get("id_12345")
-
-# Updating an existing profile
-updated_profile = {
-    "name": "Johnathan Doe",
-    "email": "johndoe@example.com"
-}
-customer_profile.update("id_12345", updated_profile)
-
-# Deleting a customer profile
-customer_profile.delete("id_12345")
+# Example usage
+original_price = 100.0
+discount_percentage = 0.20
+discount_amount = calculate_discount(original_price, discount_percentage)
+print(f"The discount amount is: {discount_amount}")
 ```
 
-**Best Practices:**
-- Ensure that all required fields are populated before creating or updating a `CustomerProfile`.
-- Use the unique identifier (`id`) to manage and reference profiles accurately.
-- Regularly review and update customer information to maintain accuracy.
-
-This documentation provides a clear understanding of how to interact with the `CustomerProfile` object, ensuring effective management of customer data within our CRM system.
+This example demonstrates how to use the `calculate_discount` function to compute a discount on an item with a purchase price of $100 and a 20% discount rate. The output will be the calculated discount amount, which in this case would be $20.00.
 ***
 ### FunctionDef _topological_index(self)
-**_topological_index**: The function of _topological_index is to determine the order in which areas should be processed based on the configured topological indexing method.
+### Function Overview
 
-**parameters**: This Function has no parameters.
-- None
+The `calculate_discounted_price` function computes the discounted price based on a given original price and discount percentage. This function is commonly used in e-commerce applications or financial systems where pricing adjustments are required.
 
-**Code Description**: The `_topological_index` method within the `GeneralObservationTransformer` class determines the sequence in which areas are processed, depending on the selected topological indexing strategy. Here is a detailed analysis:
+### Parameters
 
-1. **Initial Check**: The method first checks the value of `self._topological_indexing`. This attribute holds an instance of the `TopologicalIndexing` enumeration, which defines the indexing method used. If it is set to `TopologicalIndexing.NONE`, indicating no specific indexing strategy, the method returns `None`.
+- **original_price**: A float representing the original price of an item.
+- **discount_percentage**: An integer representing the discount to be applied as a percentage (e.g., 10 for 10%).
 
-2. **MILA Indexing**: If `self._topological_indexing` is set to `TopologicalIndexing.MILA`, the method calls `utils.order_relevant_areas` with the current observation data and player information. This function likely uses a predefined algorithm or heuristic specific to the MILA indexing strategy to determine the correct order of areas.
+### Return Values
 
-3. **Return Value**: The method returns the determined area list, which is then used by other parts of the system to process areas in the specified sequence during the transformation and observation generation processes.
+- The function returns a float, which is the discounted price after applying the specified discount.
 
-**Note**: It is crucial to ensure that `self._topological_indexing` is correctly configured before invoking this method, as incorrect settings can lead to improper processing sequences. Additionally, any changes in the area order should be validated against the requirements of the specific application or task.
+### Detailed Explanation
 
-**Output Example**: If `self._topological_indexing` is set to `TopologicalIndexing.MILA`, and given an observation and player ID, the method might return a list such as `[10, 20, 30]`, indicating that areas 10, 20, and 30 should be processed in this order. If `self._topological_indexing` is set to `TopologicalIndexing.NONE`, the method returns `None`.
+The `calculate_discounted_price` function performs the following steps:
 
-This method plays a critical role in ensuring that the processing sequence of areas aligns with the intended indexing strategy, thereby affecting the overall behavior and output of subsequent operations within the system.
+1. **Input Validation**: It first checks if both parameters are provided and of the correct types.
+2. **Discount Calculation**: If valid inputs are given, it calculates the discount amount by multiplying the original price with the discount percentage divided by 100.
+3. **Price Adjustment**: The function then subtracts the calculated discount from the original price to get the final discounted price.
+4. **Return Value**: Finally, it returns the computed discounted price.
+
+#### Key Operations and Conditions
+
+- **Input Validation**:
+    ```python
+    if not isinstance(original_price, (int, float)) or not isinstance(discount_percentage, int):
+        raise TypeError("Invalid input types for original_price or discount_percentage.")
+    ```
+
+- **Discount Calculation**:
+    ```python
+    discount_amount = original_price * (discount_percentage / 100)
+    ```
+
+- **Price Adjustment**:
+    ```python
+    discounted_price = original_price - discount_amount
+    ```
+
+### Interactions with Other Components
+
+This function is typically used within a broader application where it might be called from various parts of the codebase, such as during checkout processes or inventory management systems. It interacts directly with other functions and classes that handle pricing logic.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that both `original_price` and `discount_percentage` are provided and valid.
+- **Performance Implications**: The function is simple and efficient, making it suitable for high-frequency operations like real-time pricing adjustments.
+- **Security Considerations**: While the function itself does not involve complex security measures, it should be used in a secure environment to prevent potential misuse or injection of invalid data types.
+- **Common Pitfalls**: Be cautious about providing negative values for `original_price` or `discount_percentage`, as these could lead to incorrect results.
+
+### Example Usage
+
+Here is an example demonstrating the effective use of the `calculate_discounted_price` function:
+
+```python
+def calculate_discounted_price(original_price, discount_percentage):
+    if not isinstance(original_price, (int, float)) or not isinstance(discount_percentage, int):
+        raise TypeError("Invalid input types for original_price or discount_percentage.")
+    
+    discount_amount = original_price * (discount_percentage / 100)
+    discounted_price = original_price - discount_amount
+    
+    return discounted_price
+
+# Example usage
+original_price = 150.0
+discount_percentage = 20
+discounted_price = calculate_discounted_price(original_price, discount_percentage)
+print(f"The discounted price is: {discounted_price}")
+```
+
+This example demonstrates how to call the `calculate_discounted_price` function with valid input parameters and handle the returned value.
 ***

@@ -1,645 +1,548 @@
 ## FunctionDef mila_area_string(unit_type, province_tuple)
-### Object: CustomerProfile
+### Function Overview
 
-#### Overview
-The `CustomerProfile` object is a critical component of our customer relationship management (CRM) system, designed to store and manage detailed information about each customer. This object facilitates personalized interactions by allowing administrators and sales teams to access comprehensive data related to customers.
+The `calculate_average` function computes the average value from a list of numerical inputs. This function is designed to be flexible, allowing users to pass in any number of arguments or a single iterable containing numbers.
 
-#### Fields
+### Parameters
 
-1. **ID**
-   - **Description**: Unique identifier for the `CustomerProfile` record.
-   - **Data Type**: String
-   - **Usage**: Used internally to reference specific records in the database.
+- **args**: A variable-length argument list of numeric values (integers or floats). These are the values used to calculate the average.
+  - Example: `calculate_average(4, 5, 6)` or `calculate_average([1, 2, 3, 4])`.
 
-2. **FirstName**
-   - **Description**: The first name of the customer.
-   - **Data Type**: String
-   - **Validation**: Required, minimum length 1 character.
-   - **Usage**: Identifies the customer's given name for personalization and communication purposes.
+### Return Values
 
-3. **LastName**
-   - **Description**: The last name of the customer.
-   - **Data Type**: String
-   - **Validation**: Required, minimum length 1 character.
-   - **Usage**: Completes the full name for identification and record keeping.
+- **average**: The computed average value as a float. If no arguments are provided, the function returns `None`.
+  - Example: For input `[10, 20, 30]`, the output would be `20.0`.
 
-4. **Email**
-   - **Description**: The primary email address associated with the customer.
-   - **Data Type**: String
-   - **Validation**: Unique, required, must be a valid email format.
-   - **Usage**: Used for communication, account recovery, and personalized marketing.
+### Detailed Explanation
 
-5. **PhoneNumber**
-   - **Description**: The primary phone number of the customer.
-   - **Data Type**: String
-   - **Validation**: Optional, but if provided, must be in a valid format (e.g., +1234567890).
-   - **Usage**: Used for direct communication and emergency contact.
+The `calculate_average` function operates by first checking if any arguments have been passed. If not, it returns `None`. Otherwise, it proceeds to calculate the average of the provided numbers.
 
-6. **Address**
-   - **Description**: The physical address of the customer.
-   - **Data Type**: String
-   - **Validation**: Optional, but if provided, should be a valid postal address.
-   - **Usage**: Used for billing purposes and delivery notifications.
+1. **Argument Validation**: The function checks for the presence of at least one argument using a simple conditional statement.
+2. **Summation and Counting**: It then iterates over the arguments (or elements in an iterable), summing up all values and counting the number of elements.
+3. **Average Calculation**: After obtaining the total sum and count, it calculates the average by dividing the sum by the count.
+4. **Return Statement**: Finally, it returns the computed average.
 
-7. **DateOfBirth**
-   - **Description**: The date of birth of the customer.
-   - **Data Type**: Date
-   - **Validation**: Optional, but if provided, must be in a valid date format (YYYY-MM-DD).
-   - **Usage**: Used to calculate age for marketing purposes and compliance with data protection regulations.
+Here is a breakdown of the code:
 
-8. **Gender**
-   - **Description**: The gender of the customer.
-   - **Data Type**: String
-   - **Validation**: Optional, but if provided, must be one of the predefined values (e.g., Male, Female, Other).
-   - **Usage**: Used for demographic analysis and personalized marketing.
+```python
+def calculate_average(*args):
+    if not args:
+        return None
+    
+    total = 0
+    count = 0
 
-9. **CustomerSegment**
-   - **Description**: The segment to which the customer belongs.
-   - **Data Type**: String
-   - **Validation**: Required, must correspond to one of the predefined segments (e.g., New Customer, Existing Customer, High-Value Customer).
-   - **Usage**: Used for targeted marketing campaigns and sales strategies.
+    for value in args:
+        total += value
+        count += 1
 
-10. **JoinDate**
-    - **Description**: The date when the customer joined.
-    - **Data Type**: Date
-    - **Validation**: Required, must be in a valid date format (YYYY-MM-DD).
-    - **Usage**: Tracks the length of time the customer has been with the company for retention analysis.
+    average = total / count
+    return average
+```
 
-11. **LastPurchaseDate**
-    - **Description**: The last date on which the customer made a purchase.
-    - **Data Type**: Date
-    - **Validation**: Optional, but if provided, must be in a valid date format (YYYY-MM-DD).
-    - **Usage**: Used to track purchasing patterns and for targeted follow-up.
+### Interactions with Other Components
 
-12. **Preferences**
-    - **Description**: The preferences of the customer regarding communication and marketing.
-    - **Data Type**: JSON
-    - **Validation**: Required, but must be in a valid JSON format.
-    - **Usage**: Used to tailor communications and marketing efforts based on the customer's preferences.
+The `calculate_average` function can be used independently or integrated into larger data processing pipelines. It does not interact directly with external systems but may be part of a broader application that requires statistical analysis.
 
-#### Operations
+### Usage Notes
 
-1. **Create**
-   - **Description**: Adds a new `CustomerProfile` record to the database.
-   - **Parameters**:
-     - `FirstName`: Required
-     - `LastName`: Required
-     - `Email`: Required
-     - `PhoneNumber` (Optional)
-     - `Address` (Optional)
-     - `DateOfBirth` (Optional)
-     - `Gender` (Optional)
-     - `CustomerSegment`: Required
-     - `JoinDate`: Required
-   - **Example**: 
-     ```json
-     {
-       "FirstName": "John",
-       "LastName": "Doe",
-       "Email": "johndoe@example.com",
-       "PhoneNumber": "+1234567890",
-       "Address": "123 Main St, Anytown, USA",
-       "DateOfBirth": "1990-01-01",
-       "Gender": "Male",
-       "CustomerSegment": "Existing Customer",
-       "JoinDate": "202
+- **Preconditions**: Ensure all input values are numeric (integers or floats). Passing non-numeric types will result in an error.
+- **Performance Implications**: The function has linear time complexity O(n), where n is the number of elements. For large datasets, consider optimizing by using built-in functions like `sum` and `len`.
+- **Security Considerations**: No external inputs are processed directly; thus, security risks are minimal. However, ensure that input validation is performed to prevent unexpected behavior.
+- **Common Pitfalls**:
+  - Passing no arguments results in a return value of `None`, which may cause issues if not handled properly.
+  - Using non-numeric types can lead to runtime errors.
+
+### Example Usage
+
+Here are some examples demonstrating the effective use of the `calculate_average` function:
+
+```python
+# Example 1: Using multiple positional arguments
+average = calculate_average(4, 5, 6)
+print(f"The average is {average}")  # Output: The average is 5.0
+
+# Example 2: Using a list as an argument
+numbers = [10, 20, 30]
+average = calculate_average(*numbers)  # Unpacking the list into arguments
+print(f"The average is {average}")  # Output: The average is 20.0
+
+# Example 3: No arguments provided (returns None)
+result = calculate_average()
+print(result)  # Output: None
+```
+
+By following these guidelines, developers can effectively utilize and understand the `calculate_average` function in their projects.
 ## FunctionDef mila_unit_string(unit_type, province_tuple)
-### Object: PaymentProcessor
+### Function Overview
 
-#### Overview
-The `PaymentProcessor` class is responsible for handling all payment-related operations within the application. It ensures secure and efficient transactions by integrating with various payment gateways and providing robust error handling mechanisms.
+The `calculate_average_temperature` function computes the average temperature from a list of daily temperatures. This function is useful in climate analysis, weather forecasting, or any application requiring statistical summaries of temperature data.
 
-#### Class Responsibilities
-- **Initiate Payments**: Facilitates the initiation of payments from customers to merchants.
-- **Process Refunds**: Manages the process of refunds, ensuring that funds are returned to customers accurately and promptly.
-- **Handle Disputes**: Provides functionality for managing payment disputes between buyers and sellers.
-- **Error Handling**: Implements comprehensive error handling to ensure smooth operation even in case of unexpected issues.
+### Parameters
 
-#### Key Methods
+- **temperatures**: A list of floating-point numbers representing daily temperatures.
+  - Type: List[float]
+  - Description: Each element in this list represents the temperature recorded on a specific day. The values are expected to be within a reasonable range, typically between -50°C and 50°C.
 
-1. **initiatePayment**
-   - **Description**: Initiates a payment transaction from the customer to the merchant.
-   - **Parameters**:
-     - `amount` (required): The amount to be paid, as a floating-point number.
-     - `currency` (optional): The currency of the payment, defaulting to "USD".
-     - `customerID` (required): Unique identifier for the customer making the payment.
-     - `merchantID` (required): Unique identifier for the merchant receiving the payment.
-   - **Return Value**: A `PaymentTransaction` object representing the initiated transaction.
+### Return Values
 
-2. **processRefund**
-   - **Description**: Processes a refund request from a customer to a merchant.
-   - **Parameters**:
-     - `transactionID` (required): The unique identifier of the original transaction.
-     - `amount` (optional, defaults to full amount): The amount to be refunded, as a floating-point number. If not specified, the full amount is refunded.
-     - `reason` (optional): A string describing the reason for the refund.
-   - **Return Value**: A `RefundTransaction` object representing the processed refund.
+- **average_temperature**: A floating-point number representing the average of all temperatures in the input list.
+  - Type: float
+  - Description: This value is calculated by summing up all the temperatures in the list and dividing by the total number of elements. The result will be a single, representative temperature that summarizes the dataset.
 
-3. **handleDispute**
-   - **Description**: Manages and resolves payment disputes between buyers and sellers.
-   - **Parameters**:
-     - `disputeID` (required): The unique identifier of the dispute.
-     - `resolution` (required): A string indicating the resolution of the dispute, such as "resolved" or "unresolved".
-   - **Return Value**: A `DisputeResolution` object representing the outcome of the dispute.
+### Detailed Explanation
 
-4. **handleError**
-   - **Description**: Handles errors that occur during payment processing.
-   - **Parameters**:
-     - `errorType` (required): The type of error, such as "network", "timeout", or "invalid_data".
-     - `details` (optional): Additional details about the error.
-   - **Return Value**: A `ErrorHandlingResult` object indicating whether the error was handled successfully.
+The function `calculate_average_temperature` follows these steps to compute the average:
 
-#### Example Usage
+1. **Input Validation**: The function first checks if the input `temperatures` is not empty.
+2. **Summation**: It iterates through each element in the list, summing up all the temperatures.
+3. **Calculation of Average**: After obtaining the total sum, it divides this sum by the length of the list to get the average temperature.
+4. **Return Value**: Finally, the computed average is returned.
+
+Here is a breakdown of the code:
 
 ```python
-from payment_processor import PaymentProcessor
+def calculate_average_temperature(temperatures: List[float]) -> float:
+    if not temperatures:
+        raise ValueError("Temperature list cannot be empty")
 
-# Initialize the PaymentProcessor instance
-payment_processor = PaymentProcessor()
+    total_sum = 0.0
+    for temperature in temperatures:
+        total_sum += temperature
 
-# Initiate a payment transaction
-transaction = payment_processor.initiatePayment(amount=10.5, customerID="CUST_1234", merchantID="MERCHANT_5678")
-
-print(f"Transaction ID: {transaction.transactionID}")
+    average_temperature = total_sum / len(temperatures)
+    return average_temperature
 ```
 
-#### Error Handling
+### Interactions with Other Components
 
-The `handleError` method is crucial for ensuring the application can gracefully handle unexpected errors during payment processing. It logs the error and attempts to recover or notify the user as appropriate.
+- **Data Input**: This function can receive data from a database, file input, or any other source that provides daily temperature readings.
+- **Output Utilization**: The computed average temperature can be used in further analysis, such as comparing it against historical averages, identifying trends, or triggering alerts based on deviations.
+
+### Usage Notes
+
+- **Preconditions**:
+  - Ensure the `temperatures` list contains valid floating-point numbers. Invalid data types will result in a runtime error.
+  - The function assumes that the input list is non-empty; otherwise, it raises a `ValueError`.
+
+- **Performance Implications**: For large datasets, this function has a time complexity of O(n), where n is the number of elements in the list. This is efficient for most practical purposes but may need optimization if dealing with extremely large data sets.
+
+- **Security Considerations**: There are no direct security concerns associated with this function as it operates on simple arithmetic operations and does not involve external system interactions or sensitive data handling.
+
+### Example Usage
+
+Here is an example of how to use the `calculate_average_temperature` function:
 
 ```python
+# Sample temperature data for five days
+daily_temperatures = [23.5, 24.8, 21.6, 27.0, 22.9]
+
 try:
-    # Simulate a payment process that might fail
-    transaction = payment_processor.initiatePayment(amount=10.5, customerID="CUST_1234", merchantID="MERCHANT_5678")
-except Exception as e:
-    result = payment_processor.handleError(errorType="network", details=str(e))
-    if not result.successful:
-        print("Error handling failed.")
+    average_temp = calculate_average_temperature(daily_temperatures)
+    print(f"The average temperature over the period is: {average_temp:.2f}°C")
+except ValueError as e:
+    print(e)
 ```
 
-#### Conclusion
-The `PaymentProcessor` class is a critical component of the application, ensuring that all financial transactions are processed securely and efficiently. Its robust error handling mechanisms help maintain system reliability and user trust.
+This example demonstrates how to call the function with a list of daily temperatures and handle potential errors. The output will be:
 
-For more detailed information on each method and their parameters, refer to the respective documentation or code comments within the implementation files.
+```
+The average temperature over the period is: 24.03°C
+```
+
+By following these guidelines, developers can effectively use this function in their applications while understanding its behavior and limitations.
 ## FunctionDef possible_unit_types(province_tuple)
-### Object: UserAuthenticationService
+### Function Overview
 
-#### Overview
-The `UserAuthenticationService` is a critical component of our application designed to manage user authentication and authorization processes securely. It provides methods for logging users in, out, and managing their session states.
+The `calculate_average` function computes the average value from a list of numerical values. It is designed to handle both integer and floating-point numbers, ensuring accurate results.
 
-#### Key Features
-- **Login**: Facilitates secure login using username and password.
-- **Logout**: Ends the current user session.
-- **Session Management**: Tracks active sessions and updates session state changes.
-- **User Validation**: Verifies user credentials against the database.
-- **Token Generation**: Issues secure tokens for API access.
+### Parameters
 
-#### Methods
+- **data**: A list of numeric values (integers or floats). This parameter is mandatory and must contain at least one element.
+  
+  Example: `data = [10, 20, 30]`
 
-1. **Login**
-   - **Description**: Authenticates a user based on provided username and password.
-   - **Parameters**:
-     - `username` (string): The unique identifier of the user.
-     - `password` (string): The user's password.
-   - **Returns**:
-     - `AuthenticationResult`: An object containing authentication status, token, and expiration time.
-   - **Throws**:
-     - `InvalidCredentialsException`: If username or password is incorrect.
+### Return Values
 
-2. **Logout**
-   - **Description**: Ends the current session for a logged-in user.
-   - **Parameters**:
-     - `userId` (string): The unique identifier of the user.
-   - **Returns**:
-     - `void`
-   - **Throws**:
-     - `NotFoundException`: If the user does not exist.
+- The function returns a single float value representing the average of all elements in the input list.
 
-3. **ValidateUser**
-   - **Description**: Verifies if a user is currently authenticated and active.
-   - **Parameters**:
-     - `userId` (string): The unique identifier of the user.
-   - **Returns**:
-     - `bool`: True if the user is valid, false otherwise.
-   - **Throws**:
-     - `NotFoundException`: If the user does not exist.
+### Detailed Explanation
 
-4. **GenerateToken**
-   - **Description**: Creates a secure token for API access.
-   - **Parameters**:
-     - `userId` (string): The unique identifier of the user.
-   - **Returns**:
-     - `string`: A JWT token representing the user's session.
-   - **Throws**:
-     - `NotFoundException`: If the user does not exist.
+The `calculate_average` function performs the following steps:
 
-#### Usage Examples
+1. **Input Validation**: It first checks if the provided data is not empty.
+2. **Summation**: It iterates through each element in the list, summing up all values.
+3. **Counting Elements**: It counts the number of elements in the list to determine the denominator for the average calculation.
+4. **Average Calculation**: The function divides the total sum by the count of elements to obtain the average.
+5. **Return Result**: Finally, it returns the computed average as a float.
 
-1. **Login Example**
-   ```csharp
-   var result = UserAuthenticationService.Login("john_doe", "password123");
-   if (result.IsSuccessful)
-   {
-       Console.WriteLine($"Logged in successfully with token: {result.Token}");
-   }
-   else
-   {
-       Console.WriteLine(result.ErrorMessage);
-   }
-   ```
+Here is the detailed code:
 
-2. **Logout Example**
-   ```csharp
-   UserAuthenticationService.Logout("john_doe");
-   Console.WriteLine("Session has been ended.");
-   ```
+```python
+def calculate_average(data):
+    """
+    Calculate the average value from a list of numeric values.
+    
+    :param data: A list of numeric values (integers or floats).
+    :return: The average of all elements in the input list as a float.
+    """
+    if not data:
+        raise ValueError("Input list cannot be empty.")
+    
+    total_sum = 0
+    count = 0
+    
+    for value in data:
+        total_sum += value
+        count += 1
+    
+    if count == 0:
+        return 0.0  # Avoid division by zero
+    
+    average = total_sum / count
+    return float(average)
+```
 
-3. **ValidateUser Example**
-   ```csharp
-   bool isValid = UserAuthenticationService.ValidateUser("john_doe");
-   if (isValid)
-   {
-       Console.WriteLine("User is valid.");
-   }
-   else
-   {
-       Console.WriteLine("User is not authenticated.");
-   }
-   ```
+### Interactions with Other Components
 
-4. **GenerateToken Example**
-   ```csharp
-   string token = UserAuthenticationService.GenerateToken("john_doe");
-   Console.WriteLine($"Generated token: {token}");
-   ```
+The `calculate_average` function can be used independently or as part of a larger data processing pipeline where it might be integrated into more complex algorithms, such as statistical analysis or machine learning models.
 
-#### Best Practices
-- Always use secure methods for storing and transmitting passwords.
-- Implement rate limiting to prevent brute-force attacks.
-- Ensure tokens are securely stored and transmitted.
+### Usage Notes
 
-#### Dependencies
-- `DatabaseManager`: For user credential validation.
-- `TokenGenerator`: For creating JWT tokens.
-- `SessionTracker`: For managing active sessions.
+- **Preconditions**: Ensure that the input list contains at least one element to avoid runtime errors.
+- **Performance Considerations**: The function has linear time complexity \(O(n)\), making it efficient for lists of any size. However, extremely large datasets might require optimization depending on the application context.
+- **Security Considerations**: This function does not involve any security-sensitive operations and is safe for general use.
+- **Common Pitfalls**:
+  - Ensure that all elements in the list are numeric to avoid type errors during summation.
+  - Be aware of potential overflow issues when dealing with very large numbers, although Python's built-in types handle this gracefully.
 
-#### Error Handling
-The service handles common errors such as invalid credentials, expired tokens, and missing users. Specific exceptions include:
-- `InvalidCredentialsException`
-- `NotFoundException`
+### Example Usage
 
-For more detailed information on error handling, refer to the exception classes documented elsewhere in the codebase.
+```python
+# Example usage: Calculate the average of a list of integers and floats
+data = [10, 20, 30]
+average_value = calculate_average(data)
+print(f"The average is: {average_value}")  # Output: The average is: 20.0
 
----
+# Handling an empty list
+try:
+    empty_list = []
+    result = calculate_average(empty_list)
+except ValueError as e:
+    print(e)  # Output: Input list cannot be empty.
+```
 
-This documentation provides a clear and concise overview of the `UserAuthenticationService`, its methods, usage examples, and best practices for implementation.
+This documentation provides a comprehensive understanding of the `calculate_average` function, its parameters, return values, and usage scenarios. It is designed to help developers integrate this functionality into their projects effectively while considering potential issues and performance implications.
 ## FunctionDef possible_unit_types_movement(start_province_tuple, dest_province_tuple)
-# Documentation for `DatabaseManager`
+### Function Overview
 
-## Overview
+The `calculate_discount` function computes a discount amount based on a given purchase price and a specified discount rate. This utility function can be used in various retail or financial applications where discounts need to be calculated.
 
-`DatabaseManager` is a crucial component of our application, designed to facilitate database operations such as connection management, query execution, data retrieval, and transaction handling. This class provides a robust interface for interacting with the underlying database system, ensuring efficient and reliable data access.
+### Parameters
 
-## Class Structure
+- **purchase_price**: A floating-point number representing the original purchase price of an item.
+- **discount_rate**: A floating-point number indicating the percentage discount as a decimal (e.g., 0.1 for 10%).
 
-```python
-class DatabaseManager:
-    def __init__(self, db_config: dict):
-        """
-        Initializes the DatabaseManager instance with connection configuration.
-        
-        :param db_config: A dictionary containing database connection parameters (e.g., host, port, user, password).
-        """
-        self.connection = None
-        self.db_config = db_config
+### Return Values
 
-    def connect(self) -> bool:
-        """
-        Establishes a connection to the database using provided configuration.
+- The function returns a floating-point number representing the calculated discount amount.
 
-        :return: True if the connection is successful; otherwise, False.
-        """
-        try:
-            # Code for establishing a database connection
-            self.connection = Connection(self.db_config)
-            return True
-        except Exception as e:
-            print(f"Connection failed: {e}")
-            return False
+### Detailed Explanation
 
-    def execute_query(self, query: str) -> list:
-        """
-        Executes the provided SQL query and returns the result.
-        
-        :param query: A string representing an SQL query to be executed.
-        :return: A list of dictionaries containing the results of the query execution.
-        """
-        if not self.connection:
-            print("Database connection is not established.")
-            return []
-
-        try:
-            cursor = self.connection.cursor()
-            cursor.execute(query)
-            result = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            return [{columns[i]: row[i] for i in range(len(columns))} for row in result]
-        except Exception as e:
-            print(f"Query execution failed: {e}")
-            return []
-
-    def close(self):
-        """
-        Closes the database connection.
-        """
-        if self.connection:
-            self.connection.close()
-```
-
-## Usage Examples
-
-### Initialization and Connection Setup
+The `calculate_discount` function operates by first converting the discount rate from its decimal form to a percentage and then multiplying this percentage by the purchase price. This multiplication yields the discount amount, which is returned as the output of the function.
 
 ```python
-db_config = {
-    "host": "localhost",
-    "port": 5432,
-    "user": "admin",
-    "password": "securepassword"
-}
-
-db_manager = DatabaseManager(db_config)
-if db_manager.connect():
-    print("Database connection established successfully.")
-else:
-    print("Failed to establish database connection.")
+def calculate_discount(purchase_price: float, discount_rate: float) -> float:
+    """
+    Calculate the discount amount based on the given purchase price and discount rate.
+    
+    :param purchase_price: The original purchase price of an item (float).
+    :param discount_rate: The percentage discount as a decimal (float). For example, 0.1 for 10%.
+    :return: The calculated discount amount (float).
+    """
+    # Convert the discount rate to a percentage
+    discount_percentage = discount_rate * 100
+    
+    # Calculate the discount amount
+    discount_amount = purchase_price * (discount_percentage / 100)
+    
+    return discount_amount
 ```
 
-### Query Execution
+#### Key Operations
+
+- **Conversion of Discount Rate**: The function multiplies the `discount_rate` by 100 to convert it from a decimal form to a percentage.
+- **Calculation of Discount Amount**: The function then calculates the discount amount by multiplying the purchase price with the calculated discount percentage.
+
+### Interactions with Other Components
+
+This function can be used in various contexts, such as within a larger application for calculating discounts during checkout processes. It interacts with other components like inventory management systems or financial processing modules to ensure accurate pricing and accounting.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that the `purchase_price` is a positive floating-point number and the `discount_rate` is between 0 and 1.
+- **Performance Implications**: The function performs basic arithmetic operations, making it highly efficient. However, if this operation needs to be performed repeatedly in a loop or within a high-frequency application, consider optimizing for performance.
+- **Security Considerations**: Ensure that input values are validated before passing them to the function to prevent potential security issues such as injection attacks.
+- **Common Pitfalls**: Be cautious of floating-point arithmetic precision issues when dealing with very small or large numbers. Always validate inputs and handle edge cases like zero purchase prices.
+
+### Example Usage
+
+Here is an example demonstrating how to use the `calculate_discount` function:
 
 ```python
-query = "SELECT * FROM users WHERE age > 18;"
-results = db_manager.execute_query(query)
+# Define the purchase price and discount rate
+purchase_price = 100.00
+discount_rate = 0.20  # 20%
 
-for row in results:
-    print(row)
+# Calculate the discount amount
+discount_amount = calculate_discount(purchase_price, discount_rate)
+
+print(f"The calculated discount is: ${discount_amount:.2f}")
 ```
 
-### Closing the Connection
+This example calculates a 20% discount on an item priced at $100.00 and prints the result.
 
-```python
-db_manager.close()
-print("Database connection closed.")
-```
-
-## Best Practices
-
-- Always ensure that the database connection is properly established before executing any queries.
-- Use try-except blocks to handle potential exceptions during query execution and connection management.
-- Close the database connection when it’s no longer needed to free up resources.
-
-## Conclusion
-
-The `DatabaseManager` class provides a structured approach for managing database interactions within our application. By following best practices, developers can ensure efficient and reliable data access while maintaining robust error handling mechanisms.
+By following these guidelines, developers can effectively use the `calculate_discount` function in their applications while understanding its underlying mechanics and potential considerations.
 ## FunctionDef possible_unit_types_support(start_province_tuple, dest_province_tuple)
-### Object Overview
+### Function Overview
 
-The `CustomerService` class is designed to handle all customer-related operations within our application. This includes tasks such as creating new customers, updating existing ones, retrieving customer information, and deleting inactive customers.
+The `calculate_average_temperature` function computes the average temperature from a list of daily temperature readings. This function is useful in climate analysis, weather forecasting, or any application requiring statistical analysis of temperature data.
 
-#### Class Summary
+### Parameters
 
-- **Namespace**: `App\Services`
-- **Visibility**: Public
-- **Inheritance**: None
-- **Implements**: None
+- **temperatures**: A list of floating-point numbers representing daily temperatures.
+  - Type: List[float]
+  - Description: Each element in the list represents the temperature reading for a given day. The values should be in degrees Celsius.
 
-#### Properties
+### Return Values
 
-| Property Name | Type       | Description                                      |
-|---------------|------------|--------------------------------------------------|
-| `$customerRepository` | `\App\Repositories\CustomerRepository` | The repository used to interact with the customer database. |
+- **average_temperature**: A single floating-point number representing the average temperature across all days provided in the input list.
+  - Type: float
+  - Description: This value is calculated by summing up all temperatures and dividing by the total number of readings.
 
-#### Methods
+### Detailed Explanation
 
-##### `__construct(CustomerRepository $customerRepository)`
+The `calculate_average_temperature` function performs a straightforward calculation to determine the mean of a set of temperature values. Here's how it works:
 
-- **Description**: Constructor for the `CustomerService` class.
-- **Parameters**:
-  - `$customerRepository`: An instance of `CustomerRepository`. This is used to interact with the database and perform CRUD operations on customers.
+1. **Input Validation**: The function first checks if the input list is not empty.
+2. **Summation and Counting**: It iterates through each element in the `temperatures` list, summing up all the values while also counting the number of elements.
+3. **Calculation of Average**: After obtaining the total sum and count, it divides the sum by the count to get the average temperature.
+4. **Return Statement**: The calculated average is returned as a floating-point value.
 
-##### `create(array $data)`
+#### Code Breakdown
 
-- **Description**: Creates a new customer in the system.
-- **Parameters**:
-  - `$data`: An array containing the necessary data for creating a customer (e.g., name, email, address).
-- **Returns**: An instance of `\App\Models\Customer` representing the newly created customer.
+```python
+def calculate_average_temperature(temperatures: list) -> float:
+    if not temperatures:
+        raise ValueError("Temperature list cannot be empty")
 
-##### `update(int $customerId, array $data)`
+    total_sum = 0.0
+    count = 0
 
-- **Description**: Updates an existing customer with new information.
-- **Parameters**:
-  - `$customerId`: The ID of the customer to be updated.
-  - `$data`: An array containing the updated data for the customer.
-- **Returns**: A boolean value indicating whether the update was successful.
+    for temperature in temperatures:
+        total_sum += temperature
+        count += 1
 
-##### `retrieve(int $customerId)`
-
-- **Description**: Retrieves a specific customer by their ID.
-- **Parameters**:
-  - `$customerId`: The ID of the customer to be retrieved.
-- **Returns**: An instance of `\App\Models\Customer` representing the requested customer, or null if not found.
-
-##### `delete(int $customerId)`
-
-- **Description**: Deletes an inactive customer from the system.
-- **Parameters**:
-  - `$customerId`: The ID of the customer to be deleted.
-- **Returns**: A boolean value indicating whether the deletion was successful.
-
-#### Example Usage
-
-```php
-use App\Services\CustomerService;
-use App\Models\Customer;
-
-// Create a new instance of CustomerService
-$customerService = new CustomerService(new CustomerRepository());
-
-// Create a new customer
-$newCustomer = $customerService->create([
-    'name' => 'John Doe',
-    'email' => 'john.doe@example.com',
-    'address' => '123 Main St'
-]);
-
-// Update an existing customer
-$customerService->update(1, [
-    'email' => 'new.email@example.com'
-]);
-
-// Retrieve a specific customer
-$customer = $customerService->retrieve(1);
-
-// Delete an inactive customer
-$deletionSuccess = $customerService->delete(2);
+    average_temperature = total_sum / count
+    return average_temperature
 ```
 
-#### Notes
+### Interactions with Other Components
 
-- The `CustomerRepository` is responsible for database interactions and should be implemented according to best practices.
-- Ensure that input validation is performed in the repository layer to maintain data integrity.
+This function can be used within a larger application that processes weather data, such as a climate analysis tool or a weather dashboard. It interacts directly with the input list of temperatures and provides an output that can be further processed or displayed.
 
-This documentation provides a clear understanding of the `CustomerService` class, its methods, and how it can be used within the application.
+### Usage Notes
+
+- **Preconditions**: Ensure that the `temperatures` parameter is a non-empty list of floating-point numbers.
+- **Performance Implications**: The function has a time complexity of O(n), where n is the number of elements in the input list. This makes it efficient for small to moderately sized datasets.
+- **Security Considerations**: There are no direct security concerns, but care should be taken to validate and sanitize inputs if this function is part of a larger system that processes user-provided data.
+- **Common Pitfalls**:
+  - Ensure all temperature values are valid floating-point numbers. Invalid input can lead to incorrect calculations or runtime errors.
+  - Avoid using very large lists as the function's performance may degrade with an increase in the number of elements.
+
+### Example Usage
+
+```python
+# Example usage of calculate_average_temperature function
+temperatures = [23.5, 24.1, 22.8, 26.0, 27.2]
+average_temp = calculate_average_temperature(temperatures)
+print(f"The average temperature is: {average_temp:.2f}°C")
+```
+
+This example demonstrates how to use the `calculate_average_temperature` function with a list of daily temperatures and prints the calculated average temperature rounded to two decimal places.
+
+By following these guidelines, developers can effectively utilize this function in their applications while understanding its underlying mechanisms and potential limitations.
 ## FunctionDef action_to_mila_actions(action)
-### Object: CustomerProfile
+### Function Overview
 
-**Description:**
-The `CustomerProfile` object is designed to store comprehensive information about individual customers of our service. This object plays a critical role in maintaining detailed records that are essential for customer relationship management (CRM) and personalized marketing strategies.
+The `calculate_average` function computes the average value from a list of numerical inputs. This function is designed to be simple, efficient, and robust, handling various edge cases such as empty lists or non-numerical values.
 
-**Fields:**
+### Parameters
 
-1. **id**: 
-   - Type: String
-   - Description: A unique identifier assigned to each customer profile.
-   - Example: `cus_0987654321`
-   
-2. **name**: 
-   - Type: String
-   - Description: The full name of the customer.
-   - Example: `John Doe`
+- **input_list**: A list of numbers (integers or floats). The input list can contain any combination of numeric types.
+  - Example: `[10.5, 20, 30]`
 
-3. **email**: 
-   - Type: String
-   - Description: The primary email address associated with the customer account.
-   - Example: `john.doe@example.com`
-   
-4. **phone**: 
-   - Type: String
-   - Description: The customer's phone number, formatted for easy contact.
-   - Example: `123-456-7890`
+### Return Values
 
-5. **address**: 
-   - Type: Address Object
-   - Description: Contains detailed address information of the customer.
-     - Fields:
-       - street: String (e.g., "123 Main St")
-       - city: String (e.g., "Anytown")
-       - state: String (e.g., "CA")
-       - zipCode: String (e.g., "90210")
+- **average_value**: A float representing the average value of the elements in `input_list`. If the input list is empty, the function returns `None`.
 
-6. **dateOfBirth**: 
-   - Type: Date
-   - Description: The customer's date of birth.
-   - Example: `1985-03-14`
+### Detailed Explanation
 
-7. **gender**: 
-   - Type: String
-   - Description: The gender of the customer (options: "Male", "Female", "Other").
-   - Example: `"Male"`
+The `calculate_average` function operates as follows:
 
-8. **registrationDate**: 
-   - Type: Date
-   - Description: The date when the customer registered with our service.
-   - Example: `2021-05-30`
+1. **Input Validation**:
+   - The function first checks if the `input_list` is empty using the `len()` function.
+   - If the list is empty, it immediately returns `None`, indicating that there are no elements to average.
 
-9. **lastPurchaseDate**: 
-   - Type: Date
-   - Description: The most recent purchase date by the customer.
-   - Example: `2023-06-15`
+2. **Summation and Counting Elements**:
+   - A variable `total_sum` is initialized to 0. This will hold the sum of all elements in the list.
+   - Another variable `element_count` is set to 0, which will keep track of the number of valid numerical elements processed.
 
-10. **purchaseHistory**: 
-    - Type: Array of Purchase Objects
-    - Description: A list of all purchases made by the customer, each containing details such as product ID and purchase date.
-      - Fields:
-        - productId: String (e.g., "prod_1234567890")
-        - purchaseDate: Date
+3. **Iterating Through the List**:
+   - The function iterates through each element in `input_list`.
+   - For each element, it checks if the type is either an integer or a float using the `isinstance()` function.
+   - If the element passes this check, its value is added to `total_sum`, and `element_count` is incremented by 1.
 
-11. **loyaltyPoints**: 
-    - Type: Integer
-    - Description: The current number of loyalty points associated with the customer's account.
-    - Example: `500`
+4. **Calculating the Average**:
+   - After processing all elements, the average is calculated as `total_sum / element_count`.
+   - This result is returned as a float.
 
-12. **preferences**: 
-    - Type: Array of String
-    - Description: A list of preferences or categories that the customer has indicated interest in, such as product types or service offerings.
-      - Example: `["electronics", "books"]`
+5. **Error Handling**:
+   - The function does not explicitly handle errors for non-numeric types other than integers and floats because such cases are already filtered out by the type check.
+   - If an invalid type were to slip through, it would raise a `TypeError` during the addition operation within the loop.
 
-**Operations:**
+### Interactions with Other Components
 
-- **Create Customer Profile**:
-  - Method: POST
-  - Endpoint: `/customer-profiles`
-  - Request Body: JSON object with fields from the `CustomerProfile` schema.
-  - Response: HTTP 201 Created on successful creation, or appropriate error codes and messages for failures.
+This function can be used in various parts of a larger application where numerical data needs to be averaged. It is particularly useful for statistical calculations or data processing tasks that require summarizing numeric values.
 
-- **Retrieve Customer Profile**:
-  - Method: GET
-  - Endpoint: `/customer-profiles/{id}`
-  - Parameters: 
-    - `{id}`: String (the unique identifier of the customer profile)
-  - Response: JSON object representing the customer profile, or appropriate error codes and messages for failures.
+### Usage Notes
 
-- **Update Customer Profile**:
-  - Method: PUT
-  - Endpoint: `/customer-profiles/{id}`
-  - Parameters: 
-    - `{id}`: String (the unique identifier of the customer profile)
-  - Request Body: JSON object with fields to be updated from the `CustomerProfile` schema.
-  - Response: HTTP 204 No Content on successful update, or appropriate error codes and messages for failures.
+- **Preconditions**: The input list should contain only numbers (integers or floats). Non-numeric types will cause the function to skip those elements.
+- **Performance Implications**: The function has a linear time complexity, O(n), where n is the number of elements in `input_list`. This makes it efficient for most use cases.
+- **Security Considerations**: There are no security implications as long as the input list contains only valid numeric types. However, ensuring that external inputs are sanitized and validated can prevent potential issues.
+- **Common Pitfalls**:
+  - Ensure that the input list is not modified during the function call to avoid unexpected behavior.
+  - Be aware of edge cases like extremely large lists or very small values which might lead to floating-point precision issues.
 
-- **Delete Customer Profile**:
-  - Method: DELETE
-  - Endpoint: `/customer-profiles/{id}`
-  - Parameters: 
-    - `{id}`: String (the unique identifier of the customer profile)
-  - Response: HTTP 204 No Content on successful deletion, or appropriate error codes and messages for failures.
+### Example Usage
 
-**Example Request to Create a Customer Profile:**
+```python
+# Example usage of calculate_average function
+def main():
+    # Test with a valid numeric list
+    numbers = [10.5, 20, 30]
+    print("Average:", calculate_average(numbers))  # Output: Average: 21.666666666666668
 
-```json
-{
-  "name": "Jane Smith",
-  "email": "jane.smith@example.com",
-  "phone": "987-654-3210",
-  "address": {
-    "street": "456 Elm St",
-    "city": "Othertown",
-    "state": "NY",
-    "zipCode": "10001
+    # Test with an empty list
+    empty_list = []
+    print("Average (empty):", calculate_average(empty_list))  # Output: Average (empty): None
+
+    # Test with a mixed-type list containing non-numeric values
+    mixed_list = [10.5, "twenty", 30]
+    print("Average (mixed):", calculate_average(mixed_list))  # Output: Average (mixed): 21.666666666666668
+
+if __name__ == "__main__":
+    main()
+```
+
+This example demonstrates how the `calculate_average` function handles different scenarios, including valid numeric lists, empty lists, and mixed-type lists with non-numeric values.
 ## FunctionDef mila_action_to_possible_actions(mila_action)
-**mila_action_to_possible_actions**: The function of `mila_action_to_possible_actions` is to convert a MILA action string into all possible DeepMind actions it could refer to.
+**Function Overview**
+The `mila_action_to_possible_actions` function converts a MILA action string into all possible deepmind actions it could refer to.
 
-**Parameters**:
-· parameter1: `mila_action`: A string representing the MILA action.
+**Parameters**
+- **mila_action: str** - A string representing a MILA action. This input is expected to be one of the predefined MILA actions recognized by the system.
 
-**Code Description**:
-The function `mila_action_to_possible_actions` takes a single input, `mila_action`, which is expected to be a string corresponding to an action in the MILA (Monte-Illinois Action Language) framework. The function checks if this string exists as a key in the dictionary `_mila_action_to_deepmind_actions`. If the string is not found, it raises a `ValueError` with a message indicating that the input is unrecognized.
+**Return Values**
+- **List[action_utils.Action]** - A list containing all possible deepmind actions that correspond to the given `mila_action`. If no such action exists, it raises a `ValueError`.
 
-If the `mila_action` is recognized, the function returns a list of all corresponding DeepMind actions. This conversion helps disambiguate between multiple possible interpretations of the same MILA action in different contexts.
+**Detailed Explanation**
+The function performs a lookup in the `_mila_action_to_deepmind_actions` dictionary, which maps MILA action strings to lists of corresponding deepmind actions. Here is a step-by-step breakdown:
 
-This function plays a crucial role in ensuring that when dealing with MILA actions, developers can accurately map these to their corresponding DeepMind actions, which are used within the broader system for more detailed and specific operations. The relationship with its caller `mila_action_to_action` is evident here: after obtaining all possible deepmind actions for a given MILA action, further disambiguation or selection may be necessary, as demonstrated in the logic of `mila_action_to_action`.
+1. **Input Validation**: The function first checks if the provided `mila_action` exists as a key in the `_mila_action_to_deepmind_actions` dictionary.
+2. **Error Handling**: If the `mila_action` does not exist, it raises a `ValueError` with an appropriate error message indicating that the MILA action is unrecognized.
+3. **Return Possible Actions**: If the `mila_action` exists in the dictionary, the function returns a list of deepmind actions associated with that MILA action.
 
-**Note**: Ensure that the `_mila_action_to_deepmind_actions` dictionary is properly populated with valid mappings from MILA to DeepMind actions. Any unrecognized actions will result in a `ValueError`, so it's important to handle such cases appropriately when using this function.
+**Interactions with Other Components**
+- The `_mila_action_to_deepmind_actions` dictionary is assumed to be defined elsewhere in the codebase and contains mappings from MILA actions to their corresponding deepmind actions.
+- This function interacts with other parts of the project, particularly with `mila_action_to_action`, which uses this function to determine specific actions based on additional context such as the current season.
 
-**Output Example**: If the input string "attack" maps to two possible DeepMind actions, say `[Action('attack'), Action('engage')]`, then the output of calling `mila_action_to_possible_actions("attack")` would be `['Action(attack)', 'Action(engage)']`.
+**Usage Notes**
+- **Preconditions**: Ensure that the `_mila_action_to_deepmind_actions` dictionary is properly initialized and contains valid mappings.
+- **Performance Considerations**: The function performs a dictionary lookup, making it efficient for most use cases. However, if the number of MILA actions grows significantly, consider optimizing or caching this mapping.
+- **Security Considerations**: Ensure that the `_mila_action_to_deepmind_actions` dictionary does not contain any malicious mappings and is properly secured.
+
+**Example Usage**
+Here is an example demonstrating how to call `mila_action_to_possible_actions`:
+
+```python
+from environment.mila_actions import mila_action_to_possible_actions
+
+# Example MILA action string
+mila_action = "MOVE"
+
+# Call the function
+possible_actions = mila_action_to_possible_actions(mila_action)
+
+print(possible_actions)
+```
+
+This example will output a list of possible deepmind actions corresponding to the `MOVE` MILA action. If `MOVE` is not recognized, it will raise an error:
+
+```python
+ValueError: Unrecognised MILA action MOVE
+```
 ## FunctionDef mila_action_to_action(mila_action, season)
-**mila_action_to_action**: The function of `mila_action_to_action` is to convert a MILA action string into its corresponding DeepMind action based on additional context provided by the season.
+**Function Overview**
+The `mila_action_to_action` function converts a MILA action string into its corresponding deepmind action based on additional context such as the current season.
 
-**Parameters**:
-· parameter1: `mila_action`: A string representing the MILA action.
-· parameter2: `season`: An instance of `utils.Season`, which provides contextual information such as whether it is a retreat phase or not.
+**Parameters**
 
-**Code Description**: The function first calls another function, `mila_action_to_possible_actions(mila_action)`, to get all possible DeepMind actions that the given MILA action could refer to. If there is only one possible action, it directly returns this action. Otherwise, it further disambiguates between multiple possibilities based on the order of the first action in the list.
+- **mila_action: str** - A string representing a MILA action. This input is expected to be one of the predefined MILA actions recognized by the system.
+- **season: utils.Season** - An object representing the current season, which provides information about whether the game is in retreat mode.
 
-1. **Order of Actions**: The function uses `action_utils.action_breakdown(mila_actions[0])` to get the order of the first action from the list returned by `mila_action_to_possible_actions`. This breakdown helps determine whether the action is a `REMOVE` or `DISBAND`.
-   
-2. **Disambiguation Based on Season**: 
-   - If the order is `action_utils.REMOVE`, it checks if the current season is in a retreat phase using `season.is_retreats()`. Depending on this check, it returns either the second action (if it's a retreat) or the first one (if not).
-   - If the order is `action_utils.DISBAND`, the logic is similar but reversed: it returns the first action if in a retreat phase and the second otherwise.
+**Return Values**
 
-3. **Error Handling**: The function includes an assertion to handle unexpected cases where the MILA action might have more than two possible actions with different orders, ensuring that only disband or remove operations are considered ambiguous.
+- **action_utils.Action**: The function returns an instance of `action_utils.Action` corresponding to the deepmind action that best matches the provided MILA action and season context. If there is only one possible action, it directly returns that action. Otherwise, it determines which of two possible actions should be chosen based on the current season.
 
-This function ensures accurate mapping between MILA actions and DeepMind actions by leveraging additional context provided through the `season` parameter. It is crucial for maintaining consistency in the interpretation of MILA actions across different scenarios within the system.
+**Detailed Explanation**
 
-**Note**: Ensure that `_mila_action_to_deepmind_actions` is properly populated with valid mappings from MILA to DeepMind actions, as any unrecognized action will result in a `ValueError`.
+1. **Input Validation**: The function first calls `mila_action_to_possible_actions(mila_action)` to get a list of all possible deepmind actions corresponding to the given MILA action.
+2. **Single Possible Action**: If there is only one possible action, it directly returns that action.
+3. **Ambiguous Actions**: If there are multiple possible actions (i.e., two actions), the function further analyzes these actions using `action_utils.action_breakdown`.
+4. **Order Analysis**:
+    - The function uses `action_utils.action_breakdown` to extract the order from each of the two possible actions.
+    - It then compares the orders and returns the action based on the current season context.
 
-**Output Example**: If the input string "remove" maps to two possible DeepMind actions and it's not during a retreat phase, the function might return the first action. For instance, if the possible actions are `[Action('remove'), Action('disband')]`, the output could be `action_utils.Action('remove')`.
+The logic involves checking whether the game is in retreat mode (indicated by the `season` object). If it is, the function selects one of the two possible actions based on their orders. The exact criteria for selection are not explicitly detailed but can be inferred from the implementation of `action_utils.action_breakdown`.
+
+**Interactions with Other Components**
+
+- **mila_action_to_possible_actions**: This function interacts with `mila_action_to_possible_actions` to determine all potential deepmind actions.
+- **action_utils.action_breakdown**: It relies on this utility function to analyze and compare the orders of possible actions.
+
+**Usage Notes**
+
+- **Preconditions**: The input `mila_action` must be a valid MILA action string, and `season` must be an instance of `utils.Season`.
+- **Performance Considerations**: The function performs well for typical use cases but may have minor performance implications due to the calls to `action_utils.action_breakdown`.
+- **Security Considerations**: There are no direct security concerns with this function. However, ensure that the input parameters are validated and sanitized.
+- **Common Pitfalls**: Ensure that all possible actions are correctly identified by `mila_action_to_possible_actions` to avoid incorrect action selection.
+
+**Example Usage**
+
+```python
+from utils import Season
+
+# Example MILA action string
+mila_action = "action1"
+
+# Create a season object representing the current game state
+current_season = Season(retreat_mode=True)
+
+# Call the function with the example parameters
+selected_action = mila_action_to_action(mila_action, current_season)
+
+print(selected_action)
+```
+
+This example demonstrates how to use `mila_action_to_action` by providing a valid MILA action and a season object indicating retreat mode. The output will be an instance of `action_utils.Action` corresponding to the selected deepmind action based on the given context.

@@ -1,116 +1,306 @@
 ## ClassDef DiplomacyState
-**DiplomacyState**: The function of DiplomacyState is to define the state interface for the game of Diplomacy.
-**Attributes**: 
-- None explicitly defined; the attributes are provided by methods and their return types.
+**Function Overview**
+The `DiplomacyState` class defines a protocol for managing the state of a Diplomacy game. It provides methods for checking if the game has ended, retrieving observations, legal actions, and stepping through the game phases.
 
-**Code Description**: 
-The `DiplomacyState` class serves as a protocol (interface) that defines how states in the game of Diplomacy should behave. It outlines essential operations such as checking if the game has ended, retrieving current observations, determining legal actions for each player, calculating returns, and advancing the game state.
+**Parameters**
 
-1. **is_terminal(self) -> bool**: This method checks whether the game is currently in a terminal state, meaning it has ended. The return type `bool` indicates that this method will always return either `True` or `False`.
+- **is_terminal()**: This method does not take any parameters and returns a boolean value indicating whether the game is in a terminal state (i.e., the game has ended).
 
-2. **observation(self) -> utils.Observation**: This method returns the current observation of the game state. Observations are typically used by agents to understand their environment and make decisions. The exact structure of `utils.Observation` is not defined here but can be inferred from its return type.
+- **observation()**: This method does not take any parameters and returns an `Observation` object, which represents the current state of the game from the perspective of the player.
 
-3. **legal_actions(self) -> Sequence[Sequence[int]]**: This method returns a list of lists, where each sub-list represents the legal actions that units controlled by a specific player can take in their respective phase. The sequence is ordered alphabetically by power (Austria, England, France, Germany, Italy, Russia, Turkey), and each sublist contains all possible unit actions for the corresponding player.
+- **legal_actions()**: This method does not take any parameters and returns a list of lists. Each sublist corresponds to one of the seven powers in the game (Austria, England, France, Germany, Italy, Russia, Turkey), sorted alphabetically. The sublists contain all possible legal unit actions for each power's units.
 
-4. **returns(self) -> np.ndarray**: This method returns an array of game returns. In a non-terminal state, this will be an array of zeros because the game is still in progress. If the game has ended, the returns might contain values indicating the outcome of the game for each player.
+- **returns()**: This method does not take any parameters and returns a NumPy array (`np.ndarray`). If the game is still in progress, this array will be filled with zeros; otherwise, it contains the returns (scores) of the players at the end of the game.
 
-5. **step(self, actions_per_player: Sequence[Sequence[int]]) -> None**: This method advances the environment one full phase of Diplomacy based on a list of actions per player. The `actions_per_player` parameter is a sequence of sequences, where each inner sequence represents the unit actions taken by a specific player during their turn. The method does not return anything (`None`), as it updates the game state in place.
+- **step(actions_per_player)**: This method takes one parameter:
+  - `actions_per_player`: A list of lists where each sublist corresponds to a player and contains their unit actions for that phase. The sublists are ordered alphabetically by power, with seven sublists in total (one per power).
 
-**Note**: 
-- Ensure that all methods are implemented consistently with the protocol defined.
-- The `actions_per_player` parameter must be structured correctly to match the expected format for legal actions.
-- The use of NumPy arrays in the `returns` method suggests a dependency on NumPy, which should be imported and used accordingly.
+**Return Values**
 
-**Output Example**: 
+- **is_terminal()**: Returns a boolean value (`True` if the game has ended; `False` otherwise).
+- **observation()**: Returns an `Observation` object representing the current state of the game.
+- **legal_actions()**: Returns a list of lists, each sublist containing legal actions for units under the control of a specific power.
+- **returns()**: Returns a NumPy array with the returns (scores) of the players if the game has ended; otherwise, it returns an array filled with zeros.
+
+**Detailed Explanation**
+
+The `DiplomacyState` class is designed to encapsulate the state and behavior of a Diplomacy game. It provides several methods that allow interaction with the game's current state:
+
+1. **is_terminal()**: This method checks if the game has reached its terminal state, meaning no further actions can be taken or the game has concluded due to some predefined condition (e.g., all players have agreed on a peace treaty).
+
+2. **observation()**: This method returns an `Observation` object that provides a snapshot of the current state from the player's perspective. The observation could include details such as unit positions, territories controlled, and available resources.
+
+3. **legal_actions()**: This method generates all possible legal actions for each power in the game. Each sublist corresponds to one of the seven powers (Austria, England, France, Germany, Italy, Russia, Turkey), sorted alphabetically. The sublists contain every unit action that is valid given the current state of the game.
+
+4. **returns()**: This method returns a NumPy array with the final scores or returns for each player if the game has ended; otherwise, it returns an array filled with zeros indicating that the game is still in progress.
+
+5. **step(actions_per_player)**: This method advances the game by one phase based on the actions provided by each player. The `actions_per_player` parameter should be a list of lists where each sublist corresponds to a player and contains their unit actions for that phase. The method updates the state of the game according to these actions, ensuring that only legal actions are taken.
+
+**Interactions with Other Components**
+
+The `DiplomacyState` class interacts with other components in the project by providing methods that allow external systems or agents to interact with the game's state and progress. For example, an agent might use the `observation()` method to get a current view of the game, use the `legal_actions()` method to determine valid moves, and then use the `step(actions_per_player)` method to execute those moves.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that all actions passed to the `step()` method are legal. The `legal_actions()` method can be used to validate these actions.
+- **Performance Considerations**: The `legal_actions()` method may become computationally expensive as the number of units and possible actions increases, especially in complex game states.
+- **Handling Terminal States**: When calling `is_terminal()`, ensure that you handle both terminal and non-terminal cases appropriately. For example, if the game has ended, you might want to retrieve the final scores using the `returns()` method.
+
+**Example Usage**
+
 ```python
-# Example output for is_terminal()
-is_terminal() -> False  # Game is still ongoing
+# Example of using the DiplomacyState class
 
-# Example output for observation()
-observation() -> [Austria: [unit1, unit2], England: [], ...]  # Detailed observation data
+from diplomacy_game import Observation, DiplomacyState  # Hypothetical module names
 
-# Example output for legal_actions()
-legal_actions() -> [[0, 1, 2], [3, 4, 5], [], [], [], [], []]  # Legal actions for each player
+state = DiplomacyState()
 
-# Example output for returns()
-returns() -> np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # Game is still in progress
+while not state.is_terminal():
+    observation = state.observation()
+    legal_actions = state.legal_actions()
+    
+    # Agent makes decisions based on the current observation and legal actions
+    player_actions = [make_decision(observation, action) for action in legal_actions]
+    
+    state.step(player_actions)
 ```
+
+This example demonstrates how an agent might use the `DiplomacyState` class to interact with a Diplomacy game. The agent retrieves observations, determines legal actions, and then takes steps based on its decisions. 
+
+**Conclusion**
+
+The `DiplomacyState` class provides a structured way to manage the state of a Diplomacy game, allowing for interaction through various methods that reflect the dynamics of the game. By using these methods, agents or external systems can effectively engage with the game and make informed decisions based on the current state.
 ### FunctionDef is_terminal(self)
-**is_terminal**: The function of `is_terminal` is to determine whether the game has ended.
-**parameters**: This function does not take any parameters.
-**Code Description**: 
-The `is_terminal` method checks if the current state of the game represents an ending condition, such as a win, loss, or draw. It returns a boolean value (`True` if the game is over, and `False` otherwise). The implementation of this check is left as a placeholder (indicated by `pass`) in the provided code snippet, meaning that developers need to implement the specific logic for determining when the game ends based on the current state.
+**Function Overview**
+The `is_terminal` method determines whether the current state of a diplomatic game has reached its terminal condition.
 
-Given that this method does not take any parameters, it relies solely on the internal state of the object. Developers should ensure that all relevant information about the game's state is stored within `DiplomacyState` or accessed through its attributes before making a determination. This could include factors like the number of turns played, the current player’s position, resource status, or any other conditions that might indicate the end of the game.
+**Parameters**
+- None. The method does not accept any parameters or attributes from external sources.
 
-**Note**: Ensure that the implementation of `is_terminal` accurately reflects the rules and objectives of the game being modeled by `DiplomacyState`. Any changes to the game state should trigger a re-evaluation of whether the game has ended.
+**Return Values**
+- A boolean value (`True` or `False`). Returns `True` if the game is in a terminal state, indicating that no further actions can be taken; otherwise, returns `False`.
+
+**Detailed Explanation**
+The `is_terminal` method checks whether the current state of the game has reached its end. This typically involves evaluating various conditions within the `DiplomacyState` class to determine if any predefined criteria for a terminal state have been met.
+
+1. **Initialization**: The method is called as part of the `DiplomacyState` object's methods or properties.
+2. **Condition Evaluation**:
+   - It evaluates internal attributes and conditions that define when a game state is considered terminal.
+   - These conditions might include checks for specific player actions, global game states, or predefined end-game scenarios.
+3. **Boolean Return**: Based on the evaluation, it returns `True` if all terminal conditions are met, indicating the game has ended; otherwise, it returns `False`.
+
+**Interactions with Other Components**
+- The method interacts with other parts of the `DiplomacyState` class to access and evaluate its internal state.
+- It may also interact with external components such as game logic or user input handlers to determine if certain terminal conditions have been triggered.
+
+**Usage Notes**
+- **Preconditions**: Ensure that the `is_terminal` method is called within a valid context where the `DiplomacyState` object's attributes are properly initialized.
+- **Performance Considerations**: The method should be optimized for efficiency, as it may be called frequently during game updates. Avoid complex or computationally expensive operations inside this method.
+- **Security Considerations**: Ensure that any external inputs or state changes do not bypass the terminal condition checks to maintain game integrity.
+- **Common Pitfalls**: Be cautious of race conditions where multiple states might change simultaneously, leading to inconsistent terminal state evaluations.
+
+**Example Usage**
+```python
+# Example usage within a DiplomacyState object
+class DiplomacyState:
+    def __init__(self):
+        self.termination_conditions = False  # Example internal state
+
+    def is_terminal(self) -> bool:
+        """Whether the game has ended."""
+        return self.termination_conditions
+
+# Creating an instance and checking terminal condition
+state = DiplomacyState()
+state.termination_conditions = True  # Simulate a terminal condition
+print(state.is_terminal())  # Output: True
+```
+
+This example demonstrates how `is_terminal` can be used to check the game's state for termination conditions within the `DiplomacyState` class.
 ***
 ### FunctionDef observation(self)
-**observation**: The function of observation is to return the current state of the game or environment as an observation.
-**parameters**: This function does not take any parameters.
-**Code Description**: 
-The `observation` method is defined within the `DiplomacyState` class and returns a value of type `utils.Observation`. It serves to provide the current state of the game or environment in a structured format that can be used for decision-making processes, typically by agents or AI systems. The return type indicates that this function encapsulates the observation logic specific to the DiplomacyState context.
+**Function Overview**
+The `observation` function returns the current state observation in the context of a Diplomacy game. This function is part of the `DiplomacyState` class, which manages the state of the game.
 
-The implementation uses the `pass` statement, which means that the actual logic for generating the observation is not provided within this method. This suggests that the `observation` method acts as a placeholder or interface for more detailed implementations in derived classes or during runtime based on specific conditions and requirements of the game state.
+**Parameters**
+- None
 
-**Note**: Users should ensure that they have imported the correct type from the `utils` module, as the return type is dependent on this import. Additionally, developers must implement the actual logic to generate the observation within a concrete subclass or override method if necessary.
+**Return Values**
+- A `utils.Observation` object representing the current state of the game.
+
+**Detailed Explanation**
+The `observation` method in the `DiplomacyState` class is responsible for generating and returning the observation data. This function does not take any parameters, as it relies on the internal state of the `DiplomacyState` instance to construct the observation.
+
+Here is a step-by-step breakdown of how the `observation` function works:
+1. The method initializes or retrieves the current game state.
+2. It then constructs an `utils.Observation` object based on this state, which includes relevant information such as player positions, resource distribution, and other pertinent details.
+3. Finally, it returns the constructed observation.
+
+The internal logic of constructing the `Observation` object involves accessing various attributes and methods within the `DiplomacyState` class to gather all necessary data points for the current game state.
+
+**Interactions with Other Components**
+- The `observation` method interacts with other components in the project, such as the `utils.Observation` class, which is responsible for defining the structure of the observation data.
+- It also relies on methods and attributes within the `DiplomacyState` class to access the current game state.
+
+**Usage Notes**
+- The function should be called whenever an update to the game state is required or when a new observation needs to be generated.
+- Ensure that the internal state of the `DiplomacyState` instance is up-to-date before calling this method, as it relies on the current game state for its output.
+- Performance considerations are minimal since the function does not perform any complex operations; however, if the game state becomes very large or complex, optimization might be necessary.
+
+**Example Usage**
+Here is a simple example demonstrating how to use the `observation` method:
+
+```python
+# Assuming an instance of DiplomacyState has been created and initialized
+diplomacy_state = DiplomacyState()
+
+# Generate and retrieve the current observation
+current_observation = diplomacy_state.observation()
+print(current_observation)
+```
+
+In this example, a new `DiplomacyState` instance is created and initialized. The `observation` method is then called to generate the current state observation, which is printed out for inspection.
+
+This documentation provides a clear understanding of how the `observation` function works within the context of the `DiplomacyState` class and its interactions with other components in the project.
 ***
 ### FunctionDef legal_actions(self)
-**legal_actions**: The function of legal_actions is to return a list of all possible legal unit actions for each power.
-**parameters**: This function does not take any parameters.
-**Code Description**: 
-The `legal_actions` method returns a sequence of sequences, where each sub-sequence corresponds to the legal actions available for one of the seven powers in the game. The order of these sub-sequences is fixed and follows alphabetical order: Austria, England, France, Germany, Italy, Russia, and Turkey.
+**Function Overview**
+The `legal_actions` function returns a list of legal unit actions for each power in the game state. This function provides detailed information on all possible actions that can be taken by units controlled by different powers.
 
-Within each sub-sequence, every element represents a possible action that can be performed by any unit controlled by the corresponding power. These actions are determined based on the current state of the game, such as the position of units, available resources, and other relevant factors.
+**Parameters**
+- None: The function does not accept any parameters or attributes directly within its definition. It relies on internal state to determine the legality of actions.
 
-The structure of this function is crucial for determining valid moves in the game, ensuring that players can only make legal actions according to the rules. By providing a clear and organized representation of these actions, it supports both human players and AI systems in making informed decisions during gameplay.
-**Note**: 
-- Ensure that the returned sequences are up-to-date with the current state of the game, as legality of actions may change over time due to events or changes in unit positions.
-- The method should be called whenever the game state changes to reflect any new legal actions.
+**Return Values**
+- A list of lists, where each sublist corresponds to a power (Austria, England, France, Germany, Italy, Russia, Turkey) and contains sequences of legal unit actions for all units controlled by that power. The sublists are sorted alphabetically by power name.
+
+**Detailed Explanation**
+The `legal_actions` function operates as follows:
+1. **Initialization**: It initializes a list to hold the results.
+2. **Power Iteration**: It iterates over each power in alphabetical order (Austria, England, France, Germany, Italy, Russia, Turkey).
+3. **Action Generation**: For each power, it generates all possible unit actions that are legal within the current game state. This involves checking various conditions such as movement constraints, resource availability, and strategic considerations.
+4. **Sublist Construction**: It constructs a sublist for each power containing these legal actions.
+5. **Result Compilation**: The sublists are appended to the main list of results.
+6. **Return**: Finally, it returns the compiled list of lists.
+
+The function ensures that only valid actions are included in the output, reflecting the current state of the game and the rules governing unit behavior.
+
+**Interactions with Other Components**
+- This function interacts with the internal state of `DiplomacyState` to determine the legality of each action.
+- It may call other methods or access attributes within the `DiplomacyState` class to gather necessary information about the game state, such as unit positions, resources, and strategic constraints.
+
+**Usage Notes**
+- **Preconditions**: The function assumes that the `DiplomacyState` object is properly initialized with a valid game state.
+- **Performance Considerations**: The complexity of generating legal actions can vary based on the number of units and powers. For large games, this function may need optimization to handle performance efficiently.
+- **Security Considerations**: Ensure that the internal state accessed by `legal_actions` does not expose sensitive information or violate security policies.
+- **Common Pitfalls**: Be cautious when modifying the game state outside of this function, as it relies on a consistent internal state.
+
+**Example Usage**
+```python
+# Assuming 'game_state' is an instance of DiplomacyState
+actions = game_state.legal_actions()
+for power, actions in enumerate(actions):
+    print(f"Power {power} has legal actions: {actions}")
+```
+
+This example demonstrates how to call the `legal_actions` method and iterate over the returned list to inspect the legal actions for each power.
 ***
 ### FunctionDef returns(self)
-**returns**: The function of returns is to retrieve the game's return values as an array.
-**parameters**: This Function does not take any parameters.
-**Code Description**: 
-The `returns` method within the `DiplomacyState` class is designed to provide information about the outcome of a game. If the game is still in progress, it returns an array filled with zeros. Once the game has ended, this method will return the actual returns or outcomes associated with each player or state, represented as an `np.ndarray`.
+**Function Overview**
+The `returns` function in the `DiplomacyState` class returns an array representing the game's cumulative rewards or returns. If the game is still in progress, it returns an array filled entirely with zeros.
 
-The implementation of this function uses NumPy (`np`) to ensure that the returned data structure is a well-defined and efficient multi-dimensional array. This approach facilitates easy manipulation and analysis of the game's results.
+**Parameters**
+- None
 
-**Note**: 
-- Ensure that the NumPy library is properly imported at the beginning of the file.
-- The method assumes that the state of the game has been correctly tracked throughout its execution, allowing for accurate determination whether to return zeros or actual returns.
-- This function should be called after the game logic has determined the final outcome.
+**Return Values**
+- A NumPy array (`np.ndarray`) of zeros if the game is not over. The length of this array corresponds to the number of players or states involved in the game.
 
-**Output Example**: 
-If the game is in progress, `returns` will output an array like `[0., 0., 0.]`.
-If the game has ended and player outcomes are as follows: Player 1 gains 5 points, Player 2 loses 3 points, and Player 3 gains 2 points, then `returns` might output an array such as `[5., -3., 2.]`.
+**Detailed Explanation**
+The `returns` function checks the current state of the game through some internal logic (not explicitly shown in the provided code). If the game has ended, it returns a NumPy array filled with zeros. This behavior is consistent across all instances of the `DiplomacyState` class where the game status indicates an ongoing condition.
+
+The function uses the following steps:
+1. **Check Game Status**: The internal logic determines whether the game has concluded.
+2. **Return Zeros Array**: If the game is still in progress, it returns a NumPy array of zeros with a length corresponding to the number of players or states involved.
+
+**Interactions with Other Components**
+- This function interacts with other components that manage the game state and evaluate outcomes. It relies on the `DiplomacyState` class's internal state management to determine if the game is over.
+- The returned array may be used in various parts of the project, such as calculating player scores or updating game statistics.
+
+**Usage Notes**
+- **Preconditions**: Ensure that the `DiplomacyState` instance represents a valid game state. The function assumes that the internal state management accurately reflects whether the game has concluded.
+- **Performance Considerations**: This function is simple and does not involve complex operations, making it efficient for use in real-time scenarios.
+- **Security Considerations**: There are no security concerns with this function as it only returns a static array based on the game status.
+
+**Example Usage**
+Here is an example of how you might call the `returns` method within your code:
+
+```python
+import numpy as np
+
+# Assuming diplomacy_state is an instance of DiplomacyState
+diplomacy_state = DiplomacyState()  # Initialize with appropriate state
+
+# Check if the game has ended and get returns
+if not diplomacy_state.is_game_over():
+    print("Game is still in progress, no returns to calculate.")
+else:
+    returns_array = diplomacy_state.returns()
+    print(f"Returns array: {returns_array}")
+```
+
+In this example, `diplomacy_state` is an instance of the `DiplomacyState` class. The code checks if the game has ended using a hypothetical method `is_game_over()`. If the game is still in progress, it prints a message indicating that no returns can be calculated. Otherwise, it retrieves and prints the returns array.
 ***
 ### FunctionDef step(self, actions_per_player)
-**step**: The function of step is to advance the environment through a full phase of Diplomacy.
-**parameters**:
-· actions_per_player: A list of lists of unit-actions. There are 7 sub-lists, one per power (Austria, England, France, Germany, Italy, Russia, Turkey), sorted alphabetically, each sublist contains all corresponding player's unit-actions for that phase.
+**Function Overview**
+The `step` function advances the environment through a full phase of Diplomacy by processing actions from each player.
 
-**Code Description**: The `step` function is responsible for advancing the state of the Diplomacy game environment through a complete phase. This involves processing and applying actions submitted by players (each representing one of the 7 major powers in the game) during their respective turns. Here’s a detailed analysis:
+**Parameters**
+- **actions_per_player**: A list of length 7, where each element is a sublist representing the unit-actions for one of the seven players (Austria, England, France, Germany, Italy, Russia, Turkey). Each sublist contains integers corresponding to the specific actions taken by that player during the phase.
 
-- **Parameter Breakdown**:
-  - `actions_per_player`: This is a critical input to the function, structured as a list where each element corresponds to an action taken by a specific player. Each sublist contains actions for one of the seven players in alphabetical order.
-  
-- **Function Execution**:
-  The function does not return any value (as indicated by the `-> None` type annotation), meaning its purpose is purely procedural and involves updating the state of the game environment based on the provided actions.
+**Return Values**
+- None. The function updates the state of the environment in place without returning any value.
 
-- **Game Flow**:
-  - The function expects that each player has submitted their actions for all units they control.
-  - These actions are processed in a predefined order, ensuring fairness and consistency across different runs of the game.
-  - The function likely updates internal state variables such as unit positions, resource states, and other relevant game mechanics to reflect these actions.
+**Detailed Explanation**
+The `step` function processes a full phase of the Diplomacy game based on the actions provided by each player. Here is a step-by-step breakdown:
 
-- **Phase Progression**:
-  Given that this method steps through a "full phase," it implies that multiple sub-phases or rounds are handled within one call. This could involve turn-based decision-making, movement of units, combat resolutions, and more, depending on the specific rules of the Diplomacy game being simulated.
+1. **Input Validation**: The function expects a list of 7 sublists, one for each power. Each sublist contains integers representing unit-actions.
+2. **Action Processing**:
+    - For each player (sublist in `actions_per_player`), the function processes their actions sequentially.
+3. **State Update**:
+    - The function updates the internal state of the environment to reflect these actions, including changes in units' positions, status, and interactions between players.
+4. **Phase Completion**: After processing all 7 sublists (one for each player), the function completes the current phase by advancing to the next phase or concluding the game if applicable.
 
-- **Error Handling**:
-  While not explicitly shown in the provided code snippet, this function should include robust error handling to manage invalid or unexpected input data. For instance, ensuring that each sublist has the correct number of actions corresponding to the player's units and validating action types before processing them.
+**Interactions with Other Components**
+- The `step` function interacts with other components of the `DiplomacyState` class, such as updating unit positions and statuses.
+- It may also interact with external systems like a database or UI to store or display updated state information.
 
-- **State Transition**:
-  The `step` method transitions the game from one phase state to another, preparing it for the next set of player inputs or automating subsequent phases if AI opponents are involved. It essentially manages the turn-based progression of the game.
+**Usage Notes**
+- **Preconditions**: Ensure that `actions_per_player` is correctly structured as described. Incorrect structure will lead to undefined behavior.
+- **Performance Considerations**: The function processes all actions in one go, which may impact performance if the number of players and actions increases significantly.
+- **Edge Cases**: If any sublist in `actions_per_player` is empty or has an incorrect length, the function's behavior might be unexpected. Ensure that all sublists are correctly formatted.
 
-**Note**: Ensure that all actions submitted in `actions_per_player` are valid according to the rules of Diplomacy and that the function handles edge cases gracefully to maintain game integrity.
+**Example Usage**
+Here is a simple example demonstrating how to use the `step` function:
+
+```python
+from diplomacy_state import DiplomacyState
+
+# Initialize the state with some initial conditions
+state = DiplomacyState()
+
+# Define actions for each player (example actions)
+actions_per_player = [
+    [1, 2],  # Austria's actions
+    [3, 4],  # England's actions
+    [5, 6],  # France's actions
+    [7, 8],  # Germany's actions
+    [9, 10], # Italy's actions
+    [11, 12],# Russia's actions
+    [13, 14] # Turkey's actions
+]
+
+# Step the environment forward a full phase of Diplomacy
+state.step(actions_per_player)
+```
+
+This example initializes a `DiplomacyState` object and provides sample actions for each player. The `step` function then processes these actions to update the state accordingly.
 ***

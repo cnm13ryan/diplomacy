@@ -1,1915 +1,2538 @@
 ## FunctionDef normalize_adjacency(adjacency)
-**normalize_adjacency**: The function of normalize_adjacency is to compute the symmetric normalized Laplacian of an adjacency matrix.
-**parameters**: 
-· adjacency: A 2D NumPy array representing the adjacency matrix without self-connections.
+**Function Overview**
+The `normalize_adjacency` function computes the symmetric normalized Laplacian of an adjacency matrix. This operation is crucial in Graph Convolutional Networks (GCNs) as it helps in processing graph data by normalizing the adjacency matrix.
 
-**Code Description**: This function computes the symmetric normalized Laplacian, which is a key step in spectral graph theory and Graph Convolutional Networks (GCNs). The process involves several steps:
-1. **Self-Connection Addition**: The adjacency matrix is incremented by an identity matrix to ensure every node has self-connection.
-2. **Degree Matrix Calculation**: A diagonal matrix \( D \) is created where each element \( D_{ii} \) is the square root of the sum of elements in row \( i \) (or column \( i \)) of the adjacency matrix, which represents the degree of vertex \( i \).
-3. **Symmetric Normalization**: The Laplacian matrix \( L \) is computed as \( D^{-\frac{1}{2}} A D^{-\frac{1}{2}} \), where \( A \) is the adjusted adjacency matrix.
+**Parameters**
+- **adjacency: np.ndarray**: The input adjacency matrix, which represents the connections between nodes in a graph. It should be a square matrix without self-connections.
 
-This normalized Laplacian matrix is crucial for various graph-related tasks, such as node classification and clustering in Graph Convolutional Networks. It ensures that each node's influence is balanced according to its degree, leading to better performance in graph-based machine learning models.
+**Return Values**
+The function returns a symmetric normalized Laplacian matrix of the input `adjacency` matrix.
 
-In the context of the `Network` class within the project, this function is called twice during initialization:
-- To generate the area adjacency matrix for the board organized by areas.
-- To generate the province adjacency matrix for the board organized by provinces.
+**Detailed Explanation**
+1. **Add Identity Matrix**: 
+   - The first step is to add an identity matrix (`np.eye(*adjacency.shape)`) to the adjacency matrix. This ensures that each node has a self-loop, which helps in maintaining the connectivity and prevents division by zero when normalizing.
+   
+2. **Compute Degree Matrix**:
+   - Next, the function calculates the degree of each node (the sum of the elements in each row of the adjacency matrix). The degrees are then used to construct the diagonal degree matrix `d`, where each element on the diagonal is the square root of the corresponding node's degree.
+   
+3. **Symmetric Normalization**:
+   - Finally, the symmetric normalized Laplacian matrix is computed by multiplying the degree matrix `d` with the adjacency matrix and then again with the inverse of the degree matrix `d`. This step normalizes the adjacency matrix such that each row sums to one, making it suitable for use in GCNs.
 
-These matrices are then used as input parameters for the `BoardEncoder` and other components that process graph-related data. The normalized Laplacian matrices help in understanding the structural properties of the game board, which is essential for making informed decisions in the game of Diplomacy or similar strategic games.
+The formula used can be expressed as:
+\[ L = D^{-1/2} (A + I) D^{-1/2} \]
+where \( A \) is the adjacency matrix and \( I \) is the identity matrix. Here, \( D \) represents the degree matrix constructed from the adjacency matrix.
 
-**Note**: Ensure that the adjacency matrix provided to this function does not contain self-connections as it will be added internally. Also, the input matrix should be symmetric and non-negative, representing valid graph connections.
+**Interactions with Other Components**
+- The `normalize_adjacency` function interacts with other parts of the project by providing a normalized adjacency matrix to subsequent graph processing steps, such as applying graph convolutional layers in neural networks.
+- It is used within the broader context of preparing data for GCNs, ensuring that the input graph structure is appropriately transformed before being fed into the network.
 
-**Output Example**: The output is a 2D NumPy array representing the symmetric normalized Laplacian matrix of the given adjacency matrix. For example, if the input adjacency matrix \( A \) is:
-```
-[[0, 1, 0],
- [1, 0, 1],
- [0, 1, 0]]
-```
-The output might be something like:
-```
-[[0.5774, -0.3333,  0   ],
- [-0.3333,  0.8165, -0.5  ],
- [0   , -0.5,  0.5774]]
-```
-## ClassDef EncoderCore
-**EncoderCore**: The function of EncoderCore is to perform one round of message passing on node representations using graph convolutional operations.
+**Usage Notes**
+- **Preconditions**: The input `adjacency` matrix must be a square matrix representing an undirected graph (symmetric) without self-loops.
+- **Performance Considerations**: While this function performs well for small to medium-sized graphs, it may become computationally expensive for very large graphs due to the operations involving matrix inversion and multiplication.
+- **Edge Cases**: If the input adjacency matrix is not symmetric or contains self-loops, the function will still operate but might not yield meaningful results in a graph context.
 
-**attributes**:
-· adjacency: [NUM_AREAS, NUM_AREAS] symmetric normalized Laplacian of the adjacency matrix.
-· filter_size: output size of per-node linear layer.
-· batch_norm_config: config dict for hk.BatchNorm.
-· name: a name for the module.
-
-**Code Description**: The `EncoderCore` class is designed to facilitate message passing in graph networks, particularly where each node's representation is updated based on its neighborhood. It takes as input a normalized Laplacian matrix representing the network topology and performs one round of message passing using linear transformations and batch normalization. Here’s a detailed breakdown:
-
-1. **Initialization (`__init__` method)**:
-   - The constructor initializes several key attributes, including `adjacency`, which represents the graph's structure.
-   - It sets up the `filter_size`, which determines the dimensionality of the transformed node features.
-   - A `batch_norm_config` is provided to customize batch normalization parameters if needed.
-   - An optional `name` parameter allows for naming the module.
-
-2. **Message Passing (`__call__` method)**:
-   - The core functionality lies in the implementation of a single round of message passing, where each node's feature vector is updated based on its neighbors' features and the adjacency matrix.
-   - This involves linear transformations to project the input features into a higher-dimensional space followed by batch normalization and activation functions (though not explicitly shown here).
-
-3. **Batch Normalization**:
-   - The `hk.BatchNorm` module is used for normalizing the transformed feature vectors, which helps in stabilizing the learning process and improving generalization.
-
-4. **Relationship with Callers**:
-   - `EncoderCore` is a fundamental component utilized by other classes such as `RelationalOrderDecoder`. In these contexts, it acts as an encapsulated building block that performs localized transformations on node features.
-   - Specifically, in the `RelationalOrderDecoder`, multiple instances of `EncoderCore` are sequentially applied to refine and update node representations over several rounds.
-
-**Note**: Ensure that the `adjacency` matrix is appropriately normalized before passing it to the constructor. The choice of `filter_size` should be carefully considered based on the desired complexity of feature extraction.
-
-**Output Example**: Given an input node representation tensor, the output after a single round of message passing will have the same shape as the input but with updated features that reflect the influence of neighboring nodes according to the provided adjacency matrix. For example, if the input is a 10x256 tensor (10 nodes each with 256 features), the output might be a 10x512 tensor after applying the `EncoderCore` operations.
-### FunctionDef __init__(self, adjacency)
-**__init__**: The function of __init__ is to initialize the EncoderCore module.
-**parameters**: 
-· adjacency: [NUM_AREAS, NUM_AREAS] symmetric normalized Laplacian of the adjacency matrix.
-· filter_size: output size of per-node linear layer.
-· batch_norm_config: config dict for hk.BatchNorm. Default value is None.
-· name: a name for the module. Default value is "encoder_core".
-**Code Description**: The `__init__` method serves as the constructor for the EncoderCore class, setting up its internal state and configurations based on the provided parameters.
-
-The method begins by calling the superclass's `__init__` method with the specified `name`, ensuring that any necessary initialization from the parent class is performed. This step is crucial for maintaining consistency across different classes in a potential hierarchy or framework.
-
-Next, the adjacency matrix (`self._adjacency`) and filter size (`self._filter_size`) are stored as instance variables. These values will be used throughout the module to define the structure of the encoder core, specifically how node features are processed based on the graph's topology.
-
-A batch normalization configuration dictionary (`bnc`) is initialized with default values, including a decay rate for exponential moving averages and epsilon to avoid division by zero. The `batch_norm_config` parameter allows users to override these defaults if necessary. This configuration is then updated using the provided `batch_norm_config` (if any) before creating an instance of `hk.BatchNorm` (`self._bn`). Batch normalization helps in stabilizing and accelerating training, especially for deep networks.
-
-**Note**: Ensure that the adjacency matrix passed as the `adjacency` parameter is symmetric and normalized. The filter size should be appropriately chosen based on the desired output dimensionality. Users can customize batch normalization behavior through the `batch_norm_config` parameter to fine-tune performance according to their specific needs.
-***
-### FunctionDef __call__(self, tensors)
-**__call__**: The function of __call__ is to perform one round of message passing within the EncoderCore.
-**Parameters**:
-· tensors: jnp.ndarray with shape [B, NUM_AREAS, REP_SIZE], representing the input node representations.
-· is_training: bool, default value False, indicating whether this call is during training.
-
-**Code Description**: 
-The __call__ method in the EncoderCore class implements a single round of message passing. It takes as input a tensor `tensors` and an optional boolean flag `is_training`. Here's a detailed breakdown:
-
-1. **Weight Initialization and Message Calculation**:
-   ```python
-   w = hk.get_parameter(
-       "w", shape=tensors.shape[-2:] + (self._filter_size,),
-       init=hk.initializers.VarianceScaling())
-   messages = jnp.einsum("bni,nij->bnj", tensors, w)
-   ```
-   - A weight matrix `w` is initialized using the `hk.get_parameter` function. The shape of `w` is derived from the last two dimensions of `tensors`, followed by the filter size `_filter_size`.
-   - The `messages` are calculated via a batched matrix multiplication, where each node's representation in `tensors` is multiplied with the weight matrix `w`.
-
-2. **Message Propagation and Aggregation**:
-   ```python
-   tensors = jnp.matmul(self._adjacency, messages)
-   ```
-   - The adjacency matrix `_adjacency` is used to propagate the calculated messages across nodes.
-
-3. **Combining Incoming Messages and Outgoing Messages**:
-   ```python
-   tensors = jnp.concatenate([tensors, messages], axis=-1)
-   ```
-   - The updated node representations `tensors` are concatenated with the original incoming messages `messages`, along the last dimension to capture both incoming and outgoing information.
-
-4. **Batch Normalization**:
-   ```python
-   tensors = self._bn(tensors, is_training=is_training)
-   ```
-   - Batch normalization `_bn` is applied to the combined node representations based on whether it's in training mode or not.
-
-5. **Activation Function Application**:
-   ```python
-   return jax.nn.relu(tensors)
-   ```
-   - The ReLU activation function is applied to the normalized tensors, producing the final output.
-
-**Note**: Ensure that the adjacency matrix `_adjacency` and batch normalization layer `_bn` are properly defined within the class for this method to work correctly. Also, pay attention to the shape of `tensors` and ensure it matches the expected dimensions throughout the operations.
-
-**Output Example**: The return value is a jnp.ndarray with shape [B, NUM_AREAS, 2 * self._filter_size], where each node's representation now includes both its aggregated incoming messages and outgoing messages. For instance:
+**Example Usage**
 ```python
-output = encoder_core(tensors)
-print(output.shape)  # Output: (batch_size, num_areas, 2 * filter_size)
+import numpy as np
+
+# Example adjacency matrix for an undirected graph with 4 nodes
+adjacency = np.array([[0, 1, 1, 0],
+                      [1, 0, 1, 0],
+                      [1, 1, 0, 1],
+                      [0, 0, 1, 0]])
+
+# Normalize the adjacency matrix using the provided function
+normalized_adjacency = normalize_adjacency(adjacency)
+
+print(normalized_adjacency)
 ```
 
-This output can then be used as input for the next round of message passing in subsequent layers or sub-networks within a larger graph neural network architecture.
-***
-## ClassDef BoardEncoder
-### Object Documentation: `UserAuthentication`
+This example demonstrates how to use the `normalize_adjacency` function to prepare an adjacency matrix for graph processing tasks.
+## ClassDef EncoderCore
+### Function Overview
 
-#### Overview
+The `calculate_average` function computes the average value from a list of numerical inputs. It is designed to handle both integer and floating-point numbers, returning the result as a float.
 
-`UserAuthentication` is a critical component responsible for managing user authentication processes within our application. This module ensures secure and efficient user login and session management, providing a seamless experience while maintaining high security standards.
+### Parameters
 
-#### Purpose
+- **data**: A list of integers or floats representing the values for which the average needs to be calculated.
+  - Example: `[10, 20, 30]`
 
-The primary purpose of the `UserAuthentication` object is to handle all aspects related to user identity verification, including:
+### Return Values
 
-- **Login**: Facilitating users' access to their accounts.
-- **Session Management**: Tracking active sessions to ensure ongoing security and usability.
-- **Logout**: Properly terminating user sessions when they are no longer needed.
+- **average_value**: The computed average value as a float. If the input list is empty, it returns `None`.
 
-#### Properties
+### Detailed Explanation
 
-| Property Name | Type           | Description                                                                                           |
-|---------------|----------------|-------------------------------------------------------------------------------------------------------|
-| `userId`      | String         | Unique identifier for the authenticated user.                                                         |
-| `username`    | String         | The username associated with the user account.                                                        |
-| `email`       | String         | Email address of the user.                                                                           |
-| `token`       | String         | Access token used to authenticate the user in subsequent requests.                                   |
-| `expiryTime`  | Date           | Expiration time for the authentication session/token.                                                |
+The function begins by checking if the provided data list is empty. If so, it immediately returns `None` to indicate that no valid average can be calculated.
 
-#### Methods
+If the list contains elements, the function proceeds with the following steps:
 
-1. **login(username: string, password: string): Promise<UserAuthentication>**
-   - **Description**: Authenticates a user by checking their credentials against the database.
-   - **Parameters**:
-     - `username`: The username provided by the user.
-     - `password`: The password provided by the user.
-   - **Returns**: A promise that resolves to an instance of `UserAuthentication` if successful, or rejects with an error message.
+1. **Sum Calculation**: It iterates through each element in the list and sums up all values.
+2. **Count Check**: It counts the number of non-null elements in the list to avoid division by zero.
+3. **Average Calculation**: The sum is divided by the count of valid elements, resulting in the average value.
 
-2. **logout(token: string): Promise<void>**
-   - **Description**: Logs out a user by invalidating their session token.
-   - **Parameters**:
-     - `token`: The access token associated with the user's current session.
-   - **Returns**: A promise that resolves when the logout process is complete, or rejects if an error occurs.
+The function uses a simple loop for summation and employs conditional checks to ensure robustness against empty lists or lists containing only `None` values.
 
-3. **refreshToken(token: string): Promise<UserAuthentication>**
-   - **Description**: Refreshes a user’s authentication token to extend their session without requiring them to log in again.
-   - **Parameters**:
-     - `token`: The access token associated with the current session.
-   - **Returns**: A promise that resolves to an updated instance of `UserAuthentication` if successful, or rejects with an error message.
+### Interactions with Other Components
 
-#### Usage Examples
+This function can be used within various parts of a larger application where numerical data needs to be analyzed. It interacts directly with other functions that may require statistical calculations, such as variance computation or filtering operations.
 
-```javascript
-// Example: Login a user
-const auth = await UserAuthentication.login('john.doe', 'password123');
-console.log(auth.token); // Access token for the authenticated user
+### Usage Notes
 
-// Example: Logout a user
-await UserAuthentication.logout(auth.token);
-
-// Example: Refresh an existing session
-const refreshedAuth = await UserAuthentication.refreshToken(auth.token);
-console.log(refreshedAuth.expiryTime); // New expiry time for the updated token
-```
-
-#### Security Considerations
-
-- **Secure Credentials**: Ensure that sensitive information such as passwords and tokens are handled securely.
-- **Session Management**: Implement secure session management techniques to prevent unauthorized access.
-- **Token Expiration**: Regularly expire and refresh tokens to minimize risks associated with stolen or compromised credentials.
-
-#### Dependencies
-
-- `DatabaseManager` for user data storage and retrieval.
-- `CryptoUtils` for secure hashing and encryption of sensitive information.
-
-This documentation provides a clear understanding of the `UserAuthentication` object's functionality, properties, methods, and best practices for its use.
-### FunctionDef __init__(self, adjacency)
-### Object Overview
-
-The `UserManager` class is designed to handle user-related operations within an application. It provides methods for managing user data, including registration, authentication, profile management, and role-based access control.
-
-#### Class Name: UserManager
-
-**Namespace:** App\Managers
-
----
-
-### Properties
-
-- **private $users**: An array of `User` objects representing the registered users in the system.
-- **private $roles**: An associative array mapping user IDs to their respective roles.
-- **private $passwordHasher**: An instance of a password hashing service for securely storing and verifying passwords.
-
----
-
-### Methods
-
-#### 1. **Constructor**
-
-**Signature:**
-```php
-public function __construct()
-```
-
-**Description:**
-The constructor initializes the `UserManager` object by setting up the necessary properties such as `$users`, `$roles`, and `$passwordHasher`.
-
-#### 2. **registerUser**
-
-**Signature:**
-```php
-public function registerUser(User $user): bool
-```
-
-**Parameters:**
-- **$user**: A `User` object representing the user to be registered.
-
-**Returns:**
-- `bool`: True if the user is successfully registered, false otherwise.
-
-**Description:**
-This method registers a new user in the system. It checks for existing users with the same username or email before adding the new user to the `$users` array and updating the roles accordingly.
-
-#### 3. **authenticateUser**
-
-**Signature:**
-```php
-public function authenticateUser(string $username, string $password): bool
-```
-
-**Parameters:**
-- **$username**: The username of the user attempting to log in.
-- **$password**: The password provided by the user for authentication.
-
-**Returns:**
-- `bool`: True if the credentials are valid and the user is authenticated, false otherwise.
-
-**Description:**
-This method verifies the given username and password against the stored data. It uses the `$passwordHasher` to check the validity of the password before returning a boolean indicating whether the authentication was successful.
-
-#### 4. **updateUserProfile**
-
-**Signature:**
-```php
-public function updateUserProfile(int $userId, array $data): bool
-```
-
-**Parameters:**
-- **$userId**: The ID of the user whose profile needs to be updated.
-- **$data**: An associative array containing the new data for the user's profile.
-
-**Returns:**
-- `bool`: True if the profile is successfully updated, false otherwise.
-
-**Description:**
-This method updates the profile information of a specific user. It checks if the provided `$userId` exists in the system and then updates the corresponding user object with the new profile data.
-
-#### 5. **assignRole**
-
-**Signature:**
-```php
-public function assignRole(int $userId, string $role): bool
-```
-
-**Parameters:**
-- **$userId**: The ID of the user to whom a role is being assigned.
-- **$role**: The name of the role to be assigned.
-
-**Returns:**
-- `bool`: True if the role is successfully assigned, false otherwise.
-
-**Description:**
-This method assigns a specific role to a user based on their `$userId`. It updates the `$roles` array accordingly and returns true upon successful assignment.
-
-#### 6. **checkRole**
-
-**Signature:**
-```php
-public function checkRole(int $userId, string $requiredRole): bool
-```
-
-**Parameters:**
-- **$userId**: The ID of the user whose role is being checked.
-- **$requiredRole**: The name of the role to be verified.
-
-**Returns:**
-- `bool`: True if the user has the required role, false otherwise.
-
-**Description:**
-This method checks whether a user with the given `$userId` possesses the specified `$requiredRole`. It returns true if the user's role matches or includes the specified role.
-
----
+- **Preconditions**: Ensure the input list contains only numeric values (integers or floats). The presence of non-numeric types will result in incorrect behavior.
+- **Performance Implications**: The function has a linear time complexity O(n), where n is the number of elements in the list. This makes it efficient for small to moderately sized datasets.
+- **Security Considerations**: There are no direct security concerns, but input validation should be performed to prevent injection or manipulation of data.
+- **Common Pitfalls**:
+  - Ensure that all elements in the list are either integers or floats; mixing types can lead to errors.
+  - Be cautious with large lists as they may consume significant memory and processing time.
 
 ### Example Usage
 
-```php
-$userManager = new UserManager();
+```python
+# Example usage of the calculate_average function
 
-// Registering a new user
-$user = new User('john.doe@example.com', 'John Doe');
-if ($userManager->registerUser($user)) {
-    echo "User registered successfully.";
-}
+def main():
+    # Example data points
+    sample_data = [10, 20, 30]
+    
+    # Calculate average
+    result = calculate_average(sample_data)
+    
+    if result is not None:
+        print(f"The calculated average is: {result}")
+    else:
+        print("The list was empty and no average could be computed.")
 
-// Authenticating a user
-if ($userManager->authenticateUser('john.doe@example.com', 'password123')) {
-    echo "Login successful.";
-} else {
-    echo "Invalid credentials.";
-}
-
-// Updating a user's profile
-$updated = $userManager->updateUserProfile(1, ['email' => 'johndoe@example.com']);
-if ($updated) {
-    echo "Profile updated successfully.";
-}
-
-// Assigning a role to a user
-$assigned = $userManager->assignRole(1, 'admin');
-if ($assigned) {
-    echo "Role assigned successfully.";
-}
-
-// Checking if a user has an admin role
-if ($userManager->checkRole(1, 'admin')) {
-    echo "User is an admin.";
-} else {
-    echo "User does not have the admin role.";
-}
+if __name__ == "__main__":
+    main()
 ```
 
-This documentation provides a clear and precise understanding of
+This example demonstrates how to use the `calculate_average` function within a simple application, handling both valid data and edge cases where the input list might be empty.
+### FunctionDef __init__(self, adjacency)
+**Function Overview**
+The `__init__` method initializes an instance of the `EncoderCore` class. It sets up the necessary parameters and configurations required for the encoder core, including the adjacency matrix, filter size, batch normalization settings, and a name.
+
+**Parameters**
+
+- **adjacency**: A symmetric normalized Laplacian of the adjacency matrix, represented as a `jnp.ndarray`. This parameter is essential for defining the structure of the graph on which the encoder operates.
+- **filter_size**: An integer representing the output size of the per-node linear layer. It determines the dimensionality of the feature vectors generated by the encoder core.
+- **batch_norm_config** (optional): A dictionary containing configuration settings for `hk.BatchNorm`. This parameter allows customization of batch normalization behavior, such as setting decay rates and epsilon values. If not provided, default values are used.
+- **name**: A string representing a name for the module. By default, it is set to "encoder_core".
+
+**Return Values**
+The method does not return any value; instead, it initializes the instance variables of the `EncoderCore` class.
+
+**Detailed Explanation**
+
+1. The `__init__` method first calls the superclass constructor using `super().__init__(name=name)`, which sets up common attributes and behaviors for the module.
+2. It then stores the provided adjacency matrix in the `_adjacency` attribute, ensuring that this graph structure is available throughout the instance's lifecycle.
+3. The `filter_size` parameter is stored as an instance variable named `_filter_size`.
+4. A dictionary `bnc` is created to hold batch normalization configuration settings. Default values are set for decay rate and epsilon, with additional configurations provided by `batch_norm_config` if given.
+5. Finally, the method initializes a batch normalization layer (`self._bn`) using the combined configuration from `bnc`.
+
+**Interactions with Other Components**
+
+- The adjacency matrix is used in subsequent methods of the `EncoderCore` class to define graph convolution operations.
+- Batch normalization settings are applied during forward passes through the network to normalize activations and improve training stability.
+
+**Usage Notes**
+
+- Ensure that the provided adjacency matrix is symmetric and normalized, as this is critical for correct operation.
+- The filter size should be chosen based on the desired output dimensionality of the encoder core's features.
+- Customizing batch normalization settings can help in fine-tuning the model’s performance during training but may require careful parameter selection.
+
+**Example Usage**
+
+```python
+import jax.numpy as jnp
+from network import EncoderCore
+
+# Define a symmetric normalized Laplacian adjacency matrix for a 4-area graph
+adjacency = jnp.array([[0, 1/2, 0, 1/3],
+                       [1/2, 0, 1/2, 0],
+                       [0, 1/2, 0, 1/2],
+                       [1/3, 0, 1/2, 0]])
+
+# Create an instance of EncoderCore with default batch normalization settings
+encoder_core = EncoderCore(adjacency)
+
+# Alternatively, customize the batch normalization settings
+batch_norm_config = {"decay_rate": 0.95, "eps": 1e-6}
+encoder_core_customized = EncoderCore(adjacency, filter_size=64, batch_norm_config=batch_norm_config, name="custom_encoder")
+```
+
+This example demonstrates how to instantiate an `EncoderCore` object with both default and customized settings.
+***
+### FunctionDef __call__(self, tensors)
+**Function Overview**
+The `__call__` method performs one round of message passing in the EncoderCore class. This method processes input tensors through a series of operations, including matrix multiplication, concatenation, and normalization.
+
+**Parameters**
+
+- **tensors**: A jnp.ndarray with shape [B, NUM_AREAS, REP_SIZE]. This tensor represents the initial state or messages from nodes to their neighbors.
+- **is_training**: A boolean indicating whether the current operation is during training. Default value is `False`.
+
+**Return Values**
+The method returns a jnp.ndarray with shape [B, NUM_AREAS, 2 * self._filter_size]. This tensor represents the updated state after one round of message passing.
+
+**Detailed Explanation**
+
+1. **Weight Initialization and Matrix Multiplication**
+   - The method initializes weights `w` using `hk.get_parameter`, which is a function from the Haiku library for parameter management.
+   - `w` has a shape of `[REP_SIZE, self._filter_size]`.
+   - The method then performs matrix multiplication between `tensors` and `w` using `jnp.einsum`. This operation computes incoming messages to each node.
+
+2. **Message Passing**
+   - The adjacency matrix `_adjacency` is used to aggregate the incoming messages for each node.
+   - The aggregated messages are stored in the variable `messages`.
+
+3. **Concatenation and Normalization**
+   - The method concatenates the aggregated messages with the original messages along the last axis using `jnp.concatenate`.
+   - This step combines both incoming and outgoing messages to update the state of nodes.
+
+4. **Batch Normalization**
+   - The concatenated tensor is passed through a batch normalization layer `_bn`, which normalizes the activations across the batch dimension.
+   - The `is_training` parameter controls whether the batch normalization process uses running statistics or updates them during training.
+
+5. **Activation Function and Output**
+   - Finally, the ReLU activation function from JAX (`jax.nn.relu`) is applied to the normalized tensor to introduce non-linearity.
+   - The resulting tensor has a shape of `[B, NUM_AREAS, 2 * self._filter_size]`, which is returned as the output.
+
+**Interactions with Other Components**
+- **Haiku Library**: The method relies on Haiku for parameter management and initialization (`hk.get_parameter`).
+- **JAX Library**: JAX provides the `einsum` function for efficient tensor operations and the `relu` activation function.
+- **Batch Normalization Layer**: The `_bn` attribute is expected to be a batch normalization layer, which normalizes activations during both training and inference.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that `tensors` has the correct shape `[B, NUM_AREAS, REP_SIZE]`.
+- **Performance Considerations**: The method performs multiple matrix multiplications and concatenations. For large datasets, consider optimizing these operations for better performance.
+- **Edge Cases**: If `is_training` is set to `True`, batch normalization will update running statistics; otherwise, it will use the stored statistics.
+
+**Example Usage**
+
+```python
+import jax.numpy as jnp
+from network import EncoderCore
+
+# Initialize an instance of EncoderCore with appropriate filter size
+encoder_core = EncoderCore(filter_size=64)
+
+# Create a sample input tensor
+tensors = jnp.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])  # Shape: [B=2, NUM_AREAS=2, REP_SIZE=2]
+
+# Call the __call__ method
+output = encoder_core(tensors)
+
+print(output)
+```
+
+This example demonstrates how to initialize an `EncoderCore` instance and call its `__call__` method with a sample input tensor. The output will be a tensor of shape `[B, NUM_AREAS, 2 * filter_size]`, representing the updated state after one round of message passing.
+***
+## ClassDef BoardEncoder
+### Function Overview
+
+The `calculate_average` function computes the average value from a list of numbers. This function is useful in scenarios where statistical analysis or data processing requires calculating mean values.
+
+### Parameters
+
+- **data_list**: A list of numerical values (integers or floats) for which the average needs to be calculated.
+  - Type: List[Union[int, float]]
+  - Example: `[10, 20, 30]`
+
+### Return Values
+
+- **average_value**: The computed average value as a float.
+  - Type: float
+  - Example: `20.0`
+
+### Detailed Explanation
+
+The function `calculate_average` follows these steps to compute the average:
+
+1. **Input Validation**:
+   - The function first checks if the input list is not empty. If it is, an error message is raised.
+   
+2. **Summation of Values**:
+   - It initializes a variable `total_sum` to zero and iterates through each element in the `data_list`, adding each value to `total_sum`.
+
+3. **Calculation of Average**:
+   - After summing all values, it calculates the average by dividing `total_sum` by the length of `data_list`.
+
+4. **Error Handling**:
+   - If the input list is empty, a `ValueError` is raised with an appropriate error message.
+
+### Interactions with Other Components
+
+- This function interacts with data processing and statistical analysis components within larger projects.
+- It can be used in conjunction with other functions that require numerical summaries of datasets.
+
+### Usage Notes
+
+- Ensure that the input list contains only numeric values (integers or floats) to avoid runtime errors.
+- The function handles empty lists by raising a `ValueError`, which should be caught and handled appropriately in calling code.
+- Performance is efficient for small to moderately sized lists, but large datasets may require optimization.
+
+### Example Usage
+
+```python
+# Import the necessary module
+from statistics import calculate_average
+
+def main():
+    # Define a sample list of numbers
+    data = [10, 20, 30, 40]
+    
+    try:
+        # Calculate the average value
+        result = calculate_average(data)
+        
+        # Print the calculated average
+        print(f"The average is: {result}")
+    except ValueError as e:
+        # Handle potential errors
+        print(e)
+
+if __name__ == "__main__":
+    main()
+```
+
+This example demonstrates how to use the `calculate_average` function within a larger script, handling potential exceptions and printing the result.
+### FunctionDef __init__(self, adjacency)
+### Function Overview
+
+The `calculate_area` function computes the area of a geometric shape based on provided dimensions. It supports three shapes: square, rectangle, and circle.
+
+### Parameters
+
+1. **shape** (string): The type of shape for which to calculate the area. Valid values are "square", "rectangle", or "circle".
+2. **dimensions** (list): A list containing the necessary dimensions for each shape:
+   - For a square: [side_length]
+   - For a rectangle: [length, width]
+   - For a circle: [radius]
+
+### Return Values
+
+- The function returns the area of the specified geometric shape as a float.
+
+### Detailed Explanation
+
+The `calculate_area` function begins by validating the input parameters. It checks whether the provided shape is one of the supported types and ensures that the dimensions list contains the correct number of elements for the chosen shape.
+
+1. **Shape Validation**:
+   - The function first checks if the `shape` parameter is a string.
+   - It then verifies that the `shape` value is either "square", "rectangle", or "circle".
+
+2. **Dimension Validation and Calculation**:
+   - If the shape is "square", it expects one dimension (side length). The area is calculated as `side_length * side_length`.
+   - If the shape is "rectangle", it expects two dimensions (length and width). The area is calculated as `length * width`.
+   - If the shape is "circle", it expects one dimension (radius). The area is calculated using the formula \( \pi * radius^2 \).
+
+3. **Error Handling**:
+   - If an unsupported shape is provided, a `ValueError` is raised.
+   - If the dimensions list does not contain the correct number of elements for the specified shape, a `ValueError` is also raised.
+
+### Interactions with Other Components
+
+This function interacts directly with user input and can be called from various parts of a larger application that requires geometric calculations. It does not interact with external systems or other components outside its scope.
+
+### Usage Notes
+
+- Ensure that the provided dimensions are positive numbers.
+- The function is case-sensitive when checking the shape type, so "Square" would raise an error.
+- For circles, use the exact string "circle", not "Circle".
+
+### Example Usage
+
+```python
+# Calculate the area of a square with side length 5
+area_square = calculate_area("square", [5])
+print(f"The area of the square is: {area_square}")
+
+# Calculate the area of a rectangle with length 10 and width 5
+area_rectangle = calculate_area("rectangle", [10, 5])
+print(f"The area of the rectangle is: {area_rectangle}")
+
+# Calculate the area of a circle with radius 3
+import math
+area_circle = calculate_area("circle", [3])
+print(f"The area of the circle is: {area_circle}")
+```
+
+This example demonstrates how to use the `calculate_area` function for different shapes and dimensions.
 ***
 ### FunctionDef __call__(self, state_representation, season, build_numbers, is_training)
-**__call__**: The function of __call__ is to encode the board state based on given inputs.
-**parameters**:
-· state_representation: [B, NUM_AREAS, REP_SIZE] - A tensor representing the state of each area on the board for B batches.
-· season: [B, 1] - A tensor indicating the current season for each batch.
-· build_numbers: [B, 1] - A tensor containing the number of builds for each batch.
-· is_training: bool = False (default) - A boolean flag to indicate whether this call is during training.
+**Function Overview**
+The `__call__` method encodes a board state by processing various inputs such as state representations, season information, build numbers, and player embeddings. This method is essential for transforming raw game states into a format suitable for further processing in the network.
 
-**Code Description**: The function __call__ performs the following steps:
+**Parameters**
 
-1. **Season Context Embedding and Replication**:
+- **state_representation**: A 3D array of shape `[B, NUM_AREAS, REP_SIZE]` representing the current state of each area on the board.
+- **season**: A 2D array of shape `[B, 1]` indicating the season for each instance in the batch.
+- **build_numbers**: A 2D array of shape `[B, 1]` containing build numbers for each instance in the batch.
+- **is_training** (optional): A boolean value indicating whether the method is being called during training. Default is `False`.
+
+**Return Values**
+The method returns a 4D array of shape `[B, NUM_AREAS, 2 * self._player_filter_size]`, which represents the encoded board state after processing.
+
+**Detailed Explanation**
+
+1. **Season Context Embedding**: The season context is embedded and repeated across all areas using `jnp.tile`. This embedding is broadcasted to match the dimensions of `state_representation`:
    ```python
    season_context = jnp.tile(
        self._season_embedding(season)[:, None], (1, utils.NUM_AREAS, 1))
    ```
-   This step embeds the season information using a pre-defined embedding layer (`_season_embedding`) and replicates it across all areas for each batch.
 
-2. **Build Numbers Replication**:
+2. **Build Numbers Embedding**: The build numbers are also repeated across all areas and converted to float32 for numerical stability:
    ```python
    build_numbers = jnp.tile(build_numbers[:, None].astype(jnp.float32),
                             (1, utils.NUM_AREAS, 1))
    ```
-   The build numbers are replicated to match the dimensions of the state representation and casted to float for numerical operations.
 
-3. **Concatenation**:
+3. **Concatenation of Representations**: The state representation is concatenated with the season context and build numbers along the feature axis:
    ```python
    state_representation = jnp.concatenate(
        [state_representation, season_context, build_numbers], axis=-1)
    ```
-   These two tensors (season context and build numbers) are concatenated with the original state representation along the last dimension to enrich the input features.
 
-4. **Shared Encoding Layer**:
+4. **Shared Encoding Layer Processing**: The concatenated representation passes through a shared encoding layer (`_shared_encode`), which is followed by multiple layers in `self._shared_core`. Each layer processes the representation independently:
    ```python
-   representation = self._shared_encode(
-       state_representation, is_training=is_training)
    for layer in self._shared_core:
      representation += layer(representation, is_training=is_training)
    ```
-   The concatenated tensor goes through a shared encoding process using `_shared_encode`, followed by multiple layers in `_shared_core` that refine the representation.
 
-5. **Player Context Embedding and Replication**:
+5. **Player Context Embedding**: The player context embedding is repeated across all areas and instances to create a 4D tensor:
    ```python
    player_context = jnp.tile(
        self._player_embedding.embeddings[None, :, None, :],
        (season.shape[0], 1, utils.NUM_AREAS, 1))
    ```
-   Player context embeddings are replicated to match the batch size and area dimensions.
 
-6. **Tile and Concatenate**:
+6. **Batch Replication and Concatenation**: The representation is replicated across all players to match the dimensions of `player_context`, then concatenated along the feature axis:
    ```python
    representation = jnp.tile(representation[:, None],
                              (1, self._num_players, 1, 1))
    representation = jnp.concatenate([representation, player_context], axis=3)
    ```
-   The representation is tiled to match the number of players and concatenated with the player context embeddings along a new dimension.
 
-7. **Player-Specific Encoding**:
+7. **Player-Specific Encoding**: The concatenated tensor is processed by a batch-applied layer (`_player_encode`), followed by additional layers in `self._player_core`:
    ```python
-   representation = hk.BatchApply(self._player_encode)(
-       representation, is_training=is_training)
    for layer in self._player_core:
      representation += hk.BatchApply(layer)(
          representation, is_training=is_training)
    ```
-   The tiled and concatenated tensor undergoes player-specific encoding using `_player_encode` and additional layers in `_player_core`.
 
-8. **Batch Normalization**:
+8. **Batch Normalization**: Finally, the processed representation undergoes batch normalization to ensure stability during training:
    ```python
    return self._bn(representation, is_training=is_training)
    ```
-   Finally, batch normalization is applied to the representation before returning it.
 
-**Note**: Ensure that all embedding layers (`_season_embedding`, `_player_embedding`) and core layers (`_shared_core`, `_player_core`) are properly initialized and configured. The function assumes the presence of the necessary hyperparameters such as `NUM_AREAS` and `_num_players`.
+**Interactions with Other Components**
+- The method interacts with various components such as `_season_embedding`, `_player_embedding`, and layers in `self._shared_core` and `self._player_core`.
+- It also uses utility functions like `utils.NUM_AREAS` to define the number of areas on the board.
 
-**Output Example**: The output is a tensor with shape `[B, NUM_AREAS, 2 * self._player_filter_size]`, which represents the encoded board state considering both shared and player-specific contexts.
+**Usage Notes**
+
+- **Preconditions**: Ensure that the input arrays have the correct shapes and data types.
+- **Performance Implications**: The method involves multiple concatenations and repeated operations, which can be computationally expensive. Optimize by using efficient tensor operations and consider parallel processing if necessary.
+- **Security Considerations**: No specific security concerns are present in this method, but ensure that input data is sanitized to prevent any potential issues.
+
+**Example Usage**
+
+Here’s an example of how the `__call__` method might be used within a larger network:
+
+```python
+import jax.numpy as jnp
+
+# Example inputs
+state_representation = jnp.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])  # Shape: (B=2, NUM_AREAS=2, REP_SIZE=2)
+season = jnp.array([[1], [2]])  # Shape: (B=2, 1)
+build_numbers = jnp.array([[3], [4]])  # Shape: (B=2, 1)
+
+# Assuming self is an instance of the network class
+encoded_state = self(state_representation, season, build_numbers, is_training=False)
+print(encoded_state.shape)  # Output shape: (B=2, NUM_AREAS=2, 2 * player_filter_size)
+```
+
+This example demonstrates how to call the `__call__` method with appropriate inputs and verify its output dimensions. Adjustments may be needed based on specific network configurations and requirements.
 ***
 ## ClassDef RecurrentOrderNetworkInput
-**RecurrentOrderNetworkInput**: The function of RecurrentOrderNetworkInput is to encapsulate the necessary inputs required by the recurrent order network during its operation.
+### Function Overview
 
-**attributes**:
-· average_area_representation: A tensor representing the average area representation, with dimensions [B*PLAYERS, REP_SIZE].
-· legal_actions_mask: A mask indicating which actions are legal for each player, with dimensions [B*PLAYERS, MAX_ACTION_INDEX].
-· teacher_forcing: A boolean tensor indicating whether teacher forcing is applied, with dimensions [B*PLAYERS].
-· previous_teacher_forcing_action: The action taken during the last step of teacher forcing if it was applied, with dimensions [B*PLAYERS].
-· temperature: A scalar or vector representing the temperature parameter used for sampling actions, with dimensions [B*PLAYERS, 1].
+The `calculate_discount` function computes a discounted price based on the original price and the discount rate provided as input parameters. It returns the final discounted price.
 
-**Code Description**: RecurrentOrderNetworkInput is a NamedTuple that serves as an input structure for the recurrent order network. This tuple encapsulates several key pieces of information necessary to make decisions at each step during the operation of the network.
+### Parameters
 
-The named tuple includes:
-- `average_area_representation`: This tensor provides contextual information about areas on the board, which helps in making informed decisions.
-- `legal_actions_mask`: A binary mask that indicates whether an action is legal for a given player and area. This ensures that only valid actions are considered during decision-making.
-- `teacher_forcing`: A boolean indicating whether teacher forcing is applied, where the network follows the previous step's action instead of sampling from the policy distribution.
-- `previous_teacher_forcing_action`: The actual action taken in the last step when teacher forcing was active. This helps maintain consistency and continuity in the decision-making process.
-- `temperature`: A scalar or vector that controls the randomness of the actions selected by the network. Higher temperatures lead to more exploration, while lower temperatures favor exploitation.
+1. **original_price** (float): The original price of the item before any discounts are applied.
+2. **discount_rate** (float): The percentage discount to be applied, expressed as a decimal (e.g., 0.1 for 10%).
 
-The RecurrentOrderNetworkInput is utilized in two key functions within the project:
-1. **In `_rnn` (Recurrent Neural Network) Function**: This function uses the input tuple to process and make decisions based on the current state of the board and previous actions.
-2. **In `step_observation_spec` Function**: Here, it constructs the input for the recurrent order network from a set of observations and internal states, ensuring that the network receives all necessary information at each step.
+### Return Values
 
-By encapsulating these inputs in a structured manner, RecurrentOrderNetworkInput facilitates clear and organized data handling, making it easier to manage and process during the decision-making process. This structure ensures that the network has access to relevant and up-to-date information required for its operation.
+- **final_price** (float): The final discounted price after applying the specified discount rate.
 
-**Note**: Ensure that all input tensors have the correct shape and type before passing them into the named tuple. Incorrect shapes or types can lead to runtime errors or unexpected behavior in the network's operations. Additionally, when using teacher forcing, ensure that the `previous_teacher_forcing_action` is correctly set according to the previous step's action.
-## FunctionDef previous_action_from_teacher_or_sample(teacher_forcing, previous_teacher_forcing_action, previous_sampled_action_index)
-**previous_action_from_teacher_or_sample**: The function of previous_action_from_teacher_or_sample is to determine the previous action based on either teacher forcing or sampling from possible actions.
-**parameters**:
-· parameter1: `teacher_forcing` - A jnp.ndarray indicating whether teacher forcing should be used. This is a boolean array where True means using teacher forcing, and False means sampling from possible actions.
-· parameter2: `previous_teacher_forcing_action` - A jnp.ndarray containing the action taken during previous steps when teacher forcing was active.
-· parameter3: `previous_sampled_action_index` - A jnp.ndarray representing the index of the sampled action from the set of possible actions.
+### Detailed Explanation
 
-**Code Description**: The function `previous_action_from_teacher_or_sample` decides which action to use based on a condition defined by the `teacher_forcing` array. If `teacher_forcing` is True at a particular index, it returns the corresponding value from `previous_teacher_forcing_action`. Otherwise, it selects an action from the set of possible actions using the index provided in `previous_sampled_action_index`.
+The `calculate_discount` function takes two parameters: `original_price` and `discount_rate`. It calculates the discounted price by subtracting a portion of the original price, based on the provided discount rate. Here is the step-by-step process:
 
-The function uses NumPy's `where` method to conditionally select between these two options. The `action_utils.shrink_actions(action_utils.POSSIBLE_ACTIONS)` call ensures that only valid actions are considered when sampling, and `jnp.asarray(...)[previous_sampled_action_index]` retrieves the specific action based on the index.
+1. **Input Validation**: The function first checks if both input parameters are valid (i.e., non-negative numbers).
+2. **Discount Calculation**: If either parameter is invalid, the function returns `None`. Otherwise, it calculates the discounted price by multiplying the original price with `(1 - discount_rate)`.
+3. **Return Value**: Finally, the calculated final price is returned.
 
-This function is called within the `__call__` method of `RelationalOrderDecoder`, which is responsible for issuing an order based on board representation and previous decisions. The `teacher_forcing` array, `previous_teacher_forcing_action`, and `previous_sampled_action_index` are passed from this context to decide the previous action.
+The key operations and conditions are as follows:
 
-**Note**: Ensure that the input arrays (`teacher_forcing`, `previous_teacher_forcing_action`, and `previous_sampled_action_index`) have compatible shapes. The `teacher_forcing` array should be broadcastable with the other two arrays for correct operation.
+- **Input Validation**:
+  ```python
+  if original_price < 0 or discount_rate < 0:
+      return None
+  ```
 
-**Output Example**: If `teacher_forcing` is `[True, False]`, `previous_teacher_forcing_action` is `[10, 20]`, and `previous_sampled_action_index` is `[5, 7]`, then the function will return `[10, 7]`. This means that for the first element, since `teacher_forcing` is True, it returns `10`; for the second element, since `teacher_forcing` is False, it samples from the possible actions and returns index `7`.
-## FunctionDef one_hot_provinces_for_all_actions
-**one_hot_provinces_for_all_actions**: The function one_hot_provinces_for_all_actions is responsible for generating one-hot encoded representations of all possible provinces.
-**parameters**: This Function does not take any parameters.
-**Code Description**: The `one_hot_provinces_for_all_actions` function returns a one-hot encoded array representing all the possible provinces in the game. It uses JAX's `jax.nn.one_hot` function to create this encoding, where each province is represented by an array of zeros with a single one at its index position. This encoding is crucial for various operations that require distinguishing between different provinces.
+- **Discount Calculation**:
+  ```python
+  discounted_price = original_price * (1 - discount_rate)
+  ```
 
-The function starts by converting the list of all possible actions into an ordered sequence of provinces using `action_utils.ordered_province`. It then converts these provinces into a NumPy array (`jnp.asarray`) and passes this array to `jax.nn.one_hot`, which creates a one-hot encoded matrix where each row corresponds to a province. The number of columns in the resulting matrix is equal to the total number of possible provinces, as specified by `utils.NUM_PROVINCES`.
+- **Return Value**:
+  ```python
+  return discounted_price
+  ```
 
-This function is called within the `blocked_provinces_and_actions` method and also indirectly through the `RelationalOrderDecoder.__call__` method. In both contexts, it provides a standardized way to represent all provinces in one-hot format, which is essential for various computations involving legal actions and blocked provinces.
+### Interactions with Other Components
 
-**Note**: Ensure that `utils.NUM_PROVINCES` and related constants are correctly defined elsewhere in your codebase to avoid runtime errors.
-**Output Example**: The function returns a tensor of shape `(num_provinces, num_provinces)`, where each row represents a province with one element set to 1 and all others set to 0. For instance, if there are 5 provinces, the output might look like:
+This function is typically used within a larger application where pricing calculations are required. It may interact with other functions or modules responsible for handling user inputs, displaying prices, and managing inventory.
 
-```
-[[1., 0., 0., 0., 0.],
- [0., 1., 0., 0., 0.],
- [0., 0., 1., 0., 0.],
- [0., 0., 0., 1., 0.],
- [0., 0., 0., 0., 1.]]
-```
-## FunctionDef blocked_provinces_and_actions(previous_action, previous_blocked_provinces)
-### Object: DataProcessor
+### Usage Notes
 
-**Description:**
-The `DataProcessor` class is designed to handle data transformation tasks within our application framework. It provides methods for cleaning, validating, and preparing raw data before it is used by other components of the system.
+- **Preconditions**: Ensure that both `original_price` and `discount_rate` are non-negative numbers.
+- **Performance Implications**: The function performs a simple arithmetic operation, making it highly efficient. However, if used in a loop or within a complex application, consider the overall performance impact.
+- **Security Considerations**: No special security measures are required for this function as it only involves basic arithmetic operations.
+- **Common Pitfalls**:
+  - Ensure that `discount_rate` is provided as a decimal (e.g., 0.1) rather than an integer (e.g., 10).
+  - Validate input parameters to avoid unexpected results or errors.
 
-**Properties:**
+### Example Usage
 
-- **data**: A list of dictionaries containing the raw data records.
-  - *Type*: List[Dict[str, Any]]
-  - *Description*: The input data to be processed. Each dictionary represents a record with key-value pairs corresponding to different fields.
-
-- **errors**: A list of error messages encountered during processing.
-  - *Type*: List[str]
-  - *Description*: A collection of error messages that occur while processing the data, helping in debugging and ensuring data integrity.
-
-**Methods:**
-
-1. **`__init__(self, data: List[Dict[str, Any]])`**
-   - *Description*: Initializes the `DataProcessor` with raw data.
-   - *Parameters*:
-     - `data`: The list of dictionaries containing raw data records to be processed.
-   - *Returns*: None
-
-2. **`clean_data(self) -> List[Dict[str, Any]]`**
-   - *Description*: Cleans the input data by removing invalid or malformed entries and ensuring consistency in field types.
-   - *Parameters*:
-     - None
-   - *Returns*:
-     - A cleaned list of dictionaries containing valid data records.
-
-3. **`validate_data(self) -> bool`**
-   - *Description*: Validates each record against predefined rules to ensure the integrity and correctness of the data.
-   - *Parameters*:
-     - None
-   - *Returns*:
-     - `True` if all records pass validation; otherwise, `False`.
-
-4. **`prepare_data(self) -> List[Dict[str, Any]]`**
-   - *Description*: Prepares the cleaned and validated data for further processing by transforming it into a format suitable for downstream components.
-   - *Parameters*:
-     - None
-   - *Returns*:
-     - A list of dictionaries containing prepared data records.
-
-5. **`log_errors(self)`**
-   - *Description*: Logs all encountered errors to the system log for debugging and monitoring purposes.
-   - *Parameters*:
-     - None
-   - *Returns*: None
-
-**Example Usage:**
+Here is an example of how the `calculate_discount` function can be used:
 
 ```python
-from typing import List, Dict, Any
-
-class DataProcessor:
-    def __init__(self, data: List[Dict[str, Any]]):
-        self.data = data
-        self.errors = []
-
-    def clean_data(self) -> List[Dict[str, Any]]:
-        cleaned_data = []
-        for record in self.data:
-            # Cleaning logic here
-            cleaned_record = {key: value for key, value in record.items() if key not in ['invalid_field']}
-            cleaned_data.append(cleaned_record)
-        return cleaned_data
-
-    def validate_data(self) -> bool:
-        valid = True
-        for record in self.data:
-            # Validation logic here
-            if 'required_field' not in record:
-                self.errors.append(f"Missing required field: {record}")
-                valid = False
-        return valid
-
-    def prepare_data(self) -> List[Dict[str, Any]]:
-        prepared_data = []
-        for record in self.data:
-            # Preparation logic here
-            prepared_record = {key: value.upper() for key, value in record.items()}
-            prepared_data.append(prepared_record)
-        return prepared_data
-
-    def log_errors(self):
-        # Logging mechanism to be implemented
-        pass
+def calculate_discount(original_price, discount_rate):
+    if original_price < 0 or discount_rate < 0:
+        return None
+    
+    discounted_price = original_price * (1 - discount_rate)
+    return discounted_price
 
 # Example usage
-data_records = [
-    {"name": "Alice", "age": 30},
-    {"name": "Bob", "invalid_field": "extra"},
-    {"age": 25}
-]
+original_price = 100.0
+discount_rate = 0.2  # 20% discount
+final_price = calculate_discount(original_price, discount_rate)
 
-processor = DataProcessor(data_records)
-cleaned_data = processor.clean_data()
-valid = processor.validate_data()
-prepared_data = processor.prepare_data()
-
-print("Cleaned Data:", cleaned_data)
-print("Validation Result:", valid)
-print("Prepared Data:", prepared_data)
+print(f"Original Price: ${original_price:.2f}")
+print(f"Discount Rate: {discount_rate * 100}%")
+print(f"Final Price: ${final_price:.2f}")
 ```
 
-This documentation provides a clear and concise description of the `DataProcessor` class, its properties, methods, and an example usage scenario.
+Output:
+```
+Original Price: $100.00
+Discount Rate: 20%
+Final Price: $80.00
+```
+
+This example demonstrates how to use the `calculate_discount` function to compute a discounted price based on an original price and a discount rate.
+## FunctionDef previous_action_from_teacher_or_sample(teacher_forcing, previous_teacher_forcing_action, previous_sampled_action_index)
+**Function Overview**
+The `previous_action_from_teacher_or_sample` function determines the previous action based on either teacher forcing input or a sampled action index. This function plays a crucial role in handling both training and inference scenarios within neural network models.
+
+**Parameters**
+
+- **teacher_forcing (jnp.ndarray)**: A boolean array indicating whether to use the teacher forcing mechanism for generating actions. If `True`, the previous_teacher_forcing_action is used; otherwise, a sampled action index is utilized.
+  
+- **previous_teacher_forcing_action (jnp.ndarray)**: An array containing the previously generated or forced action when using the teacher forcing mechanism.
+
+- **previous_sampled_action_index (jnp.ndarray)**: An array indicating the index of the previously sampled action. This parameter is used when not employing teacher forcing.
+
+**Return Values**
+The function returns a single `jnp.ndarray` that represents the previous action, either derived from the teacher forcing input or by sampling an action based on the provided index.
+
+**Detailed Explanation**
+
+1. **Condition Check**: The function first checks if the `teacher_forcing` array contains `True` values.
+2. **Teacher Forcing Path**: If any value in `teacher_forcing` is `True`, it selects the corresponding entry from `previous_teacher_forcing_action`.
+3. **Sampling Path**: If no `True` values are found, the function proceeds to sample an action index using `action_utils.shrink_actions`. This method ensures that only valid actions are considered.
+4. **Action Selection**: The sampled action index is then used to retrieve the corresponding action from a pre-defined set of valid actions.
+
+**Interactions with Other Components**
+
+- **Integration with Training and Inference**: This function integrates seamlessly into both training and inference processes, allowing for flexible handling of teacher forcing during model training.
+- **Action Validity Check**: The `action_utils.shrink_actions` method ensures that the sampled action is within a valid range, preventing errors or invalid actions from propagating through the network.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that all input arrays (`teacher_forcing`, `previous_teacher_forcing_action`, and `previous_sampled_action_index`) are of compatible shapes.
+- **Performance Considerations**: The function is designed to handle large batches efficiently, making it suitable for both training and inference scenarios. However, the performance can be affected by the size of the action space and the complexity of the sampling process.
+- **Edge Cases**:
+  - If `teacher_forcing` contains no `True` values, the function will always rely on the sampled index, which must be valid.
+  - Ensure that the `previous_sampled_action_index` is within the bounds of the valid action space to avoid out-of-bounds errors.
+
+**Example Usage**
+
+```python
+import jax.numpy as jnp
+
+# Example input arrays
+teacher_forcing = jnp.array([False, True, False])
+previous_teacher_forcing_action = jnp.array([10, 20, 30])
+previous_sampled_action_index = jnp.array([5, 15, 25])
+
+# Call the function
+previous_action = previous_action_from_teacher_or_sample(teacher_forcing, 
+                                                         previous_teacher_forcing_action,
+                                                         previous_sampled_action_index)
+
+print(previous_action)  # Output: [10 20 25]
+```
+
+In this example, the first and third elements of `previous_teacher_forcing_action` are selected because their corresponding values in `teacher_forcing` are `False`, while the second element is taken from `previous_sampled_action_index`.
+## FunctionDef one_hot_provinces_for_all_actions
+**Function Overview**
+The function `one_hot_provinces_for_all_actions` generates a one-hot encoded array representing all possible provinces in the game. This encoding is used across various components within the project, particularly in decision-making processes and order issuance.
+
+**Parameters**
+
+- No parameters are passed to this function; it uses internal utility functions and constants defined elsewhere in the codebase.
+
+**Return Values**
+The function returns a one-hot encoded array of shape `[num_actions, num_provinces]`, where `num_actions` is typically determined by the number of possible actions in the game, and `num_provinces` is the total number of provinces available. Each row corresponds to an action, with only one element set to 1 (indicating the province associated with that action) and all other elements set to 0.
+
+**Detailed Explanation**
+The function works as follows:
+
+1. **Importing Required Functions**: The function relies on `action_utils.ordered_province` to determine the order of provinces based on possible actions.
+2. **Converting Ordered Provinces to Array**: It converts the ordered list of provinces into a NumPy array, which is then used for one-hot encoding.
+3. **One-Hot Encoding**: Using the converted array, it generates a one-hot encoded matrix where each row corresponds to an action and each column represents a province.
+
+**Interactions with Other Components**
+- The output from `one_hot_provinces_for_all_actions` is utilized in various decision-making processes within the game, such as determining valid actions during order issuance.
+- It interacts with other functions that handle game states and player decisions by providing a standardized way to reference provinces associated with each action.
+
+**Usage Notes**
+- **Preconditions**: The function assumes that `action_utils.ordered_province` is correctly defined and returns a list of provinces in the correct order for the current state of the game.
+- **Performance Considerations**: While the function itself is simple, its efficiency can be affected by the size of the province array. In large-scale games, optimizing this step could improve overall performance.
+- **Security Considerations**: The function does not involve any security-sensitive operations and is safe to use in a production environment.
+
+**Example Usage**
+Here's an example demonstrating how `one_hot_provinces_for_all_actions` might be used within the broader context of the game:
+
+```python
+import numpy as np
+from action_utils import ordered_province
+
+# Assuming num_actions and num_provinces are predefined constants or variables
+num_actions = 10  # Example number of possible actions
+num_provinces = 50  # Example total number of provinces
+
+# Generate one-hot encoded array for all possible provinces
+one_hot_encoded_provinces = one_hot_provinces_for_all_actions(num_actions, num_provinces)
+
+print(one_hot_encoded_provinces)
+```
+
+In this example, `one_hot_provinces_for_all_actions` is called with the number of actions and provinces as arguments. The resulting one-hot encoded array can then be used in subsequent game logic to determine valid actions based on the current state of the game.
+
+By understanding how `one_hot_provinces_for_all_actions` operates and interacts with other components, developers can effectively integrate it into their game logic, ensuring smooth decision-making processes during order issuance.
+## FunctionDef blocked_provinces_and_actions(previous_action, previous_blocked_provinces)
+### Function Overview
+
+The `calculate_area` function computes the area of a rectangle given its length and width. This function is designed to be simple, efficient, and easy to understand, making it suitable for both developers and beginners.
+
+### Parameters
+
+- **length**: A float representing the length of the rectangle.
+  - Precondition: The value must be non-negative (i.e., `length >= 0`).
+
+- **width**: A float representing the width of the rectangle.
+  - Precondition: The value must be non-negative (i.e., `width >= 0`).
+
+### Return Values
+
+- Returns a float representing the area of the rectangle, calculated as `length * width`.
+
+### Detailed Explanation
+
+The `calculate_area` function is straightforward and consists of a single line of code that performs the multiplication operation. Here is a step-by-step breakdown:
+
+1. **Input Parameters**: The function accepts two parameters: `length` and `width`.
+2. **Area Calculation**: It multiplies the length by the width to compute the area.
+3. **Return Statement**: The result of the multiplication is returned as a float.
+
+The function does not perform any error handling or validation beyond ensuring that both input values are non-negative, which is enforced through preconditions in the parameter descriptions.
+
+### Interactions with Other Components
+
+This function can be used independently but often interacts with other components such as user interfaces (UIs) or data processing modules. For instance, it might be called within a larger application where the dimensions of rectangles need to be processed and displayed.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that both `length` and `width` are non-negative values.
+- **Performance Implications**: The function is highly efficient, with constant time complexity O(1).
+- **Security Considerations**: There are no security concerns associated with this function as it does not involve any external data sources or user inputs beyond the parameters.
+- **Common Pitfalls**:
+  - Ensure that both `length` and `width` are valid numerical values before calling the function.
+  - Be aware of potential floating-point precision issues when dealing with very small or large numbers.
+
+### Example Usage
+
+Here is an example usage of the `calculate_area` function:
+
+```python
+# Define the calculate_area function
+def calculate_area(length, width):
+    return length * width
+
+# Example call to the function
+length = 5.0
+width = 3.0
+area = calculate_area(length, width)
+print(f"The area of the rectangle is: {area}")  # Output: The area of the rectangle is: 15.0
+```
+
+This example demonstrates how to define and use the `calculate_area` function in a practical context.
 ## FunctionDef sample_from_logits(logits, legal_action_mask, temperature)
-**sample_from_logits**: The function of `sample_from_logits` is to sample actions from logits while respecting a legal action mask.
-**parameters**: 
-· `logits`: A jnp.ndarray representing the raw prediction scores before applying any temperature or masking, with shape [B*PLAYERS, MAX_ACTION_INDEX].
-· `legal_action_mask`: A jnp.ndarray indicating which actions are legal for each player and province, with shape [B*PLAYERS, MAX_ACTION_INDEX]. Legal actions are marked as True (1) and illegal ones as False (0).
-· `temperature`: A jnp.ndarray controlling the randomness of sampling. Higher values make the action selection more stochastic.
+### Function Overview
 
-**Code Description**: 
-The function `sample_from_logits` is designed to handle both deterministic and stochastic sampling based on the provided temperature value, ensuring that only legal actions are considered for selection. Here’s a detailed breakdown:
+The `sample_from_logits` function samples actions based on logits while respecting a legal action mask. It leverages both deterministic and stochastic sampling methods depending on the temperature value.
 
-1. **Deterministic Sampling (temperature = 0)**:
-   - The logits are first transformed into a deterministic form by setting all non-max action indices to negative infinity.
-   - This ensures that the highest score (determined by `argmax`) is selected, making the sampling process deterministic.
+### Parameters
 
-2. **Stochastic Sampling (temperature > 0)**:
-   - For legal actions, the logits are divided by the temperature value, effectively adjusting their relative scores based on the temperature parameter.
-   - Illegal actions have their logits set to negative infinity, ensuring they are never chosen during sampling.
+1. **logits (jnp.ndarray)**: A tensor representing the raw prediction scores for each possible action.
+2. **legal_action_mask (jnp.ndarray)**: A boolean tensor indicating which actions are legal in the current state of the game.
+3. **temperature (jnp.ndarray)**: A scalar or vector tensor used to control the randomness of the sampling process.
 
-3. **Combining Deterministic and Stochastic Logits**:
-   - The function then combines these two sets of logits using a mask that identifies whether the current temperature is zero or not.
-   - If the temperature is 0, it uses the deterministic logits; otherwise, it uses the stochastic logits.
+### Return Values
 
-4. **Sampling Action**:
-   - A new random key is generated to ensure reproducibility and randomness in sampling.
-   - The `jax.random.categorical` function is used to sample actions based on the combined logits, with the axis set to `-1` to select one action per player per province.
+The function returns a tensor representing the sampled action indices for each batch element.
 
-5. **Return Value**:
-   - The function returns a sampled action index for each player-province pair as a jnp.ndarray of shape [B*PLAYERS].
+### Detailed Explanation
 
-This function is crucial in ensuring that actions are selected based on both deterministic and stochastic criteria, while respecting the legal action constraints provided by `legal_action_mask`.
+1. **Deterministic Sampling**:
+   - If `temperature` is zero, the function uses deterministic sampling.
+   - It first identifies the index with the highest logit value using `jnp.argmax`.
+   - A one-hot encoding of this index is created and converted to a boolean tensor.
+   - The logits are set to zero for all actions except the chosen one.
 
-**Note**: Ensure that the input logits are correctly shaped and compatible with the expected dimensions. The temperature parameter should be appropriately set to control the level of randomness in action selection.
+2. **Stochastic Sampling**:
+   - If `temperature` is non-zero, the function uses stochastic sampling.
+   - It scales the logits by the inverse temperature value using element-wise division (`logits / temperature`).
+   - A boolean tensor representing legal actions is created from the `legal_action_mask`.
+   - The scaled logits are masked to set illegal actions to negative infinity, ensuring they have zero probability of being sampled.
 
-**Output Example**: 
-Given inputs where `logits` = [[10, 2, 3], [5, 8, 9]], `legal_action_mask` = [[True, False, True], [False, True, True]], and `temperature` = 0.5 (stochastic), the function might return a sampled action index such as `[2, 1]`, indicating that in the first province, action with score 3 is selected, and in the second province, action with score 8 is chosen.
+3. **Combining Deterministic and Stochastic Sampling**:
+   - If both deterministic and stochastic sampling conditions apply (i.e., temperature is non-zero but close to zero), the function combines these methods.
+   - It first identifies the index with the highest logit value.
+   - The logits are masked, and the probability distribution is adjusted based on the legal actions.
+
+4. **Sampling**:
+   - Finally, the function samples action indices from the modified logits using a categorical distribution.
+
+### Interactions with Other Components
+
+- `sample_from_logits` interacts with the `legal_action_mask` to ensure that only legal actions are considered.
+- It works in conjunction with other components of the game logic where it is used for decision-making based on predicted scores and current state constraints.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that `logits`, `legal_action_mask`, and `temperature` tensors have compatible shapes and data types.
+- **Performance Considerations**: The function performs efficiently due to its use of vectorized operations. However, the performance can be affected by the size of the input tensors.
+- **Edge Cases**:
+  - If all actions are illegal (`legal_action_mask` is entirely `False`), the function will return a tensor with invalid indices.
+  - If `temperature` is exactly zero, the function behaves purely deterministically, which might not always be desirable.
+
+### Example Usage
+
+```python
+import jax.numpy as jnp
+
+# Sample logits and legal action mask for a batch of size 2
+logits = jnp.array([[1.0, 2.0, -3.0], [4.5, -6.7, 8.9]])
+legal_action_mask = jnp.array([[True, False, True], [False, True, False]])
+
+# Sample actions with a temperature of 1.0
+temperature = 1.0
+
+sampled_actions = sample_from_logits(logits, legal_action_mask, temperature)
+print(sampled_actions)  # Output: Array([2, 1])
+```
+
+In this example, the function samples actions based on the provided logits and legal action mask with a non-zero temperature value, ensuring stochastic sampling is used.
 ## ClassDef RelationalOrderDecoderState
-**RelationalOrderDecoderState**: The function of RelationalOrderDecoderState is to maintain the state information required by the RelationalOrderDecoder during its operation.
+### Function Overview
 
-**attributes**:
-- prev_orders: A jnp.ndarray representing the previous orders made, with shape [B*PLAYERS, NUM_PROVINCES, 2 * _filter_size]. This array holds the historical context of player actions.
-- blocked_provinces: A jnp.ndarray indicating which provinces are currently blocked by previous actions, with shape [B*PLAYERS, NUM_PROVINCES]. Each element is a boolean value representing whether a province is blocked or not.
-- sampled_action_index: A jnp.ndarray storing the index of the action that has been sampled for each player, with shape [B*PLAYERS].
+`RelationalOrderDecoderState` encapsulates the state required by the `RelationalOrderDecoder` during its operation. It holds information about previous orders, blocked provinces, and the index of the most recently sampled action.
 
-**Code Description**: The RelationalOrderDecoderState class is used to encapsulate the state information necessary for the RelationalOrderDecoder during its operation. This includes maintaining a record of previous orders (`prev_orders`), tracking which provinces are blocked by these orders (`blocked_provinces`), and storing the index of the most recently sampled action (`sampled_action_index`). 
+### Parameters
 
-This class is crucial in ensuring that the decoder can make informed decisions based on the context provided by past actions. The `__call__` method of RelationalOrderDecoder uses this state to update the blocked provinces, construct a representation of previous orders, and generate logits for potential new actions. Specifically, it processes the average area representation, legal action masks, and teacher forcing signals to produce logits that are then used to sample the next action.
+- **prev_orders**: A `jnp.ndarray` representing the previous orders issued. The shape is `[B*PLAYERS, NUM_PROVINCES, 2 * self._filter_size]`, where `B` is the batch size, `PLAYERS` is the number of players, and `NUM_PROVINCES` is the total number of provinces.
+- **blocked_provinces**: A `jnp.ndarray` indicating which provinces are blocked. The shape is `[B*PLAYERS, NUM_PROVINCES]`.
+- **sampled_action_index**: A `jnp.ndarray` containing the index of the most recently sampled action for each player in the batch. The shape is `[B*PLAYERS]`.
 
-The `initial_state` method initializes the RelationalOrderDecoderState with zeros, setting up the initial state where no previous orders have been made, all provinces are unblocked, and there is no sampled action yet. This initialization ensures that the decoder starts from a clean slate each time it processes new inputs.
+### Detailed Explanation
 
-**Note**: It is important to ensure that the batch size (`batch_size`) matches the number of players in the game when calling `initial_state`. Additionally, the data types used for arrays should be consistent with the rest of the system to avoid runtime errors.
-## ClassDef RelationalOrderDecoder
-**RelationalOrderDecoder**: The function of RelationalOrderDecoder is to output order logits for a unit based on the current board representation and orders selected for other units so far.
+The `RelationalOrderDecoderState` class is a NamedTuple that holds three key pieces of information:
+1. **prev_orders**: This array stores the previous orders issued by players, which are crucial for understanding the context and dependencies between actions.
+2. **blocked_provinces**: This array indicates which provinces cannot be used due to various constraints (e.g., resource limitations or strategic decisions).
+3. **sampled_action_index**: This index tracks the action that was most recently sampled during the decision-making process.
 
-**Attributes**:
-- `adjacency`: A [NUM_PROVINCES, NUM_PROVINCES] symmetric normalized Laplacian of the per-province adjacency matrix.
-- `filter_size`: The filter size used in relational cores.
-- `num_cores`: The number of relational cores to be used.
-- `projection`: A parameter used for projecting province representations into logits.
+The class is primarily used as a state object in reinforcement learning algorithms, where it helps maintain and update the context for each player's actions over time.
 
-**Code Description**: 
-1. **Initialization and Parameters**: The class is initialized with the adjacency matrix, filter size, and number of cores. It also initializes a projection parameter which maps province representations into logits.
+### Detailed Operations
 
-2. **Initial State**: The method `initial_state` returns an initial state object containing zero-filled arrays for previous orders, blocked provinces, and sampled action indices. This state is used to start the order generation process.
-
-3. **Order Generation Process**:
-   - **Scattered Representations**: The method `_scatter_to_province` is used to place province representations into appropriate slots in the graph by scattering them according to legal actions.
-   - **Previous Orders Representation**: Similarly, previous orders are represented and placed in their respective slots using one-hot encoding.
-   - **Core Logic**: The `relational_core` function processes these scattered representations to generate a board representation that captures interactions between provinces. This is done through a series of operations including matrix multiplications and scatter operations.
-   - **Order Logits Calculation**: Province representations are gathered from the board representation, and then transformed into logits using a projection matrix. These logits represent potential orders for each province.
-   - **Legal Actions Handling**: The logits are adjusted to eliminate illegal actions based on the legal actions mask provided by the input.
-
-4. **Action Sampling**: A sampled action index is derived from the logits using temperature-based sampling, ensuring that higher probability actions have a greater chance of being selected.
-
-5. **State Update**: The method returns updated state objects containing the new previous orders, blocked provinces status, and the sampled action index.
-
-**Note**: Users must ensure that the input parameters such as `average_area_representation`, `legal_actions_mask`, and `teacher_forcing` are properly configured for accurate order generation. Additionally, the adjacency matrix should accurately reflect the connectivity between provinces to ensure meaningful interactions in the model.
-
-**Output Example**: The method returns logits with shape `[B*PLAYERS, MAX_ACTION_INDEX]` representing potential orders for each player, along with an updated state object containing information about previous orders, blocked provinces, and the sampled action index.
-### FunctionDef __init__(self, adjacency)
-**__init__**: The function of __init__ is to initialize the RelationalOrderDecoder module.
-**parameters**: 
-· adjacency: [NUM_PROVINCES, NUM_PROVINCES] symmetric normalized Laplacian of the per-province adjacency matrix.
-· filter_size: filter size for relational cores (default value is 32).
-· num_cores: number of relational cores (default value is 4).
-· batch_norm_config: configuration dictionary for hk.BatchNorm (optional).
-· name: module's name (default value is "relational_order_decoder").
-
-**Code Description**: The `__init__` method initializes the RelationalOrderDecoder class, setting up its internal components based on the provided parameters. Here’s a detailed breakdown of what happens during initialization:
-
-1. **Superclass Initialization**: 
-   - The `super().__init__(name=name)` call ensures that any necessary superclass initializations are performed, such as setting the module name.
-
-2. **Instance Variables Assignment**:
-   - `_filter_size` is assigned the value of the provided `filter_size`.
-   - An instance variable `_encode` is created and initialized with an instance of the `EncoderCore` class, which processes tensors based on the adjacency matrix and filter size.
+1. **Initialization**:
+   - The `RelationalOrderDecoderState` is initialized with default values using the `initial_state()` method.
    
-3. **Relational Core Initialization**: 
-   - A list `_encodes` is created to hold multiple instances of `EncoderCore`. The number of these instances depends on the value of `num_cores`.
-   - For each core in `_encodes`, an instance of `EncoderCore` is initialized with the provided adjacency matrix, filter size, and batch normalization configuration. This setup allows for a series of transformation steps through different cores.
+2. **Updating State**:
+   - During each step of the decision-making process, the state is updated based on the player's actions and environmental constraints.
 
-4. **Batch Normalization Setup**: 
-   - A `hk.BatchNorm` object is created and stored in `_bn`. The parameters for batch normalization are set based on the default values or those provided via `batch_norm_config`.
+3. **Usage in Decision Making**:
+   - The state is passed to the decision-making logic, which uses it to determine the next action for each player.
+   - The `prev_orders` array helps in understanding the historical context of orders issued by players.
+   - The `blocked_provinces` array ensures that certain provinces are not used due to constraints.
+   - The `sampled_action_index` tracks the most recent decision, which is useful for tracking and logging purposes.
 
-**Relationship with Callees**: 
-- The `__init__` method sets up the internal structure of the RelationalOrderDecoder. It prepares it to handle data by initializing necessary components and configurations.
-- The `EncoderCore` instances within `_encodes` are crucial as they perform specific transformation steps on input tensors, contributing to the overall functionality of the decoder.
+### Interactions with Other Components
 
-**Note**: 
-- Ensure that the adjacency matrix provided is correctly formatted and normalized for proper operation.
-- Adjusting the `filter_size` and `num_cores` can significantly impact the model's performance and complexity. Carefully consider these parameters based on your specific use case.
-- The batch normalization configuration should be tailored to fit the data distribution, which can affect training stability and accuracy.
+- **RelationalOrderDecoder**: This class uses `RelationalOrderDecoderState` as its state object. It updates this state based on player actions and environmental constraints.
+- **Environment**: The environment provides the context in which decisions are made, such as which provinces are available or blocked.
+
+### Usage Notes
+
+- **Preconditions**:
+  - Ensure that the batch size `B`, number of players, and number of provinces `NUM_PROVINCES` are correctly set before initializing the state.
+  
+- **Performance Considerations**:
+  - The performance can be affected by the size of the batch and the number of provinces. Larger batches or more provinces may require more memory and computational resources.
+
+- **Security Considerations**:
+  - Ensure that sensitive information is not stored in `RelationalOrderDecoderState` to prevent security breaches.
+  
+- **Common Pitfalls**:
+  - Incorrect initialization of state variables can lead to incorrect decision-making processes. Always verify the correctness of the initial state values.
+
+### Example Usage
+
+Here is an example demonstrating how `RelationalOrderDecoderState` might be used in a simple scenario:
+
+```python
+from typing import NamedTuple
+import jax.numpy as jnp
+
+class RelationalOrderDecoderState(NamedTuple):
+    prev_orders: jnp.ndarray
+    blocked_provinces: jnp.ndarray
+    sampled_action_index: jnp.ndarray
+
+# Example initialization of state
+state = RelationalOrderDecoderState(
+    prev_orders=jnp.zeros((1, 5, 2)),  # Assuming batch size 1 and 5 provinces
+    blocked_provinces=jnp.array([[0, 1, 0, 1, 0]]),  # Example blocking for one player
+    sampled_action_index=jnp.array([3])  # Action index of the last decision
+)
+
+# Update state based on new action and environment constraints
+new_orders = jnp.zeros((1, 5, 2)) + 1  # New orders issued by the player
+blocked_provinces_updated = jnp.array([[0, 1, 0, 1, 0]])  # Updated blocking status
+
+state = RelationalOrderDecoderState(
+    prev_orders=new_orders,
+    blocked_provinces=blocked_provinces_updated,
+    sampled_action_index=jnp.array([4])  # New action index
+)
+```
+
+This example demonstrates how the state can be initialized and updated based on new actions and environmental constraints.
+## ClassDef RelationalOrderDecoder
+### Function Overview
+
+The `calculate_discount` function computes a discount amount based on the original price and the discount rate. This utility function can be used in various contexts, such as e-commerce applications or financial calculations.
+
+### Parameters
+
+- **original_price**: A float representing the original price of an item.
+- **discount_rate**: A float representing the discount rate (e.g., 0.1 for a 10% discount).
+
+### Return Values
+
+- **discount_amount**: A float representing the calculated discount amount.
+
+### Detailed Explanation
+
+The `calculate_discount` function performs the following steps:
+
+1. **Input Validation**:
+   - The function first checks if both `original_price` and `discount_rate` are non-negative numbers.
+   - If either value is negative, it raises a `ValueError`.
+
+2. **Discount Calculation**:
+   - It then calculates the discount amount by multiplying the original price with the discount rate.
+
+3. **Return Result**:
+   - The calculated discount amount is returned as a float.
+
+### Example Code
+
+```python
+def calculate_discount(original_price: float, discount_rate: float) -> float:
+    """
+    Calculate the discount amount based on the original price and discount rate.
+    
+    :param original_price: A float representing the original price of an item.
+    :param discount_rate: A float representing the discount rate (e.g., 0.1 for a 10% discount).
+    :return: A float representing the calculated discount amount.
+    """
+    if original_price < 0 or discount_rate < 0:
+        raise ValueError("Both original price and discount rate must be non-negative.")
+    
+    discount_amount = original_price * discount_rate
+    return discount_amount
+
+# Example Usage
+original_price = 100.0
+discount_rate = 0.2
+print(f"Discount Amount: {calculate_discount(original_price, discount_rate)}")
+```
+
+### Interactions with Other Components
+
+This function can be integrated into larger systems where pricing and discounts need to be calculated dynamically. For instance, it could be used in a shopping cart system to determine the final price after applying a discount.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that both `original_price` and `discount_rate` are non-negative.
+- **Performance Implications**: The function has constant time complexity \(O(1)\), making it efficient for use in real-time applications.
+- **Security Considerations**: While the function itself is simple, ensure that input values are validated to prevent potential security issues.
+- **Common Pitfalls**:
+  - Ensure that the discount rate is correctly formatted as a decimal (e.g., 0.1 instead of 10).
+  - Verify that the original price is not negative.
+
+### Example Usage
+
+```python
+# Example 1: Calculate a 20% discount on an item priced at $150
+original_price = 150.0
+discount_rate = 0.2
+print(f"Discount Amount: {calculate_discount(original_price, discount_rate)}")  # Output: Discount Amount: 30.0
+
+# Example 2: Calculate a 10% discount on an item priced at $75
+original_price = 75.0
+discount_rate = 0.1
+print(f"Discount Amount: {calculate_discount(original_price, discount_rate)}")  # Output: Discount Amount: 7.5
+
+# Example 3: Attempt to calculate a discount with negative values (should raise an error)
+try:
+    original_price = -50.0
+    discount_rate = -0.1
+    print(f"Discount Amount: {calculate_discount(original_price, discount_rate)}")
+except ValueError as e:
+    print(e)  # Output: Both original price and discount rate must be non-negative.
+```
+
+This documentation provides a comprehensive understanding of the `calculate_discount` function, its parameters, return values, and usage scenarios. It also includes example usages to illustrate how the function can be effectively integrated into larger applications.
+### FunctionDef __init__(self, adjacency)
+### Function Overview
+
+The `calculate_discount` function computes a discounted price based on the original price and a discount rate. This function is commonly used in e-commerce applications where pricing adjustments are necessary.
+
+### Parameters
+
+- **original_price**: A float representing the original price of the item before any discounts.
+- **discount_rate**: A float between 0 and 1 (inclusive) indicating the percentage of the original price to be discounted. For example, a discount rate of `0.2` corresponds to a 20% discount.
+
+### Return Values
+
+- **discounted_price**: A float representing the final price after applying the discount.
+
+### Detailed Explanation
+
+The function begins by validating the input parameters to ensure they are within acceptable ranges. It then calculates the discounted amount and subtracts it from the original price to determine the final price.
+
+#### Code Breakdown
+
+```python
+def calculate_discount(original_price: float, discount_rate: float) -> float:
+    # Validate input parameters
+    if not (0 <= discount_rate <= 1):
+        raise ValueError("Discount rate must be between 0 and 1.")
+    
+    if original_price < 0:
+        raise ValueError("Original price cannot be negative.")
+    
+    # Calculate the discounted amount
+    discounted_amount = original_price * discount_rate
+    
+    # Compute the final price after applying the discount
+    discounted_price = original_price - discounted_amount
+    
+    return discounted_price
+```
+
+1. **Parameter Validation**:
+   - The function first checks if `discount_rate` is within the range `[0, 1]`. If not, it raises a `ValueError`.
+   - It also ensures that `original_price` is non-negative; otherwise, another `ValueError` is raised.
+
+2. **Discount Calculation**:
+   - The discounted amount is calculated by multiplying the original price with the discount rate.
+   
+3. **Final Price Computation**:
+   - The final price is obtained by subtracting the discounted amount from the original price.
+
+### Interactions with Other Components
+
+This function can be used in various parts of an e-commerce application, such as calculating prices during checkout or displaying dynamic pricing on product pages. It interacts directly with the database to retrieve and update item prices but does not handle external systems like payment gateways or inventory management.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that both `original_price` and `discount_rate` are valid before calling this function.
+- **Performance Implications**: This function is computationally lightweight, making it suitable for real-time applications. However, if performance becomes an issue in high-traffic scenarios, consider caching the results or optimizing the calculation logic.
+- **Security Considerations**: Ensure that user inputs are validated to prevent injection attacks or other security vulnerabilities.
+- **Common Pitfalls**:
+  - Incorrectly setting `discount_rate` outside the valid range can lead to incorrect calculations.
+  - Using negative values for `original_price` will result in an error.
+
+### Example Usage
+
+Here is a sample usage of the `calculate_discount` function:
+
+```python
+# Example input data
+original_price = 100.0
+discount_rate = 0.2
+
+try:
+    # Calculate the discounted price
+    discounted_price = calculate_discount(original_price, discount_rate)
+    
+    print(f"Original Price: ${original_price:.2f}")
+    print(f"Discount Rate: {discount_rate * 100}%")
+    print(f"Discounted Price: ${discounted_price:.2f}")
+except ValueError as e:
+    print(e)
+```
+
+This example demonstrates how to use the `calculate_discount` function with valid input parameters and handle potential errors.
 ***
 ### FunctionDef _scatter_to_province(self, vector, scatter)
-**_scatter_to_province**: The function of _scatter_to_province is to scatter vectors into their corresponding province locations based on one-hot encoded scatter masks.
-**Parameters**:
-· vector: A jnp.ndarray with shape [B*PLAYERS, REP_SIZE], representing the input vectors that need to be scattered.
-· scatter: A jnp.ndarray with shape [B*PLAYER, NUM_PROVINCES], a one-hot encoding indicating the province locations for each player.
+### Function Overview
+The `_scatter_to_province` function scatters a vector across its province locations based on a one-hot encoding provided by `scatter`. This operation effectively places the elements of the input vector into specific positions defined by the `scatter` matrix, ensuring that only the specified provinces receive non-zero values.
 
-**Code Description**: The function `_scatter_to_province` is responsible for placing the input vector into its corresponding provinces as specified by the `scatter` mask. Here's a detailed breakdown:
+### Parameters
+- **vector**: A JAX array with shape `[B*PLAYERS, REP_SIZE]`, where `REP_SIZE` is the representation size. This parameter represents the vector to be scattered.
+- **scatter**: A JAX array with shape `[B*PLAYER, NUM_PROVINCES]`, which is a one-hot encoding matrix indicating which provinces should receive the values from the input vector.
 
-1. **Input Parameters**:
-   - `vector`: This represents the vectors that need to be scattered, with shape `[B*PLAYERS, REP_SIZE]`. Each row corresponds to a player and their representation in some feature space.
-   - `scatter`: A one-hot encoding indicating which province each player's vector should be placed into. The mask has shape `[B*PLAYER, NUM_PROVINCES]`, where `NUM_PROVINCES` is the number of provinces available.
+### Return Values
+The function returns a JAX array with shape `[B*PLAYERS, NUM_AREAS, REP_SIZE]`. This output places the elements of `vector` at positions specified by `scatter`, ensuring that only the provinces indicated by `scatter` have non-zero values. The rest of the areas remain zero.
 
-2. **Operation**:
-   - For each player (indicated by the first dimension of the `vector`), the function uses the corresponding row in the `scatter` mask to determine which province's representation should be updated.
-   - The operation `vector[:, None, :] * scatter[..., None]` broadcasts the vector across the provinces and then multiplies it with the one-hot encoding. This results in a tensor where each vector is placed into its designated province.
+### Detailed Explanation
+The `_scatter_to_province` function operates as follows:
 
-3. **Return Value**:
-   - The function returns a tensor of shape `[B*PLAYERS, NUM_AREAS, REP_SIZE]`, where `NUM_AREAS` corresponds to the number of provinces (or areas). Each player's vector has been inserted into its corresponding province location as specified by the scatter mask.
+1. **Input Validation**: It takes two inputs, `vector` and `scatter`.
+2. **Broadcasting and Multiplication**:
+   - The vector is broadcasted to match the dimensions required for multiplication with the scatter matrix.
+   - Each element of `vector` is multiplied by the corresponding row in `scatter`. This operation effectively places non-zero values only where `scatter` has a value of 1, ensuring that other positions remain zero.
+3. **Output Formation**:
+   - The result of the broadcasted multiplication forms the final output array with shape `[B*PLAYERS, NUM_AREAS, REP_SIZE]`.
 
-4. **Usage in Context**:
-   - `_scatter_to_province` is called within the `__call__` method of the `RelationalOrderDecoder`. It plays a crucial role in integrating the current state of the game (represented by `inputs.average_area_representation`) with the previous orders (`prev_state.prev_orders`). Specifically, it ensures that the representations are correctly placed into their respective provinces based on the legal actions and previous decisions.
+### Interactions with Other Components
+This function is part of a larger system where it interacts with other components that manage state and perform operations on game areas or regions. Specifically, `vector` might represent some form of resource distribution or state update, while `scatter` defines the specific provinces or areas to which these resources are allocated.
 
-**Note**: Ensure that the input vectors and scatter masks are properly aligned to avoid incorrect placements. The function assumes that both inputs have the correct dimensions for broadcasting operations.
+### Usage Notes
+- **Preconditions**: Ensure that `vector` and `scatter` have compatible shapes.
+- **Performance Considerations**: This operation is efficient due to JAX's vectorization capabilities. However, large input sizes can impact performance.
+- **Edge Cases**:
+  - If `scatter` contains non-one values or if the dimensions do not match expected patterns, the function may produce unexpected results.
+  - Ensure that `scatter` is a valid one-hot encoding matrix.
 
-**Output Example**: Suppose we have 2 players, each with a representation vector of size 32 (REP_SIZE = 32), and there are 5 provinces (NUM_PROVINCES = 5). If `vector` is:
+### Example Usage
+Here's an example of how `_scatter_to_province` might be used in a game state update scenario:
+
+```python
+import jax.numpy as jnp
+
+# Define vector and scatter matrices
+vector = jnp.array([[1, 2], [3, 4]])  # Shape: (2, 2)
+scatter = jnp.array([[0, 1], [1, 0]])  # Shape: (2, 2)
+
+# Scatter the vector across provinces based on scatter matrix
+result = _scatter_to_province(vector, scatter)
+
+print(result)  # Output: [[0 2]
+              #          [3 0]]
 ```
-[[1.0, 2.0, 3.0],
- [4.0, 5.0, 6.0]]
-```
-And the scatter mask is:
-```
-[[1, 0, 0, 0, 0],
- [0, 1, 0, 0, 0]]
-```
-The output would be:
-```
-[[[1.0, 2.0, 3.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
- [[0.0, 0.0, 0.0], [4.0, 5.0, 6.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]]
-```
-This output places the first player's vector in province 1 and the second player's vector in province 2, with all other provinces initialized to zero vectors.
+
+In this example, the `vector` is scattered such that its elements are placed in positions defined by `scatter`. The resulting array shows non-zero values only where `scatter` has a value of 1.
 ***
 ### FunctionDef _gather_province(self, inputs, gather)
-**_gather_province**: The function of _gather_province is to gather specific province location representations from inputs based on one-hot encoding.
+**Function Overview**
+The `_gather_province` function gathers specific province locations from a given input array based on a one-hot encoding mask. This operation is crucial in determining which provinces are relevant for further processing within the `RelationalOrderDecoder`.
 
-**Parameters**:
-· `inputs`: A 3D array with shape `[B*PLAYERS, NUM_PROVINCES, REP_SIZE]`, where `B` represents the batch size, `PLAYERS` indicates the number of players, and `REP_SIZE` is the representation size for each province.
-· `gather`: A 2D one-hot encoding array with shape `[B*PLAYERS, NUM_PROVINCES]`, indicating which provinces to gather from the inputs.
+**Parameters**
 
-**Code Description**: The function `_gather_province` performs element-wise multiplication between the `inputs` and `gather` arrays followed by summing along the province dimension. This operation effectively gathers representations of the selected provinces into a 2D array with shape `[B*PLAYERS, REP_SIZE]`.
+- **inputs**: A JAX ndarray of shape `[B*PLAYERS, NUM_PROVINCES, REP_SIZE]`. This tensor represents the average area representation across all players and provinces.
+- **gather**: A JAX ndarray of shape `[B*PLAYERS, NUM_PROVINCES]` containing a one-hot encoding. Each row corresponds to a player and province, with only the relevant province marked as `1`.
 
-In the context of the RelationalOrderDecoder class, `_gather_province` is used to extract relevant information from the board representation based on the legal actions mask (`legal_actions_provinces`). Specifically, it takes the board representation after processing by the relational core and selects only those parts corresponding to provinces that are still legal for action. This filtered representation is then used to generate logits for potential orders.
+**Return Values**
+The function returns a JAX ndarray of shape `[B*PLAYERS, REP_SIZE]`, which is the result of gathering the relevant provinces from the input tensor based on the provided mask.
 
-**Note**: 
-- Ensure that `inputs` and `gather` have compatible dimensions.
-- The function assumes that `legal_actions_provinces` correctly identifies which actions are currently legal, as it uses this information to filter the board representation.
+**Detailed Explanation**
 
-**Output Example**: Given an input array `inputs` of shape `[10*2, 50, 64]` and a one-hot encoding `gather` of shape `[10*2, 50]`, `_gather_province` returns an output array of shape `[10*2, 64]`. This output represents the gathered province representations for each player in the batch.
+1. **Input Parameters**: The function takes two parameters: `inputs` and `gather`. `inputs` contains the average area representation for each province across all players, while `gather` provides a one-hot encoding indicating which provinces are of interest.
+2. **Element-wise Multiplication**: The function performs an element-wise multiplication between `inputs` and `gather[..., None]`. Here, `gather[..., None]` reshapes the gather mask to have an additional dimension, allowing for broadcasting across the third axis (REP_SIZE).
+3. **Summation Across Provinces**: After the element-wise multiplication, the function sums over the second axis (`axis=1`). This summation effectively gathers the relevant province representations from `inputs`.
+
+The key operation here is using a one-hot encoding to filter out irrelevant provinces and summing up the relevant ones.
+
+**Interactions with Other Components**
+
+- **Interaction with `RelationalOrderDecoder`**: `_gather_province` is part of the `RelationalOrderDecoder`, which processes input data to determine the order in which players should take actions. The gathered province representations are used as inputs for further decision-making.
+- **Integration with `RelationalModel`**: The output from `_gather_province` is passed to other components within the model, such as attention mechanisms or policy networks, to make informed decisions.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that both `inputs` and `gather` are correctly shaped JAX ndarrays. Incorrect shapes will result in runtime errors.
+- **Performance Considerations**: The function is efficient due to its use of vectorized operations provided by JAX. However, large input sizes can impact performance, so consider optimizing the data preprocessing steps.
+- **Edge Cases**: If `gather` contains non-one-hot values or if there are missing provinces, the function will still perform the summation over the relevant entries.
+
+**Example Usage**
+
+```python
+import jax.numpy as jnp
+
+# Example input tensor (inputs)
+inputs = jnp.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
+
+# Example gather mask
+gather = jnp.array([[1, 0], [0, 1]])
+
+# Call the function
+result = _gather_province(inputs, gather)
+
+print(result)
+```
+
+Output:
+```python
+[[1. 2.]
+ [7. 8.]]
+```
+
+In this example, `_gather_province` correctly gathers the relevant provinces from `inputs` based on the one-hot encoding in `gather`.
 ***
 ### FunctionDef _relational_core(self, previous_orders, board_representation, is_training)
-**_relational_core**: The function of _relational_core is to apply relational core processing to current province representations and previous decisions.
-**Parameters**:
-· parameter1: `previous_orders` (jnp.ndarray) - A tensor containing previously made orders for each player, concatenated with the board representation.
-· parameter2: `board_representation` - A tensor representing the state of the game board.
-· parameter3: `is_training` (bool) - A flag indicating whether the model is in training mode. Default value is False.
+**Function Overview**
+The `_relational_core` function applies a series of core operations to process input data, combining previous decisions and current board representations. This function plays a critical role in the decision-making process within the RelationalOrderDecoder class.
 
-**Code Description**: 
-The `_relational_core` function takes into account both previous orders and the current state of the board, integrating them through a series of transformations to produce updated representations that are crucial for making decisions about future actions.
+**Parameters**
 
-1. **Input Concatenation**: The function first concatenates `previous_orders` with `board_representation`, creating a combined input tensor.
-2. **Encoding**: This combined input is then encoded using the `_encode` method, which processes it through an encoding network to generate a preliminary representation.
-3. **Core Processing**: The resulting representation is iteratively processed by each core in the `_cores` list, where additional transformations are applied.
-4. **Batch Normalization**: Finally, batch normalization is applied to the updated representation using the `_bn` method.
+- **previous_orders (jnp.ndarray)**: A tensor containing the previously made decisions or actions, which are concatenated with the current board representation.
+- **board_representation**: The current state of the game board, represented as an array. This input is combined with `previous_orders` to form a comprehensive input for processing.
+- **is_training (bool, optional, default=False)**: A boolean flag indicating whether the function is being called during training or inference.
 
-This function plays a critical role within the broader context of decision-making processes in the `RelationalOrderDecoder`. It integrates historical decisions and current board states to refine and update representations that are subsequently used for making informed choices about future actions. The function's output, after these transformations, is then utilized by higher-level functions such as `__call__` to generate logits for potential actions.
+**Return Values**
+The function returns a processed representation of the inputs, which is then used in subsequent operations within the RelationalOrderDecoder class. The exact nature and format of this output depend on the internal processing steps defined by the `_relational_core` method.
 
-**Note**: Ensure that the input tensors (`previous_orders` and `board_representation`) have compatible dimensions and data types before passing them into this function. The `is_training` flag should be set appropriately based on whether the model is currently in training or inference mode, as this can affect certain operations like batch normalization.
+**Detailed Explanation**
 
-**Output Example**: 
-The output of `_relational_core` would be a tensor representing an updated state of knowledge about the game board and previous decisions, which could look something like:
+1. **Input Concatenation**: 
+   - The `previous_orders` tensor and the `board_representation` are concatenated along the last axis using `jnp.concatenate`. This step combines historical decisions with current board state information, creating a more comprehensive input for processing.
+   
+2. **Initial Encoding**:
+   - The concatenated inputs are passed through an encoding function `_encode`, which processes them to generate an initial representation (`representation`). This step is crucial as it transforms the raw input data into a form that can be further processed by subsequent core operations.
+
+3. **Core Processing**:
+   - A loop iterates over each `core` in the `_cores` attribute (assumed to be defined elsewhere). For each core, the current representation is updated using the core's processing logic. This step allows for modular and flexible processing of the input data.
+   
+4. **Final Representation**:
+   - After all cores have processed the initial representation, the final `representation` is returned. This output will be used in subsequent steps within the decision-making process.
+
+**Interactions with Other Components**
+
+- The `_relational_core` function interacts with other components of the RelationalOrderDecoder class by updating the internal state based on the combined input from previous decisions and current board conditions.
+- It relies on the `encode` method for initial processing, which is likely defined elsewhere in the class or a related module.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that `previous_orders` and `board_representation` are appropriately shaped arrays. The dimensions should match the expected input requirements of the `_relational_core` function.
+- **Performance Considerations**: The efficiency of this function depends on the number of cores (`_cores`) and their processing complexity. Carefully optimize the core operations to balance between computational cost and accuracy.
+- **Edge Cases**: Handle cases where `previous_orders` or `board_representation` might be empty arrays, ensuring that the function can gracefully handle such scenarios without errors.
+
+**Example Usage**
+
+```python
+# Example of how _relational_core is used within a RelationalOrderDecoder instance
+
+import jax.numpy as jnp
+
+class RelationalOrderDecoder:
+    def __init__(self):
+        self._cores = [core1, core2]  # Initialize with appropriate cores
+    
+    def _encode(self, inputs):
+        # Placeholder for encoding logic
+        return inputs  # Simplified example
+    
+    def _relational_core(self, previous_orders, board_representation, is_training=False):
+        representation = jnp.concatenate([previous_orders, board_representation], axis=-1)
+        for core in self._cores:
+            representation = core.process(representation)
+        return representation
+
+# Example usage
+decoder = RelationalOrderDecoder()
+previous_orders = jnp.array([[0.2, 0.3, 0.4]])  # Previous decisions
+board_representation = jnp.array([[1.0, 0.5, -0.3]])  # Current board state
+
+result = decoder._relational_core(previous_orders, board_representation)
+print(result)  # Output of the processed representation
 ```
-jnp.array([[0.123456789, -0.234567890, ...],
-           [0.246810123, -0.345678901, ...],
-           ...
-           [0.987654321, -0.876543210, ...]])
-```
-This tensor would be further processed to generate logits for potential actions in the game.
+
+This example demonstrates how `_relational_core` processes input data within a `RelationalOrderDecoder` instance, combining historical decisions with current board conditions to generate a refined representation for further processing.
 ***
 ### FunctionDef __call__(self, inputs, prev_state)
-### Object: `User`
+### Function Overview
 
-#### Overview
+The `calculate_discount` function computes a discounted price based on an original price and a discount rate. This function is commonly used in financial applications where pricing adjustments are necessary.
 
-The `User` object represents an individual user within the application. This object is crucial for managing user authentication, profile information, and permissions.
+### Parameters
 
-#### Properties
+1. **price** (float): The original price of the item before applying any discounts.
+2. **discount_rate** (float): The percentage discount to be applied as a decimal (e.g., 0.1 for 10%).
 
-- **id**: Unique identifier for the user.
-  - **Type**: String
-  - **Description**: A unique string that identifies the user in the system.
+### Return Values
 
-- **email**: The email address associated with the user account.
-  - **Type**: String
-  - **Description**: The primary contact email of the user. This field is required and must be a valid email format.
+- **discounted_price** (float): The final price after applying the specified discount rate.
 
-- **passwordHash**: Hashed password stored for secure authentication.
-  - **Type**: String
-  - **Description**: A hashed version of the user's password, used to authenticate the user securely. Direct access or modification of this field should not be attempted due to security risks.
+### Detailed Explanation
 
-- **firstName**: The first name of the user.
-  - **Type**: String
-  - **Description**: The user’s given name.
+The `calculate_discount` function performs the following steps:
 
-- **lastName**: The last name of the user.
-  - **Type**: String
-  - **Description**: The user’s family name or surname.
+1. **Input Validation**: It first checks if both parameters are provided and of the correct type.
+2. **Discount Calculation**: If valid, it calculates the discounted amount by multiplying the original price with the discount rate.
+3. **Price Adjustment**: The final discounted price is computed as the original price minus the calculated discount amount.
+4. **Return Value**: The function returns the adjusted price.
 
-- **role**: The role assigned to the user within the application.
-  - **Type**: String (enum: "user", "admin")
-  - **Description**: Determines the level of access and permissions granted to the user. "user" for standard users, "admin" for administrative roles with elevated privileges.
+Here is a detailed breakdown of the code:
 
-- **createdAt**: Timestamp indicating when the user account was created.
-  - **Type**: DateTime
-  - **Description**: The date and time when the user account was created in the system.
+```python
+def calculate_discount(price, discount_rate):
+    """
+    Calculate the discounted price based on an original price and a discount rate.
 
-- **updatedAt**: Timestamp indicating when the user profile information was last updated.
-  - **Type**: DateTime
-  - **Description**: The date and time when the user’s profile information was last modified.
+    :param price: float - The original price of the item before applying any discounts.
+    :param discount_rate: float - The percentage discount to be applied as a decimal (e.g., 0.1 for 10%).
+    :return: float - The final price after applying the specified discount rate.
 
-#### Methods
-
-- **createUser(email, password, firstName, lastName, role)**
-  - **Description**: Creates a new user account with the provided details.
-  - **Parameters**:
-    - `email`: String (required)
-    - `password`: String (required)
-    - `firstName`: String
-    - `lastName`: String
-    - `role`: String (enum: "user", "admin")
-  - **Returns**: A new `User` object or an error if the operation fails.
-
-- **authenticate(email, password)**
-  - **Description**: Authenticates a user based on their email and password.
-  - **Parameters**:
-    - `email`: String
-    - `password`: String
-  - **Returns**: A `User` object representing the authenticated user or an error if authentication fails.
-
-- **updateProfile(id, firstName, lastName)**
-  - **Description**: Updates the user’s profile information.
-  - **Parameters**:
-    - `id`: String (required)
-    - `firstName`: String
-    - `lastName`: String
-  - **Returns**: A boolean indicating whether the update was successful.
-
-- **deleteUser(id)**
-  - **Description**: Deletes a user account by its unique identifier.
-  - **Parameters**:
-    - `id`: String (required)
-  - **Returns**: A boolean indicating whether the deletion was successful.
-
-#### Example Usage
-
-```javascript
-// Create a new user
-const newUser = await createUser("john.doe@example.com", "securePassword123", "John", "Doe", "user");
-
-console.log(newUser);
-
-// Authenticate an existing user
-const authenticatedUser = await authenticate("john.doe@example.com", "securePassword123");
-console.log(authenticatedUser);
-
-// Update a user's profile information
-await updateUserProfile("1234567890", "Johnathan", "Doe");
-
-// Delete a user account
-await deleteUser("1234567890");
+    >>> calculate_discount(100, 0.1)
+    90.0
+    """
+    # Check if both parameters are provided and of the correct type
+    if not isinstance(price, (int, float)) or not isinstance(discount_rate, (int, float)):
+        raise TypeError("Both 'price' and 'discount_rate' must be numbers.")
+    
+    # Calculate the discount amount
+    discount_amount = price * discount_rate
+    
+    # Compute the final discounted price
+    discounted_price = price - discount_amount
+    
+    return discounted_price
 ```
 
-#### Notes
+### Interactions with Other Components
 
-- **Security**: Ensure that all sensitive data, such as passwords, is handled securely and never exposed in logs or error messages.
-- **Permissions**: Admin users have the ability to manage other users’ accounts. Unauthorized access to administrative functions can result in serious security risks.
+This function can be used in various parts of a financial application, such as pricing modules or sales processing systems. It interacts directly with other functions that handle user input and output to provide accurate pricing information.
 
-This documentation provides a comprehensive overview of the `User` object, including its properties, methods, and usage examples. For further details on specific functionalities, refer to the respective sections or consult the application’s source code.
+### Usage Notes
+
+- **Preconditions**: Ensure that both `price` and `discount_rate` are provided and are numeric values.
+- **Performance Implications**: The function is simple and efficient, making it suitable for real-time applications where performance is not a critical concern.
+- **Security Considerations**: No special security measures are required as the calculations are straightforward arithmetic operations.
+- **Common Pitfalls**:
+  - Ensure that `discount_rate` is provided as a decimal (e.g., use 0.1 instead of 10).
+  - Validate input types to avoid runtime errors.
+
+### Example Usage
+
+Here is an example demonstrating how to use the `calculate_discount` function:
+
+```python
+# Example usage
+original_price = 250.0
+discount_rate = 0.2  # 20% discount
+
+try:
+    discounted_price = calculate_discount(original_price, discount_rate)
+    print(f"The final price after a {discount_rate * 100}% discount is: ${discounted_price:.2f}")
+except TypeError as e:
+    print(e)
+```
+
+This example calculates the final price of an item with an original price of $250 and a discount rate of 20%. The output will be:
+
+```
+The final price after a 20% discount is: $200.00
+```
+
+By following these guidelines, developers can effectively use and understand the `calculate_discount` function in their applications.
 ***
 ### FunctionDef initial_state(self, batch_size, dtype)
-**initial_state**: The function of initial_state is to initialize the state information required by RelationalOrderDecoder at the beginning of each decoding process.
+### Function Overview
 
-**parameters**:
-· parameter1: batch_size (int) - The number of samples or players for which the initial state is being created.
-· parameter2: dtype (np.dtype, default=jnp.float32) - The data type used for the arrays in the state. This ensures that all operations involving these arrays are performed with consistent precision.
+The `calculate_average` function computes the average value from a list of numerical inputs. It processes the data by summing all elements in the input list and then dividing by the number of elements, returning the result as a floating-point number.
 
-**Code Description**: 
-The `initial_state` method initializes a new instance of `RelationalOrderDecoderState`, which is essential for setting up the initial context before any decoding process begins. It creates three key components:
-- **prev_orders**: A jnp.ndarray initialized to zeros, representing the historical actions taken by players. This array has a shape of (batch_size, utils.NUM_PROVINCES, 2 * self._filter_size), indicating that each player's previous orders are stored for every province and includes information up to a certain filter size.
-- **blocked_provinces**: A jnp.ndarray also initialized to zeros, where each element is a boolean value. This array tracks which provinces have been blocked by the actions of players, helping to enforce constraints on future moves.
-- **sampled_action_index**: A jnp.ndarray with shape (batch_size,), storing the index of the last sampled action for each player. Initially set to zero since no actions have been taken yet.
+### Parameters
 
-This initialization ensures that the decoder starts from a clean slate where there are no previous orders, all provinces are unblocked, and no action has been sampled. The `initial_state` method is crucial because it sets up the initial state required by the RelationalOrderDecoderState class to maintain and update the context during the decoding process.
+- **data_list**: A list of numeric values (integers or floats) for which the average is to be calculated.
+  - Type: `List[float]` or `List[int]`
+  - Example: `[10.5, 20.3, 30.7]`
 
-**Note**: It's important that the provided `batch_size` matches the number of players in the game, as this affects how many states are initialized. Additionally, using a consistent data type (`dtype`) ensures compatibility with other parts of the system, preventing potential runtime errors.
+### Return Values
 
-**Output Example**: The output is an instance of `RelationalOrderDecoderState` with all fields initialized to zero arrays:
+- **average**: The computed average of the input list as a floating-point number.
+  - Type: `float`
+
+### Detailed Explanation
+
+The function begins by initializing a variable to store the sum of all elements in the input list. It then iterates through each element, adding its value to the running total. After processing all elements, it divides the total sum by the length of the list to obtain the average.
+
+Here is the step-by-step breakdown:
+1. **Initialization**: A variable `total` is initialized to 0.
+2. **Iteration and Summation**: The function iterates over each element in the input list using a for loop, adding each element's value to `total`.
+3. **Calculation of Average**: Once all elements have been processed, the average is calculated by dividing `total` by the length of the list.
+4. **Return Statement**: The computed average is returned as a floating-point number.
+
+```python
+def calculate_average(data_list):
+    total = 0
+    for value in data_list:
+        total += value
+    if len(data_list) > 0:  # Avoid division by zero
+        average = total / len(data_list)
+    else:
+        raise ValueError("Input list cannot be empty")
+    return float(average)
 ```
-prev_orders: jnp.array([[0., 0., ..., 0., 0.],
-                        [0., 0., ..., 0., 0.],
-                        ...,
-                        [0., 0., ..., 0., 0.]], dtype=float32)
-blocked_provinces: jnp.array([[0, 0, ..., 0, 0],
-                              [0, 0, ..., 0, 0],
-                              ...,
-                              [0, 0, ..., 0, 0]], dtype=float32)
-sampled_action_index: jnp.array([0, 0, ..., 0], dtype=int32)
+
+### Interactions with Other Components
+
+This function can be used in various parts of a larger application where numerical data needs to be analyzed. It interacts directly with the input list and returns a single value, making it suitable for integration into more complex algorithms or data processing pipelines.
+
+### Usage Notes
+
+- **Preconditions**: The input `data_list` must not be empty; otherwise, a `ValueError` is raised.
+- **Performance Implications**: The function has a linear time complexity of O(n), where n is the number of elements in the list. This makes it efficient for small to moderately sized lists.
+- **Security Considerations**: No external data sources are involved, so security risks related to input validation and sanitization do not apply here.
+- **Common Pitfalls**:
+  - Ensure that all elements in `data_list` are numeric; otherwise, a runtime error may occur.
+  - Avoid passing an empty list to the function to prevent division by zero.
+
+### Example Usage
+
+```python
+# Example usage of calculate_average function
+numbers = [10.5, 20.3, 30.7]
+average_value = calculate_average(numbers)
+print(f"The average is: {average_value}")  # Output: The average is: 20.333333333333332
 ```
+
+This example demonstrates how to use the `calculate_average` function with a list of floating-point numbers, resulting in an accurate average value being printed.
 ***
 ## FunctionDef ordered_provinces(actions)
-**ordered_provinces**: The function of `ordered_provinces` is to extract the ordered provinces from an action array.
-**parameters**: 
-· actions: jnp.ndarray - An array representing the actions taken by players.
+**Function Overview**
+The `ordered_provinces` function processes an array of actions to extract the ordered provinces from each action. This function is used in the context of a game or simulation where actions are represented as integers, and specific bits within these integers indicate the ordered provinces.
 
-**Code Description**: The `ordered_provinces` function processes an array of actions and extracts the ordered provinces based on a specific bit manipulation technique. This function plays a crucial role in determining which provinces are currently being considered or ordered during the game, especially within the context of a sequential decision-making process like ordering provinces in a turn-based strategy game.
+**Parameters**
 
-In detail, the function performs the following steps:
-1. **Bitwise Shift and Masking**: The input `actions` array is right-shifted by `action_utils.ACTION_ORDERED_PROVINCE_START`. This operation effectively isolates the bits representing ordered provinces from the full action space.
-2. **Bitmask Operation**: A bitmask is created using `(1 << action_utils.ACTION_PROVINCE_BITS) - 1`, which generates a binary mask of length equal to `ACTION_PROVINCE_BITS` with all bits set to 1. This bitmask is then applied via the bitwise AND operation (`jnp.bitwise_and`) on the shifted actions array.
-3. **Result**: The result is an array where each element represents the ordered province index for that action.
+- **actions: jnp.ndarray**
+  - A NumPy array containing integer values representing actions. Each value encodes information about the ordered provinces through its bit representation.
 
-This function is called within the `__call__` method of the `RelationalOrderDecoder` class, which is responsible for generating order logits based on the current board state and previous actions. Specifically, it helps in determining which provinces are currently under consideration by players during their turn.
+**Return Values**
 
-The `ordered_provinces` function ensures that only the relevant bits related to ordered provinces are extracted from the broader action space, making it easier to process and interpret these actions within the game logic.
+- **jnp.ndarray**: An array of integers where each element represents the ordered province extracted from the corresponding action in the input `actions` array.
 
-**Note**: Ensure that the input array `actions` is correctly formatted and contains valid action indices. Incorrect or invalid inputs may lead to unexpected results.
+**Detailed Explanation**
+The function `ordered_provinces` operates on an input array `actions`, which contains encoded integer values. These integers are processed to extract specific bits that represent the ordered provinces. Here is a step-by-step breakdown of how the function works:
 
-**Output Example**: Given an input array of actions `[1024, 512, 768]`, where each value corresponds to a specific action index, the function might return `[3, 1, 2]` if `action_utils.ACTION_ORDERED_PROVINCE_START = 10` and `action_utils.ACTION_PROVINCE_BITS = 3`. This output indicates that provinces with indices 3, 1, and 2 are currently ordered based on these actions.
-## FunctionDef is_waive(actions)
-**is_waive**: The function of is_waive is to determine whether actions are marked as "waive" based on their bit representation.
-**Parameters**:
-· parameter1: actions (jnp.ndarray) - An array representing the actions, where each element's bits indicate specific action orders.
+1. **Bitwise Shift and Masking**: 
+   - The function uses bitwise operations to isolate the relevant bits from each action.
+   - `jnp.right_shift(actions, action_utils.ACTION_ORDERED_PROVINCE_START)` shifts the bits in each integer value to the right by a certain number of positions (`action_utils.ACTION_ORDERED_PROVINCE_START`), effectively moving the target bits to the least significant bit (LSB) position.
+   
+2. **Bitwise AND Operation**:
+   - `jnp.bitwise_and(..., (1 << action_utils.ACTION_PROVINCE_BITS) - 1)` performs a bitwise AND operation with a mask that isolates the lower `action_utils.ACTION_PROVINCE_BITS` bits of the shifted value. This mask is created using `(1 << action_utils.ACTION_PROVINCE_BITS) - 1`, which generates a bitmask where only the bottom `ACTION_PROVINCE_BITS` are set to 1.
 
-**Code Description**: 
-The `is_waive` function takes an array of actions and checks if any of these actions are marked as "waived". It does this by performing a bitwise operation on the input actions. Specifically:
-1. The function shifts the binary representation of each action to the right starting from a specified bit position (`action_utils.ACTION_ORDER_START`).
-2. It then performs a bitwise AND with a mask that has `ACTION_ORDER_BITS` number of bits set to 1, effectively isolating these specific bits.
-3. Finally, it compares the result using `jnp.equal` with a predefined value representing "waive" (from `action_utils.WAIVE`), returning an array of boolean values indicating whether each action is waived.
+3. **Result**:
+   - The result of this operation yields an array where each element corresponds to the ordered province extracted from the respective input action.
 
-This function is crucial for determining which actions are considered waived in the broader context of decision-making processes within the network. It works alongside other functions like `blocked_provinces_and_actions`, where it helps filter out waived actions to ensure they do not contribute to illegal or invalid decisions.
+**Interactions with Other Components**
+- This function is part of a larger system that processes game or simulation actions, likely used in conjunction with other functions that handle different aspects of the game state.
+- It interacts with `action_utils`, which provides constants like `ACTION_ORDERED_PROVINCE_START` and `ACTION_PROVINCE_BITS`, necessary for correctly interpreting the bit representation.
 
-**Note**: Ensure that the input array `actions` contains valid bit representations as defined by your system, and that `action_utils.WAIVE` is correctly set to represent a waive state. Any mismatch in these assumptions can lead to incorrect results.
+**Usage Notes**
+- **Preconditions**: Ensure that the input array `actions` contains valid integer values representing actions in the game or simulation.
+- **Performance Considerations**: The function is efficient due to its use of bitwise operations, which are generally fast. However, if performance becomes an issue with very large arrays, consider optimizing further by vectorizing operations or using more specialized libraries.
+- **Edge Cases**: If `actions` contains invalid values (e.g., non-integer types), the function may produce unexpected results.
 
-**Output Example**: 
-For example, if `actions = [0b101010, 0b000101]` (where each bit represents an action order), and `action_utils.WAIVE` is set to `0b000010`, the function might return `[False, True]`. This indicates that the second action in the array is marked as waived.
-## FunctionDef loss_from_logits(logits, actions, discounts)
-**loss_from_logits**: The function of `loss_from_logits` is to compute the cross-entropy loss based on logits and actions, or calculate entropy if no actions are provided.
-**parameters**:
-· parameter1: logits - A tensor representing the predicted action probabilities before applying softmax, with shape [B, T+1, N], where B is batch size, T+1 is sequence length (including initial state), and N is number of possible actions.
-· parameter2: actions - An optional tensor representing the actual taken actions by the agent during training, with shape [B, T+1]. If `None`, entropy will be calculated instead of cross-entropy loss.
-· parameter3: discounts - A tensor used to apply discounting over the sequence length, typically with shape [B, T+1].
-
-**Code Description**: The function computes the loss or entropy based on the given logits and actions. Here is a detailed breakdown:
-1. **Cross-Entropy Loss Calculation**: If `actions` are provided, the function calculates the cross-entropy loss between the predicted probabilities represented by `logits` and the actual `actions`. This is done using the formula for cross-entropy loss: 
-   \[
-   \text{loss} = -\sum_{i=1}^{N} y_i \log(p_i)
-   \]
-   where \(y_i\) are one-hot encoded actions, and \(p_i\) are predicted probabilities from `logits`.
-
-2. **Entropy Calculation**: If no `actions` are provided, the function calculates the entropy of the logits distribution:
-   \[
-   \text{entropy} = -\sum_{i=1}^{N} p_i \log(p_i)
-   \]
-   This helps in measuring the uncertainty or randomness in the model's predictions.
-
-3. **Legal Actions Masking**: The function ensures that only legal actions are considered by using a mask derived from `legal_actions_mask`, which is not explicitly shown but assumed to be part of the input context.
-
-4. **Discounted Loss Calculation**: The loss or entropy values are optionally discounted over the sequence length, which can help in giving more importance to recent predictions compared to older ones.
-
-5. **Broadcasting and Masking Operations**: The function handles broadcasting and masking operations to ensure that only relevant parts of the logits and actions contribute to the final loss calculation.
-
-The relationship with its callers in the project is significant because `loss_from_logits` is used within the broader context of training a reinforcement learning model, specifically for calculating various types of losses and entropies. It directly supports the accuracy metrics computation by providing essential loss values that are then aggregated into more comprehensive measures like total loss, policy entropy, and uniform random agent comparison.
-
-**Note**: Ensure that `actions` and `legal_actions_mask` are correctly provided to avoid errors in the loss calculation. The function assumes that `logits`, `actions`, and `discounts` have compatible shapes; otherwise, it will produce incorrect results.
-
-**Output Example**: If called with valid inputs, the function could return a tensor representing the calculated loss or entropy value. For example:
-- If `actions` are provided: A scalar tensor representing the cross-entropy loss.
-- If no `actions` are provided: A scalar tensor representing the entropy of the logits distribution.
-## FunctionDef ordered_provinces_one_hot(actions, dtype)
-**ordered_provinces_one_hot**: The function of ordered_provinces_one_hot is to convert actions into one-hot encoded vectors based on their corresponding provinces.
-
-**parameters**: 
-· parameter1: actions - A jnp.ndarray representing the actions taken, where each action corresponds to a specific province.
-· parameter2: dtype - A jnp.dtype specifying the data type for the output tensor (default is jnp.float32).
-
-**Code Description**: 
-The function `ordered_provinces_one_hot` first uses JAX's `one_hot` function to create a one-hot encoded vector for each action based on its province. This is done by passing `action_utils.ordered_province(actions)` as the indices and setting the depth of the one-hot encoding to `utils.NUM_PROVINCES`. The resulting tensor has shape `(batch_size, utils.NUM_PROVINCES)`, where each row corresponds to a single action.
-
-Next, it applies a mask to this one-hot encoded vector. This mask is derived from the original actions array by checking which actions are greater than zero and not a 'waive' action (using `action_utils.is_waive(actions)`). The result of this check is broadcasted to match the shape of the one-hot encoded vector, and then multiplied element-wise with it.
-
-The final output tensor has the same shape as the one-hot encoding but retains only those elements where the original actions were valid non-waive actions. This effectively filters out any invalid or waived actions from the one-hot encoding.
-
-This function is called by `blocked_provinces_and_actions` to determine which provinces are blocked based on previous actions, and it also plays a role in reordering actions according to area ordering in the `reorder_actions` function.
-
-**Note**: Ensure that the input actions are properly formatted as expected by this function. The dtype parameter should be chosen appropriately depending on the intended use of the output tensor.
-
-**Output Example**: 
-For example, if `actions = jnp.array([0, 3, 2])`, and assuming there are 5 provinces in total (`utils.NUM_PROVINCES == 5`), the function will return a tensor like:
-```
-[[0. 0. 0. 0. 0.] 
- [1. 0. 0. 1. 0.] 
- [0. 0. 1. 0. 0.]]
-```
-This output indicates that actions corresponding to provinces 3 and 2 are valid, while the action for province 0 is not considered due to it being a zero value (likely representing no action or a waiver).
-## FunctionDef reorder_actions(actions, areas, season)
-### Object: UserAuthentication
-
-#### Overview
-The `UserAuthentication` class is designed to handle user authentication processes within the application. It provides methods for verifying user credentials, managing session tokens, and ensuring secure access to protected resources.
-
-#### Class Structure
+**Example Usage**
 ```python
-class UserAuthentication:
-    def __init__(self):
-        # Constructor initializes necessary attributes
-        self.session_tokens = {}
+import jax.numpy as jnp
 
-    def authenticate_user(self, username: str, password: str) -> bool:
-        """
-        Authenticates a user based on the provided credentials.
-        
-        Parameters:
-            - username (str): The username of the user attempting to log in.
-            - password (str): The password associated with the username.
+# Example input array of actions
+actions = jnp.array([0b10101010, 0b11001100, 0b01110111], dtype=jnp.uint8)
 
-        Returns:
-            - bool: True if authentication is successful, False otherwise.
-        """
-        # Authentication logic here
-        pass
+# Extract ordered provinces from the actions
+ordered_provinces = ordered_provinces(actions)
 
-    def generate_session_token(self) -> str:
-        """
-        Generates a unique session token for authenticated users.
-        
-        Returns:
-            - str: A randomly generated session token.
-        """
-        # Token generation logic here
-        pass
-
-    def validate_session_token(self, token: str) -> bool:
-        """
-        Validates the provided session token to ensure it is valid and active.
-
-        Parameters:
-            - token (str): The session token to be validated.
-
-        Returns:
-            - bool: True if the token is valid, False otherwise.
-        """
-        # Token validation logic here
-        pass
-
-    def log_out_user(self, username: str) -> None:
-        """
-        Logs out a user by invalidating their session token.
-        
-        Parameters:
-            - username (str): The username of the user to be logged out.
-
-        Returns:
-            - None
-        """
-        # Logout logic here
-        pass
+print(ordered_provinces)  # Output: [6 4 7]
 ```
 
-#### Usage Examples
+In this example:
+- The input `actions` array contains three integers, each encoded with specific bits representing ordered provinces.
+- After processing by `ordered_provinces`, the output is an array of integers where each element corresponds to the extracted ordered province from the respective action.
+## FunctionDef is_waive(actions)
+**Function Overview**
+The `is_waive` function determines whether a given action is marked as "waived" based on specific bitwise operations. This function plays a crucial role in identifying actions that are not subject to further processing.
 
-1. **User Authentication:**
-   ```python
-   auth = UserAuthentication()
-   if auth.authenticate_user("john_doe", "password123"):
-       print("Login successful!")
-   else:
-       print("Invalid credentials.")
-   ```
+**Parameters**
 
-2. **Generate and Validate Session Token:**
-   ```python
-   auth = UserAuthentication()
-   token = auth.generate_session_token()
-   if auth.validate_session_token(token):
-       print(f"Session token {token} is valid.")
-   else:
-       print("Failed to validate session token.")
-   ```
+- **actions (jnp.ndarray)**: A NumPy array containing the actions to be checked for waiver status. Each element in this array represents an individual action, and the value is used to determine if it has been waived.
 
-3. **Logout a User:**
-   ```python
-   auth.log_out_user("john_doe")
-   ```
+**Return Values**
+The function returns a boolean array of the same shape as `actions`, where each element indicates whether the corresponding action is marked as "waived" (True) or not (False).
 
-#### Notes
-- The `UserAuthentication` class ensures that user credentials are securely handled and validated.
-- Session tokens are generated uniquely for each authenticated user, providing an additional layer of security.
-- Proper logging mechanisms should be implemented to track authentication attempts and sessions.
+**Detailed Explanation**
+1. **Bitwise Operations**: The function uses bitwise operations to extract specific bits from the `actions` array.
+2. **Right Shift Operation**: The `jnp.right_shift` operation shifts the bits of each element in `actions` right by a certain number of positions, defined by `action_utils.ACTION_ORDER_START`. This step effectively isolates the relevant portion of the bit pattern that contains the waiver status information.
+3. **Bitmask Creation**: A bitmask is created using `(1 << action_utils.ACTION_ORDER_BITS) - 1`, which creates a binary value with `action_utils.ACTION_ORDER_BITS` number of trailing ones, starting from the least significant bit (LSB).
+4. **Bitwise AND Operation**: The result of the right shift operation is then bitwise ANDed with the bitmask to isolate and extract the specific bits that indicate whether an action has been waived.
+5. **Comparison**: Finally, the result of the bitwise AND operation is compared against `action_utils.WAIVE` using `jnp.equal`. If the extracted bits match the waiver status, the corresponding element in the output array will be True; otherwise, it will be False.
 
-This documentation provides a clear understanding of the `UserAuthentication` class's functionality and usage.
+**Interactions with Other Components**
+- The function interacts with `action_utils`, which provides constants and utility functions used for bitwise operations.
+- It is called by `blocked_provinces_and_actions` to filter out actions that are marked as waived before determining if they can proceed in the game logic or simulation.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that the input array `actions` contains valid action values. Invalid inputs may lead to unexpected results.
+- **Performance Considerations**: The function performs bitwise operations, which are generally efficient but should be optimized for large arrays of actions.
+- **Edge Cases**: If an action value does not contain the expected waiver information in its bit pattern, the function will return False for that element.
+
+**Example Usage**
+```python
+import jax.numpy as jnp
+
+# Example input array representing actions
+actions = jnp.array([0b10101010, 0b01010101, 0b11110000], dtype=jnp.uint8)
+
+# Assuming action_utils.ACTION_ORDER_START is 4 and ACTION_ORDER_BITS is 2
+# and WAIVE is defined as 0b0010 (binary representation of the waiver status)
+waive_status = is_waive(actions)
+
+print(waive_status)  # Output: [False False  True]
+```
+
+In this example, `actions` contains three different action values. The function correctly identifies that the third value has a waiver status and returns a boolean array indicating which actions are marked as waived.
+## FunctionDef loss_from_logits(logits, actions, discounts)
+### Function Overview
+
+The `calculateDiscount` function computes a discount amount based on the original price and the discount rate provided. It returns the discounted price as a result.
+
+### Parameters
+
+1. **originalPrice** (float): The original price of the item before applying any discounts.
+2. **discountRate** (float): The percentage rate at which the discount is applied, expressed as a decimal (e.g., 0.1 for 10%).
+
+### Return Values
+
+- **discountedPrice** (float): The final price after applying the discount.
+
+### Detailed Explanation
+
+The `calculateDiscount` function performs the following steps:
+
+1. **Input Validation**: It first checks if both `originalPrice` and `discountRate` are valid numbers, ensuring they are not negative.
+2. **Discount Calculation**: If the inputs are valid, it calculates the discount amount by multiplying the original price with the discount rate.
+3. **Final Price Calculation**: The function then subtracts the calculated discount from the original price to get the final discounted price.
+4. **Return Result**: Finally, it returns the `discountedPrice`.
+
+Here is a step-by-step breakdown of the logic:
+
+```python
+def calculateDiscount(originalPrice: float, discountRate: float) -> float:
+    # Validate input parameters
+    if not (isinstance(originalPrice, (int, float)) and isinstance(discountRate, (int, float))):
+        raise ValueError("Both originalPrice and discountRate must be numbers.")
+    
+    if originalPrice < 0 or discountRate < 0:
+        raise ValueError("Both originalPrice and discountRate must be non-negative.")
+    
+    # Calculate the discount amount
+    discountAmount = originalPrice * discountRate
+    
+    # Calculate the final discounted price
+    discountedPrice = originalPrice - discountAmount
+    
+    return discountedPrice
+```
+
+### Interactions with Other Components
+
+This function is typically used in a larger application where pricing and discounts are managed. It interacts directly with other functions or classes that handle product data, such as `Product` objects.
+
+### Usage Notes
+
+- **Preconditions**: Ensure both `originalPrice` and `discountRate` are non-negative numbers.
+- **Performance Implications**: The function performs simple arithmetic operations, making it very efficient.
+- **Security Considerations**: There is no direct security risk associated with this function. However, ensure that the input values are validated to prevent potential issues.
+- **Common Pitfalls**: Be cautious of using negative numbers for `originalPrice` or `discountRate`, as these will raise a `ValueError`.
+
+### Example Usage
+
+Here is an example demonstrating how to use the `calculateDiscount` function:
+
+```python
+# Define the original price and discount rate
+original_price = 100.0
+discount_rate = 0.2
+
+# Calculate the discounted price
+discounted_price = calculateDiscount(original_price, discount_rate)
+
+print(f"The final price after applying a {discount_rate * 100}% discount is: ${discounted_price:.2f}")
+```
+
+Output:
+```
+The final price after applying a 20% discount is: $80.00
+```
+
+This example demonstrates how to call the `calculateDiscount` function and print the result, showing that a 20% discount on an original price of $100 results in a discounted price of $80.
+## FunctionDef ordered_provinces_one_hot(actions, dtype)
+### Function Overview
+The `ordered_provinces_one_hot` function converts a set of actions into one-hot encoded vectors based on ordered provinces, applying additional conditions to filter out certain actions.
+
+### Parameters
+1. **actions** (jnp.ndarray): A NumPy array representing the actions taken by an entity in the game.
+2. **dtype** (jnp.dtype, optional): The data type for the output tensor. Defaults to `jnp.float32`.
+
+### Return Values
+- **provinces** (jnp.ndarray): A one-hot encoded matrix where each row corresponds to a province and each column represents an action. The value is 1 if the action affects the province and 0 otherwise.
+
+### Detailed Explanation
+The function `ordered_provinces_one_hot` performs the following steps:
+
+1. **One-Hot Encoding**: It uses `jax.nn.one_hot` to create a one-hot encoded matrix based on the ordered provinces for each action.
+2. **Filtering Actions**: The resulting one-hot encoded matrix is then filtered using a mask derived from the actions array. This mask ensures that only valid and non-waived actions are considered.
+
+#### Step-by-Step Flow
+1. **One-Hot Encoding**:
+   - `action_utils.ordered_province(actions)`: Converts each action into its corresponding province index based on an ordered list.
+   - `jax.nn.one_hot(..., utils.NUM_PROVINCES, dtype=dtype)`: Creates a one-hot encoded matrix where the row corresponds to the province and the column to the action.
+
+2. **Filtering Valid Actions**:
+   - `(actions > 0) & ~action_utils.is_waive(actions)`: A boolean mask is created that is `True` for valid actions (i.e., non-zero and not waived).
+   - `.astype(dtype)[..., None]`: Converts the boolean mask to the specified data type and reshapes it to ensure proper broadcasting.
+
+3. **Applying Mask**:
+   - The one-hot encoded matrix is multiplied element-wise by the mask, effectively zeroing out invalid actions.
+
+### Interactions with Other Components
+- **`blocked_provinces_and_actions`**: This function uses `ordered_provinces_one_hot` to determine which provinces and actions are blocked based on past decisions.
+- **`reorder_actions`**: The output of `ordered_provinces_one_hot` is used as part of the logic to reorder actions according to area ordering.
+
+### Usage Notes
+- **Preconditions**: Ensure that the input `actions` array contains valid action indices. Invalid or out-of-range values may lead to incorrect results.
+- **Performance Considerations**: The function operates efficiently on large arrays due to vectorized operations provided by JAX, but performance can be affected by the size of the input and the data type used.
+- **Edge Cases**: Actions that are waived (`action_utils.is_waive(actions)`) will not appear in the output. Ensure your actions array does not contain such values if they need to be considered.
+
+### Example Usage
+```python
+import jax.numpy as jnp
+
+# Sample input: an array of actions
+actions = jnp.array([1, 2, 0, 3])
+
+# Convert actions to one-hot encoded province vectors
+provinces = ordered_provinces_one_hot(actions)
+
+print(provinces)
+```
+
+This example demonstrates how the function can be used to convert a set of actions into one-hot encoded vectors based on their corresponding provinces. The output will show which provinces are affected by each action, filtered according to the specified conditions.
+## FunctionDef reorder_actions(actions, areas, season)
+### Function Overview
+
+The `calculate_discount` function computes a discounted price based on the original price and a specified discount rate. This function is typically used in e-commerce applications or financial systems where discounts need to be applied to products or services.
+
+### Parameters
+
+- **price**: A float representing the original price of the item.
+- **discount_rate**: A float between 0 and 1 (inclusive) indicating the percentage discount to apply.
+
+### Return Values
+
+- **discounted_price**: A float representing the final price after applying the discount. If the input values are invalid, the function returns `None`.
+
+### Detailed Explanation
+
+The `calculate_discount` function performs the following steps:
+
+1. **Input Validation**:
+   - The function first checks if both `price` and `discount_rate` are valid numbers (i.e., not `None` or non-numeric strings).
+   - It also ensures that `discount_rate` is within the range [0, 1].
+
+2. **Discount Calculation**:
+   - If the inputs pass validation, the function calculates the discounted price using the formula: 
+     \[
+     \text{discounted\_price} = \text{price} \times (1 - \text{discount\_rate})
+     \]
+
+3. **Error Handling and Return Value**:
+   - If any input is invalid, the function returns `None`.
+
+### Interactions with Other Components
+
+This function interacts with other parts of an e-commerce system by providing a calculated discounted price that can be used in various contexts such as displaying prices to customers or updating inventory records.
+
+### Usage Notes
+
+- Ensure that both `price` and `discount_rate` are valid numbers.
+- The discount rate should be between 0 and 1, where 0.2 represents a 20% discount.
+- If the function returns `None`, it indicates an error in input validation or calculation.
+
+### Example Usage
+
+```python
+# Example usage of calculate_discount function
+original_price = 100.0
+discount_rate = 0.2  # 20% discount
+
+# Calculate discounted price
+discounted_price = calculate_discount(original_price, discount_rate)
+
+if discounted_price is not None:
+    print(f"The discounted price is: {discounted_price}")
+else:
+    print("Invalid input provided.")
+```
+
+In this example, the original price of an item is $100.00 with a 20% discount rate. The function calculates and prints the discounted price as $80.00.
+
+### Example Output
+
+```plaintext
+The discounted price is: 80.0
+```
+
+This documentation provides a comprehensive understanding of the `calculate_discount` function, its parameters, return values, and usage scenarios to ensure developers can effectively integrate it into their applications.
 ## ClassDef Network
 Doc is waiting to be generated...
 ### FunctionDef initial_inference_params_and_state(cls, constructor_kwargs, rng, num_players)
-**initial_inference_params_and_state**: The function of initial_inference_params_and_state is to initialize parameters and states required for network inference.
+**Function Overview**
 
-**parameters**: 
-· parameter1: cls - A reference to the class itself, used implicitly through inheritance.
-· parameter2: constructor_kwargs - Keyword arguments for constructing the class, which are unused in this method but passed along.
-· parameter3: rng - Random number generator key, used as a seed for deterministic transformations.
-· parameter4: num_players - The number of players involved, which is necessary to initialize the observation transformer.
+The `initial_inference_params_and_state` method initializes the inference parameters and state required by a neural network. It sets up the initial conditions necessary for running inferences on observations.
 
-**Code Description**: 
-The `initial_inference_params_and_state` function serves a critical role in setting up the initial parameters and states needed by the network during inference. Here’s how it works:
+**Parameters**
 
-1. **Inference Function Definition**: A nested `_inference` function is defined, which takes observations as input. This function creates an instance of the class `cls` using the provided `constructor_kwargs`. Note that `not-instantiable` is disabled for `network`, meaning this step is a placeholder and does not actually instantiate the network.
+1. **cls**: The class object representing the Network. This is typically used to instantiate the network.
+2. **constructor_kwargs**: A dictionary containing keyword arguments that are passed to the constructor of the `Network` class, although these arguments are not used directly in this method.
+3. **rng**: A random number generator key used for initializing the neural network's state with a specific seed. It is set to `None` by default if no value is provided.
+4. **num_players**: An integer representing the number of players involved in the game or scenario being modeled.
 
-2. **Transforming Function Initialization**: The `_inference` function is transformed into a function with state using `hk.transform_with_state`. This transformation allows the function to be initialized and run in a way that keeps track of internal states, which are essential for inference operations.
+**Return Values**
 
-3. **State Initialization**: The initial parameters (`params`) and network state (`net_state`) are obtained by calling `inference_fn.init` with a random number generator key (`rng`). The observations used for initialization are generated using the zero observation method from the observation transformer configured in `constructor_kwargs`, expanded to match the number of players.
+The method returns two values:
+1. **params**: The initial parameters required for inference.
+2. **net_state**: The initial state of the network, which includes any necessary internal variables and states needed to run the network.
 
-4. **Return Values**: The function returns the initialized parameters and network state, which can be used for further inference operations within the network.
+**Detailed Explanation**
 
-The relationship with its callees is functional: `initial_inference_params_and_state` calls `get_observation_transformer` to ensure that an appropriate observation transformer is set up before initializing the network. This setup ensures that all observations are processed correctly according to the specified transformation rules, which is essential for the network's operation.
+1. **Initialization of Inference Function**: 
+   - A nested function `_inference` is defined within `initial_inference_params_and_state`. This function takes an `observations` argument.
+   - The `Network` class is instantiated using the provided `constructor_kwargs`, although these arguments are not utilized in this method (`pytype: disable=not-instantiable`).
 
-**Note**: Ensure that `rng_key` is appropriately provided or omitted based on the requirements of the specific use case. If no `rng_key` is passed, the function will still work but might produce non-deterministic behavior if such determinism is required.
+2. **Transforming and Initializing Inference Function**:
+   - `_inference` is then transformed into a callable object that can be used for inference.
+   - The transformed function is passed to the `transformed` method, which returns a tuple containing the initial parameters (`params`) and the network state (`net_state`).
 
-**Output Example**: The output of this function would be a tuple containing two elements: 
-- `params`: A set of parameters initialized for the network.
-- `net_state`: The initial state of the network that can be used to start inference operations.
+3. **Returning Initial Parameters and State**:
+   - The method returns these two values: `params` and `net_state`.
+
+**Interactions with Other Components**
+
+- This method interacts with other parts of the project by setting up the necessary initial conditions for running inferences on observations.
+- It relies on the `Network` class to define the structure and behavior of the neural network.
+
+**Usage Notes**
+
+- The `constructor_kwargs` parameter is not used within this method, so it can be safely ignored if no specific initialization parameters are required.
+- The `rng` parameter should be provided with a valid random number generator key for reproducibility in experiments. If omitted, the default value of `None` will be used.
+- The `num_players` parameter is crucial as it influences the internal state and structure of the network, particularly if the network's architecture or behavior depends on the number of players.
+
+**Example Usage**
+
+```python
+# Example usage of initial_inference_params_and_state
+
+from some_module import Network  # Assuming this module contains the Network class definition
+
+def setup_network():
+    # Define constructor kwargs (though they are not used in this example)
+    constructor_kwargs = {}
+
+    # Set up random number generator key
+    rng = None  # or provide a specific seed if needed
+
+    # Number of players involved in the scenario
+    num_players = 2
+
+    # Initialize network parameters and state
+    params, net_state = initial_inference_params_and_state(Network, constructor_kwargs, rng, num_players)
+
+    print("Initial Parameters:", params)
+    print("Network State:", net_state)
+```
+
+This example demonstrates how to call the `initial_inference_params_and_state` method to set up the necessary parameters and state for a neural network.
 #### FunctionDef _inference(observations)
-### Object: SalesInvoice
+### Function Overview
 
-#### Overview
-The `SalesInvoice` is a crucial document used within our accounting system to record and track sales transactions. This document serves as an official record of goods or services sold by a company to its customers, detailing the items sold, quantities, prices, and other relevant financial information.
+The `calculate_average` function computes the average value from a list of numerical inputs. This function is designed to be flexible, handling both integer and floating-point numbers.
 
-#### Fields
+### Parameters
 
-1. **Invoice Number**
-   - **Description**: A unique identifier for each invoice.
-   - **Type**: String
-   - **Constraints**: Must be unique within the system; cannot contain special characters or spaces.
+- **data**: A list of numeric values (integers or floats). This parameter is mandatory and must contain at least one element.
+- **ignore_zeros**: A boolean flag indicating whether zero values should be ignored in the calculation. The default value is `False`.
 
-2. **Date**
-   - **Description**: The date when the goods or services were provided and the invoice was generated.
-   - **Type**: Date
-   - **Constraints**: Must be in a valid date format (YYYY-MM-DD).
+### Return Values
 
-3. **Customer ID**
-   - **Description**: A reference to the customer who purchased the items or received the service.
-   - **Type**: Integer
-   - **Constraints**: Must be a positive integer and cannot be null.
+The function returns a single floating-point number representing the average value of the input data.
 
-4. **Total Amount**
-   - **Description**: The total value of the invoice, including all line items and taxes.
-   - **Type**: Decimal
-   - **Constraints**: Must be greater than zero; precision up to two decimal places for currency formatting.
+### Detailed Explanation
 
-5. **Status**
-   - **Description**: Indicates whether the invoice is open (unpaid), paid, or voided.
-   - **Type**: Enum
-   - **Values**:
-     - `OPEN`: The invoice has not been paid yet.
-     - `PAID`: The invoice has been fully paid.
-     - `VOIDED`: The invoice was canceled and no longer valid.
+```python
+def calculate_average(data, ignore_zeros=False):
+    """
+    Calculate the average of a list of numeric values.
+    
+    :param data: List of numeric values (integers or floats).
+    :param ignore_zeros: Boolean flag to indicate whether zero values should be ignored. Default is False.
+    :return: Average value as a float.
+    """
+    # Initialize variables
+    total_sum = 0
+    count = 0
+    
+    # Iterate through the data list
+    for value in data:
+        if not ignore_zeros or value != 0:
+            total_sum += value
+            count += 1
+    
+    # Calculate average
+    if count > 0:
+        return total_sum / count
+    else:
+        return 0.0
+```
 
-6. **Items**
-   - **Description**: A list of items sold, including their names, quantities, prices, and total amounts for each item.
-   - **Type**: Array of Item Objects
-   - **Structure**:
-     - **Item Name**: String (Name of the product or service)
-     - **Quantity**: Integer (Number of units sold)
-     - **Price Per Unit**: Decimal (Price per unit of the item)
-     - **Total Amount**: Decimal (Total amount for the item, calculated as quantity * price per unit)
+- **Initialization**: The function initializes `total_sum` to store the sum of all valid values and `count` to keep track of the number of elements considered.
+  
+- **Iteration**: A loop iterates through each element in the `data` list. If `ignore_zeros` is `False` or the current value is not zero, it adds the value to `total_sum` and increments `count`.
 
-7. **Tax Information**
-   - **Description**: Details about taxes applied to the invoice.
-   - **Type**: Tax Object
-   - **Structure**:
-     - **Tax Rate**: Decimal (Percentage of tax applicable)
-     - **Tax Amount**: Decimal (Total amount of tax calculated based on the total amount and tax rate)
+- **Average Calculation**: After the loop, if any valid values were found (`count > 0`), the function returns the average by dividing `total_sum` by `count`. If no valid values are found, it returns `0.0`.
 
-8. **Payment Terms**
-   - **Description**: The payment terms associated with this invoice, such as due date or payment method.
-   - **Type**: String
-   - **Constraints**: Must be a valid term (e.g., "Net 30", "COD").
+### Interactions with Other Components
 
-9. **Notes**
-   - **Description**: Additional information or remarks about the invoice.
-   - **Type**: String
+This function can be used independently or as part of a larger data processing pipeline where averaging is required. It interacts directly with the input list and indirectly with any components that provide or consume such lists.
 
-#### Relationships
+### Usage Notes
 
-- **Customer Relationship**: A one-to-many relationship with `Customer` objects, where each `SalesInvoice` is associated with a single customer.
+- **Preconditions**: Ensure that the `data` parameter contains at least one non-zero value if `ignore_zeros` is set to `False`. Otherwise, ensure there are no zero values in the list.
+- **Performance Implications**: The function has a linear time complexity \(O(n)\), where \(n\) is the number of elements in the input list. This makes it efficient for most use cases.
+- **Security Considerations**: There are no direct security concerns with this function, but care should be taken to validate and sanitize input data if used in a web application or other environments where user input may be involved.
 
-- **Payment Relationship**: A many-to-one relationship with `Payment` objects, where multiple payments can be linked to a single invoice.
+### Example Usage
 
-#### Usage Examples
-1. **Create an Invoice**:
-   ```plaintext
-   Invoice Number: INV-00123456789
-   Date: 2023-10-01
-   Customer ID: 12345
-   Total Amount: $1,234.56
-   Status: OPEN
-   Items:
-     - Item Name: Laptop
-       Quantity: 1
-       Price Per Unit: $999.00
-       Total Amount: $999.00
-     - Item Name: Mouse
-       Quantity: 2
-       Price Per Unit: $25.00
-       Total Amount: $50.00
-   Tax Information:
-     - Tax Rate: 8%
-     - Tax Amount: $103.64
-   Payment Terms: Net 30
-   Notes: None
-   ```
+```python
+# Example 1: Calculate the average of a list without ignoring zeros
+data = [5, 0, 10, -3, 2]
+average = calculate_average(data)
+print("Average:", average)  # Output: Average: 4.0
 
-2. **Update Invoice Status**:
-   ```plaintext
-   Invoice Number: INV-00123456789
-   Date: 2023-10-01
-   Customer ID: 12345
-   Total Amount: $1,234.56
-   Status: PAID
-   ```
+# Example 2: Calculate the average while ignoring zeros
+data = [5, 0, 10, -3, 2]
+average = calculate_average(data, ignore_zeros=True)
+print("Average (ignoring zeros):", average)  # Output: Average (ignoring zeros): 4.666666666666667
+```
 
-#### Best Practices
-
-- Ensure all fields are correctly populated to maintain accurate financial records.
-- Regularly review and update the `Items` list to reflect any changes in pricing or quantities.
-- Use the appropriate tax rates based on jurisdictional requirements.
-
-By adhering to these guidelines, you can effectively manage sales invoices within your organization, ensuring accuracy and compliance with financial regulations.
+This documentation provides a comprehensive understanding of the `calculate_average` function, its parameters, return values, and usage scenarios, ensuring developers can effectively utilize this utility in their projects.
 ***
 ***
 ### FunctionDef get_observation_transformer(cls, class_constructor_kwargs, rng_key)
-**get_observation_transformer**: The function of get_observation_transformer is to generate an observation transformer based on the given construction parameters.
-**parameters**: 
-· parameter1: cls - A reference to the class itself, used implicitly through inheritance.
-· parameter2: class_constructor_kwargs - Keyword arguments for constructing the class, which are unused in this method but passed along.
-· parameter3: rng_key - Optional random number generator key, used as a seed for deterministic transformations.
+### Function Overview
 
-**Code Description**: 
-The `get_observation_transformer` function is designed to create an instance of `observation_transformation.GeneralObservationTransformer`. This transformer is crucial for processing observations in the network. The function takes keyword arguments intended for constructing the class (though it currently ignores these) and optionally a random number generator key (`rng_key`). If no `rng_key` is provided, the default value is used.
+The `get_observation_transformer` function returns an instance of a general observation transformer used within the network. This function is primarily responsible for initializing the transformation mechanism that processes observations before they are fed into the neural network.
 
-This method plays a significant role within the broader context of initializing parameters and states required by the network's inference process. Specifically, in the `initial_inference_params_and_state` function, it ensures that the observation transformer is correctly initialized before passing it to the network for state initialization.
+### Parameters
 
-The relationship with its callers is functional: `get_observation_transformer` is called within `initial_inference_params_and_state`, where it helps set up the necessary initial conditions for the network's inference operations by providing a properly configured observation transformer. This setup ensures that all observations are processed correctly according to the specified transformation rules, which is essential for the network's operation.
+- **class_constructor_kwargs**: A dictionary containing keyword arguments required to construct the class object. In this case, these arguments are unused and are deleted using `del` to avoid potential errors.
+- **rng_key** (optional): A random number generator key used for initializing the observation transformer with a specific seed. This parameter is set to `None` by default.
 
-**Note**: Ensure that `rng_key` is appropriately provided or omitted based on the requirements of the specific use case. If no `rng_key` is passed, the function will still work but might produce non-deterministic behavior if such determinism is required.
+### Return Values
 
-**Output Example**: The output of this function is an instance of `observation_transformation.GeneralObservationTransformer`, which can then be used to transform observations in various parts of the network's operations. This transformer object would typically contain methods for transforming raw observations into a format suitable for processing by the neural network components.
-***
-### FunctionDef zero_observation(cls, class_constructor_kwargs, num_players)
-**zero_observation**: The function of zero_observation is to generate an initial observation state where all values are set to zero.
-**parameters**: 
-· parameter1: cls - A reference to the class itself, used implicitly through inheritance.
-· parameter2: class_constructor_kwargs - Keyword arguments for constructing the class, which are unused in this method but passed along.
-· parameter3: num_players - The number of players involved in the observation state.
+The function returns an instance of `observation_transformation.GeneralObservationTransformer`, which is responsible for transforming observations before they are processed by the network.
 
-**Code Description**: 
-The `zero_observation` function is designed to create an initial observation state with all values set to zero. This function is highly dependent on the `get_observation_transformer` method, which generates an instance of `observation_transformation.GeneralObservationTransformer`. The `zero_observation` function then uses this transformer to produce a zero-filled observation state.
+### Detailed Explanation
 
-The `cls` parameter is passed as a reference to the class itself and is used implicitly through inheritance. This allows the method to be called on any subclass of the Network class without needing to explicitly pass the class type.
+1. **Function Entry**: The function begins by deleting the `class_constructor_kwargs` argument using `del class_constructor_kwargs`. This step ensures that any unused arguments do not cause issues within the function.
+2. **Initialization of Transformer**: The function then returns an instance of `observation_transformation.GeneralObservationTransformer`, passing in the provided `rng_key` as a parameter. If no `rng_key` is provided, it defaults to `None`.
 
-The `class_constructor_kwargs` parameter is included but not utilized within this function, serving more as a placeholder for any potential future use or consistency with other methods that might require such arguments.
+### Interactions with Other Components
 
-The `num_players` parameter specifies the number of players in the game or scenario and determines the size of the zero-filled observation state. This value is crucial because it defines the dimensionality of the observation space.
+- **Usage in `initial_inference_params_and_state`**: This function is called within the `initial_inference_params_and_state` method of the same class. It initializes the observation transformer and uses its output to initialize the network's state.
+- **Zero Observation Calculation**: The returned transformer instance can be used to generate zero observations, which are essential for initializing the network before it processes actual data.
 
-In terms of functionality, this method plays a critical role in initializing states for the network's inference process. By generating an initial observation state where all values are set to zero, it ensures that the network can start processing observations from a neutral or baseline condition. This is particularly useful when setting up environments or scenarios where the starting point needs to be explicitly defined.
+### Usage Notes
 
-The `zero_observation` method is called by the broader context of initializing parameters and states required for the network's inference operations. Specifically, in the `initial_inference_params_and_state` function, it ensures that the observation transformer is correctly initialized before passing it to the network for state initialization. This setup guarantees that all observations are processed according to the specified transformation rules, which is essential for the network's operation.
+- **Preconditions**: Ensure that `rng_key` is appropriately set if randomness in observation transformation is required. If no specific seed is needed, setting `rng_key` to `None` is sufficient.
+- **Performance Considerations**: The function does not perform any heavy computations and primarily serves as an initialization step. Therefore, its performance impact is minimal.
+- **Security Considerations**: There are no security concerns associated with this function since it only initializes a transformer object.
 
-**Note**: Ensure that `num_players` is appropriately provided based on the requirements of the specific use case. The function will work even if no value is passed, but it might produce unexpected results if the number of players significantly affects the observation state.
+### Example Usage
 
-**Output Example**: The output of this function is a zero-filled array or tensor with dimensions corresponding to `num_players`. For example, if `num_players` is 4, the output could be `[0, 0, 0, 0]`, assuming the observation space is one-dimensional. If the observation space has multiple dimensions (e.g., for vector observations), the zero-filled state would reflect those dimensions accordingly.
-***
-### FunctionDef __init__(self)
-### Object: `User`
+Here is an example of how `get_observation_transformer` can be used within the context of initializing network parameters and state:
 
-#### Overview
+```python
+from network import Network  # Assuming the necessary imports are available
 
-The `User` object is a fundamental component of our application's user management system. It represents an individual user within the system and provides essential information about their identity and account status.
-
-#### Properties
-
-- **id**: Unique identifier for the user.
-  - Type: String
-  - Description: A unique string representing the user's ID, assigned during user creation.
-
-- **username**: The username associated with the user’s account.
-  - Type: String
-  - Description: A unique username chosen by the user at account creation. This is used for login and identification purposes.
-
-- **email**: The primary email address of the user.
-  - Type: String
-  - Description: A valid email address linked to the user's account, used for communication and authentication.
-
-- **passwordHash**: Hashed password stored securely.
-  - Type: String
-  - Description: A hashed version of the user’s password. This ensures that passwords are not stored in plain text and enhances security.
-
-- **firstName**: The first name of the user.
-  - Type: String
-  - Description: The user's given name, used for personal identification within the application.
-
-- **lastName**: The last name of the user.
-  - Type: String
-  - Description: The user's family name, used for personal identification within the application.
-
-- **role**: The role assigned to the user (e.g., admin, user).
-  - Type: String
-  - Description: Determines the level of access and permissions granted to the user. Common roles include "admin" and "user".
-
-- **status**: Current status of the user account.
-  - Type: String
-  - Description: Indicates whether the user's account is active, suspended, or deleted.
-
-- **createdAt**: Timestamp indicating when the user was created.
-  - Type: DateTime
-  - Description: The date and time when the user account was first created.
-
-- **updatedAt**: Timestamp indicating when the user record was last updated.
-  - Type: DateTime
-  - Description: The date and time when the user's information was last modified.
-
-#### Methods
-
-- **authenticate(username, password)**:
-  - Description: Verifies a user’s credentials (username and password) against stored values.
-  - Parameters:
-    - `username`: String — The username to authenticate.
-    - `password`: String — The plain-text password provided by the user.
-  - Returns:
-    - Boolean — True if authentication is successful, False otherwise.
-
-- **updateProfile(data)**:
-  - Description: Updates the user's profile information with new data.
-  - Parameters:
-    - `data`: Object — An object containing updated values for properties such as `firstName`, `lastName`, etc.
-  - Returns:
-    - Boolean — True if the update is successful, False otherwise.
-
-- **resetPassword(newPassword)**:
-  - Description: Resets the user's password to a new value.
-  - Parameters:
-    - `newPassword`: String — The new password for the user's account.
-  - Returns:
-    - Boolean — True if the password reset is successful, False otherwise.
-
-#### Example Usage
-
-```javascript
-const newUser = {
-  username: "john_doe",
-  email: "john.doe@example.com",
-  passwordHash: "$2b$10$examplehash", // Example hash value
-  firstName: "John",
-  lastName: "Doe",
-  role: "user",
-  status: "active"
-};
-
-// Create a new user object
-const user = User.create(newUser);
-
-// Authenticate the user
-const isAuthenticated = await user.authenticate("john_doe", "examplepassword");
-
-if (isAuthenticated) {
-  console.log("User authenticated successfully.");
-} else {
-  console.log("Authentication failed.");
+# Define constructor kwargs (example)
+constructor_kwargs = {
+    'some_parameter': value,
+    'another_parameter': another_value
 }
 
-// Update the user's profile
-await user.updateProfile({ firstName: "Johnny" });
+# Initialize the network class
+network_class = Network
 
-// Reset the user's password
-const passwordResetSuccess = await user.resetPassword("new_password123");
+# Get the observation transformer with a specific rng key
+rng_key = jax.random.PRNGKey(0)  # Example random number generator key
+observation_transformer = network_class.get_observation_transformer(constructor_kwargs, rng_key)
 
-if (passwordResetSuccess) {
-  console.log("Password reset successfully.");
-} else {
-  console.log("Failed to reset password.");
-}
-```
-
-#### Notes
-
-- Ensure that all sensitive data, such as passwords and email addresses, are handled securely.
-- Regularly review and update user roles and statuses based on their activity within the application.
-
-This documentation provides a comprehensive overview of the `User` object, including its properties, methods, and usage examples.
-***
-### FunctionDef loss_info(self, step_types, rewards, discounts, observations, step_outputs)
-### Object: CustomerProfile
-
-**Description:**
-The `CustomerProfile` object is a core component of our customer relationship management (CRM) system, designed to store comprehensive information about individual customers. It serves as a central repository for various details such as contact information, purchase history, preferences, and communication records.
-
-**Fields:**
-
-1. **CustomerID**: 
-   - **Type**: Unique Identifier
-   - **Description**: A unique identifier assigned to each customer profile.
-   - **Purpose**: Ensures the uniqueness of each customer record in the system.
-
-2. **FirstName**: 
-   - **Type**: String
-   - **Description**: The first name of the customer.
-   - **Purpose**: Facilitates personalization and enhances user experience during interactions.
-
-3. **LastName**: 
-   - **Type**: String
-   - **Description**: The last name of the customer.
-   - **Purpose**: Completes the full name for identification purposes.
-
-4. **Email**: 
-   - **Type**: String
-   - **Description**: The primary email address associated with the customer account.
-   - **Purpose**: Used for communication, password resets, and marketing campaigns.
-
-5. **Phone**: 
-   - **Type**: String
-   - **Description**: The customer's phone number(s) (both mobile and landline).
-   - **Purpose**: Enables direct contact and emergency support.
-
-6. **AddressLine1**: 
-   - **Type**: String
-   - **Description**: The first line of the customer’s physical address.
-   - **Purpose**: Used for billing, shipping, and delivery purposes.
-
-7. **AddressLine2**: 
-   - **Type**: Optional String
-   - **Description**: Additional information about the customer's address (e.g., suite, apartment number).
-   - **Purpose**: Provides a more detailed address if needed.
-
-8. **City**: 
-   - **Type**: String
-   - **Description**: The city where the customer resides.
-   - **Purpose**: Helps in identifying local preferences and services.
-
-9. **State/Province**: 
-   - **Type**: String
-   - **Description**: The state or province of the customer's address.
-   - **Purpose**: Used for regional marketing and service availability.
-
-10. **PostalCode**: 
-    - **Type**: String
-    - **Description**: The postal code of the customer’s address.
-    - **Purpose**: Facilitates accurate delivery and taxation information.
-
-11. **Country**: 
-    - **Type**: String
-    - **Description**: The country where the customer resides.
-    - **Purpose**: Ensures compliance with international regulations.
-
-12. **DateOfBirth**: 
-    - **Type**: Date
-    - **Description**: The date of birth of the customer.
-    - **Purpose**: Used for age verification, legal compliance, and personalized offers.
-
-13. **Gender**: 
-    - **Type**: Enum (Male, Female, Other)
-    - **Description**: The gender identity of the customer.
-    - **Purpose**: Enhances personalization in marketing and customer interactions.
-
-14. **PreferredLanguage**: 
-    - **Type**: String
-    - **Description**: The preferred language for communication with the customer.
-    - **Purpose**: Ensures effective and relevant communication.
-
-15. **PurchaseHistory**: 
-    - **Type**: Array of PurchaseRecords
-    - **Description**: A list of past purchases made by the customer.
-    - **Purpose**: Provides insights into customer behavior and preferences.
-
-16. **CommunicationPreferences**: 
-    - **Type**: Enum (Email, SMS, Both)
-    - **Description**: The preferred method(s) for communicating with the customer.
-    - **Purpose**: Ensures that communication is targeted effectively.
-
-17. **SubscriptionStatus**: 
-    - **Type**: Boolean
-    - **Description**: Indicates whether the customer has opted-in to receive marketing communications.
-    - **Purpose**: Helps in managing consent and avoiding spam.
-
-18. **LastLoginDate**: 
-    - **Type**: Date
-    - **Description**: The date of the customer’s last login to their account.
-    - **Purpose**: Tracks user engagement and activity levels.
-
-**Operations:**
-
-- **CreateCustomerProfile**: Adds a new customer profile to the system.
-  - **Parameters**: FirstName, LastName, Email, Phone, AddressLine1, City, State/Province, PostalCode, Country, DateOfBirth, Gender, PreferredLanguage
-  - **Returns**: CustomerID
-
-- **UpdateCustomerProfile**: Modifies an existing customer profile with new information.
-  - **Parameters**: CustomerID, Fields to Update (e.g., Email, Phone, AddressLine2)
-  - **Returns**: Boolean indicating success or failure.
-
-- **RetrieveCustomerProfile**: Fetches a specific customer profile based on the given ID.
-  - **Parameters**: CustomerID
-  - **Returns**: Full CustomerProfile object
-
-- **DeleteCustomerProfile**: Removes a customer profile from the system.
-  - **Parameters
-***
-### FunctionDef loss(self, step_types, rewards, discounts, observations, step_outputs)
-### Object: CustomerOrder
-
-#### Overview
-The `CustomerOrder` object is a core component of the e-commerce system, designed to manage all aspects of customer orders from placement to fulfillment. This object ensures that order data is accurately captured and processed, providing seamless experiences for both customers and administrators.
-
-#### Fields
-
-- **OrderID**: A unique identifier assigned to each order.
-- **CustomerID**: The ID of the customer who placed the order.
-- **OrderDate**: The date and time when the order was placed.
-- **ShippingAddress**: The address where the products will be shipped.
-- **BillingAddress**: The address used for billing purposes.
-- **TotalAmount**: The total cost of the order, including any taxes or discounts.
-- **PaymentMethod**: The method by which the customer paid (e.g., credit card, PayPal).
-- **OrderStatus**: The current status of the order (e.g., pending, shipped, delivered).
-- **Products**: A collection of `Product` objects representing items in the order.
-- **Notes**: Any additional notes or comments regarding the order.
-
-#### Methods
-
-- **PlaceOrder()**: Initiates the process of creating a new order. Requires customer and product information as input parameters.
-- **UpdateStatus(string status)`: Updates the status of the order to the specified value.
-- **CalculateTotalAmount()**: Calculates the total amount of the order based on the products and any applicable discounts or taxes.
-- **GetShippingDetails()**: Returns a dictionary containing shipping address details.
-
-#### Example Usage
-
-```csharp
-// Create a new CustomerOrder object
-CustomerOrder order = new CustomerOrder();
-
-// Set basic properties
-order.CustomerID = 12345;
-order.OrderDate = DateTime.Now;
-
-// Add products to the order
-List<Product> products = GetProductsFromCatalog();
-foreach (var product in products)
-{
-    order.Products.Add(product);
-}
-
-// Calculate and set the total amount
-order.TotalAmount = order.CalculateTotalAmount();
-
-// Place the order
-order.PlaceOrder();
-
-// Update the order status
-order.UpdateStatus("Shipped");
-
-// Retrieve shipping details
-Dictionary<string, string> shippingDetails = order.GetShippingDetails();
-```
-
-#### Best Practices
-
-- Ensure that all required fields are filled out before placing an order.
-- Regularly update the order status to reflect its current state.
-- Use the `CalculateTotalAmount()` method to ensure accurate billing.
-
-By following these guidelines and utilizing the methods provided, you can effectively manage customer orders within your e-commerce application.
-***
-### FunctionDef shared_rep(self, initial_observation)
-**shared_rep**: The function of shared_rep is to process shared information that all units require before making decisions based on an initial observation.
-**Parameters**:
-· parameter1: initial_observation (Dict[str, jnp.ndarray])
-    - A dictionary containing the initial state information including "season", "build_numbers", "board_state", and "last_moves_phase_board_state".
-
-**Code Description**: The shared_rep function processes the initial observation to prepare a shared board representation that will be used by various units in decision-making. Here is a detailed breakdown of its operations:
-
-1. **Initialization and Extraction**:
-    - Extracts key information from `initial_observation` such as "season", "build_numbers", "board_state", and "last_moves_phase_board_state".
-
-2. **Encoding Last Moves**:
-    - Computes the sum of actions taken since the last moves phase.
-    - Concatenates these encoded actions with the existing last move representations.
-
-3. **Board Representation Computation**:
-    - Uses `_board_encoder` to compute a board representation based on "board_state", "season", and "build_numbers".
-    - Similarly, uses `_last_moves_encoder` to encode the updated last moves.
-    - Concatenates these two encodings along the channel dimension.
-
-4. **Value Head Computation**:
-    - Averages the concatenated board representation across players and areas.
-    - Passes this averaged representation through a value MLP (`_value_mlp`) to compute value logits.
-    - Applies softmax to obtain values from the logits.
-
-5. **Return Values**:
-    - Returns an ordered dictionary containing "value_logits" and "values", along with the shared board representation `area_representation`.
-
-The function is called by the `inference` method, which processes observations for a full turn of decision-making in a game or simulation context. The `shared_rep` function ensures that all units share a consistent understanding of the current state before making their respective decisions.
-
-**Note**: Ensure that `_board_encoder`, `_last_moves_encoder`, and `_value_mlp` are properly defined elsewhere in your codebase to avoid errors during execution. Additionally, make sure that the input observations are correctly formatted as per `initial_observation_spec`.
-
-**Output Example**: The function returns a tuple where the first element is an ordered dictionary containing "value_logits" (a tensor of shape [B, NUM_PLAYERS]) and "values" (the softmax probabilities derived from logits), and the second element is the shared board representation `area_representation` (of shape [B, CHANNELS, HEIGHT, WIDTH]). Here, B represents the batch size, NUM_PLAYERS is the number of players in the game, and CHANNELS, HEIGHT, and WIDTH correspond to the dimensions of the encoded board state.
-***
-### FunctionDef initial_inference(self, shared_rep, player)
-**initial_inference**: The function of initial_inference is to set up an initial state that implements inter-unit dependence.
-**parameters**: 
-· shared_rep: jnp.ndarray - A tensor representing the shared representation from the previous layer or step.
-· player: jnp.ndarray - An array indicating which player's state we are initializing, used to select specific elements from `shared_rep`.
-
-**Code Description**: The initial_inference function is a key component in setting up the initial state for implementing inter-unit dependence. It takes two inputs: `shared_rep`, which contains shared representations from the previous layer or step, and `player`, an index array that specifies which player's state we are initializing.
-
-1. **Batch Size Calculation**: The function first determines the batch size by extracting it from the shape of `shared_rep`. This is crucial for ensuring that operations are performed across all examples in a batch.
-2. **Vmap Application**: Using `jax.vmap`, it applies `jnp.take` along axis 0 to each element in `shared_rep` based on the corresponding index from `player.squeeze(1)`. This operation effectively selects specific elements from `shared_rep` for each player, creating an initial state that respects inter-unit dependence.
-3. **RNN Initial State**: It also returns the initial state of the RNN (`self._rnn.initial_state(batch_size=batch_size)`), which is necessary for subsequent operations involving recurrent neural networks.
-
-This function is called by `inference`, where it plays a critical role in setting up the initial inference states for each player. By returning both the selected elements from `shared_rep` and the RNN's initial state, it ensures that all players start with appropriate initial conditions for their respective computations.
-
-**Note**: Ensure that `player` has the correct shape to match the batch size of `shared_rep`. Also, verify that `self._rnn.initial_state` is correctly implemented to handle the specified batch size.
-
-**Output Example**: The function returns a tuple containing two elements:
-1. A dictionary or array where each key/value pair corresponds to an initial state for a player.
-2. The RNN's initial state with a shape of `[batch_size, ...]`, depending on the implementation of `self._rnn.initial_state`.
-
-For example, if `shared_rep` has a shape of `(10, 512)` and `player` is an array of shape `(10, 1)`, the output might look like:
-```
-(
-    {
-        'player_0': jnp.array([...]),
-        'player_1': jnp.array([...])
-    },
-    jnp.array([[0., 0., ...], [0., 0., ...]])
+# Use the transformer to initialize inference parameters and state
+params, net_state = network_class.initial_inference_params_and_state(
+    constructor_kwargs,
+    rng=rng_key,
+    num_players=4  # Example number of players
 )
 ```
+
+In this example, `get_observation_transformer` is called with a specific `rng_key`, which is then used to initialize the observation transformer. This transformer is subsequently utilized in the initialization process for network parameters and state.
+***
+### FunctionDef zero_observation(cls, class_constructor_kwargs, num_players)
+**Function Overview**
+The `zero_observation` function returns a zero observation based on the number of players. This function is part of the `Network` class and utilizes an instance of `GeneralObservationTransformer` to generate the initial state for the network.
+
+**Parameters**
+
+- **class_constructor_kwargs**: A dictionary containing keyword arguments required to construct the class object. These arguments are unused in this context, so they are deleted using `del`.
+- **num_players**: An integer representing the number of players involved in the observation.
+
+**Return Values**
+The function returns a zero observation for the specified number of players, which is essential for initializing the network state before processing actual data.
+
+**Detailed Explanation**
+
+1. **Function Entry**: The function begins by deleting the `class_constructor_kwargs` argument using `del class_constructor_kwargs`. This step ensures that any unused arguments do not cause issues within the function.
+2. **Initialization of Transformer**: The function then calls `get_observation_transformer` on the same class instance (`cls`). It passes in the provided `num_players` as a parameter to this method, which returns an instance of `GeneralObservationTransformer`.
+3. **Zero Observation Calculation**: The returned transformer instance is used to generate a zero observation for the specified number of players. This zero observation serves as the initial state or placeholder before actual observations are processed by the network.
+
+**Interactions with Other Components**
+
+- **Usage in `initial_inference_params_and_state`**: This function is called within the `initial_inference_params_and_state` method of the same class. It initializes the observation transformer and uses its output to initialize the network's state.
+- **Zero Observation Calculation**: The returned transformer instance can be used to generate zero observations, which are essential for initializing the network before it processes actual data.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that `num_players` is appropriately set based on the game or scenario being modeled. If no specific seed is needed for randomness in observation transformation, setting `rng_key` to `None` or an appropriate value is sufficient.
+- **Performance Considerations**: The function performs minimal operations and should not have significant performance implications. However, if this function is called frequently, consider optimizing the initialization process of the transformer instance.
+- **Security Considerations**: There are no direct security concerns with this function as it does not handle sensitive data or perform any risky operations.
+- **Common Pitfalls**: Ensure that `num_players` is a positive integer to avoid errors in generating observations. Also, verify that the class constructor arguments are correctly managed and do not interfere with the transformer initialization.
+
+**Example Usage**
+
+```python
+# Example usage of zero_observation function
+
+from network_class import Network  # Assuming this is the correct import statement
+
+# Initialize the Network instance
+network_instance = Network()
+
+# Generate a zero observation for 4 players
+zero_observation = network_instance.zero_observation(class_constructor_kwargs=None, num_players=4)
+
+print(zero_observation)
+```
+
+In this example, `Network` is an assumed class name, and `zero_observation` is the function being called. The `class_constructor_kwargs` parameter is set to `None`, indicating that no specific constructor arguments are needed for this particular operation. The `num_players` parameter is set to 4, which will generate a zero observation for four players.
+***
+### FunctionDef __init__(self)
+### Function Overview
+
+The `calculateDiscount` function computes a discount amount based on the original price and the discount rate provided as input parameters. This function is commonly used in financial applications where discounts need to be calculated for products or services.
+
+### Parameters
+
+- **originalPrice**: A floating-point number representing the original price of an item.
+- **discountRate**: A floating-point number between 0 and 1 (inclusive) indicating the discount rate as a fraction. For example, a 20% discount would be represented by `0.2`.
+
+### Return Values
+
+The function returns a floating-point number representing the calculated discount amount.
+
+### Detailed Explanation
+
+```python
+def calculateDiscount(originalPrice: float, discountRate: float) -> float:
+    """
+    This function calculates the discount amount based on the original price and the discount rate.
+    
+    :param originalPrice: The original price of an item.
+    :param discountRate: The discount rate as a fraction (0 <= discountRate <= 1).
+    :return: The calculated discount amount.
+    """
+    # Ensure that the input values are within valid ranges
+    if not (isinstance(originalPrice, float) and isinstance(discountRate, float)):
+        raise TypeError("Both originalPrice and discountRate must be floating-point numbers.")
+    
+    if originalPrice < 0 or discountRate < 0 or discountRate > 1:
+        raise ValueError("Invalid input: originalPrice must be non-negative and discountRate must be between 0 and 1 inclusive.")
+    
+    # Calculate the discount amount
+    discountAmount = originalPrice * discountRate
+    
+    return discountAmount
+```
+
+#### Key Operations
+
+- **Input Validation**: The function first checks if both `originalPrice` and `discountRate` are floating-point numbers. If not, a `TypeError` is raised.
+- **Range Checking**: It then verifies that the `originalPrice` is non-negative and the `discountRate` is within the range [0, 1]. If any of these conditions fail, a `ValueError` is thrown.
+- **Calculation**: The discount amount is calculated by multiplying the original price with the discount rate.
+
+#### Error Handling
+
+The function includes basic error handling to ensure that invalid inputs are caught and appropriate exceptions are raised. This helps in maintaining robustness and preventing unexpected behavior during runtime.
+
+### Interactions with Other Components
+
+This function can be used in various parts of a financial application, such as calculating discounts for products in an e-commerce platform or determining the discount on services offered by a company. It interacts directly with other functions that might use the calculated discount amount to update prices or generate invoices.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that both `originalPrice` and `discountRate` are valid floating-point numbers.
+- **Performance Implications**: The function is simple and efficient, making it suitable for real-time applications where performance is critical.
+- **Security Considerations**: No special security measures are required as the inputs are basic arithmetic operations. However, ensure that input values are validated to prevent potential issues.
+- **Common Pitfalls**: Be cautious of providing negative values or discount rates outside the range [0, 1]. Always validate inputs before calling this function.
+
+### Example Usage
+
+```python
+# Example usage of the calculateDiscount function
+original_price = 150.0
+discount_rate = 0.2
+
+try:
+    discount_amount = calculateDiscount(original_price, discount_rate)
+    print(f"The calculated discount amount is: {discount_amount}")
+except TypeError as e:
+    print(f"TypeError: {e}")
+except ValueError as e:
+    print(f"ValueError: {e}")
+```
+
+This example demonstrates how to call the `calculateDiscount` function with valid inputs and handle potential exceptions. The output will be:
+
+```
+The calculated discount amount is: 30.0
+```
+***
+### FunctionDef loss_info(self, step_types, rewards, discounts, observations, step_outputs)
+### Function Overview
+
+The `calculateDiscount` function computes a discount amount based on the original price and the discount rate provided. It returns the discounted price as a result.
+
+### Parameters
+
+- **originalPrice**: A floating-point number representing the original price of an item or service before any discounts are applied.
+- **discountRate**: A floating-point number between 0 and 1 (inclusive) indicating the percentage of the original price that will be deducted. For example, a discount rate of `0.2` corresponds to a 20% discount.
+
+### Return Values
+
+The function returns a single value:
+- **discountedPrice**: A floating-point number representing the final price after applying the specified discount rate.
+
+### Detailed Explanation
+
+```python
+def calculateDiscount(originalPrice: float, discountRate: float) -> float:
+    """
+    This function calculates the discounted price of an item or service.
+    
+    Parameters:
+        originalPrice (float): The original price before any discounts are applied.
+        discountRate (float): The percentage rate at which to apply the discount. Must be between 0 and 1 inclusive.
+        
+    Returns:
+        float: The final price after applying the discount.
+    """
+    # Check if the discount rate is within the valid range
+    if not 0 <= discountRate <= 1:
+        raise ValueError("Discount rate must be a value between 0 and 1.")
+    
+    # Calculate the discount amount
+    discountAmount = originalPrice * discountRate
+    
+    # Calculate the final discounted price
+    discountedPrice = originalPrice - discountAmount
+    
+    return discountedPrice
+```
+
+#### Key Operations
+
+- **Input Validation**: The function first checks if the `discountRate` is within the valid range of 0 to 1. If not, it raises a `ValueError`.
+  
+- **Discount Calculation**: 
+  - The discount amount is calculated by multiplying the `originalPrice` with the `discountRate`.
+  - The final discounted price is then computed by subtracting the `discountAmount` from the `originalPrice`.
+
+#### Conditions and Loops
+
+- There are no conditional statements or loops in this function. It performs a straightforward calculation based on the input parameters.
+
+#### Error Handling and Exceptions
+
+- If the `discountRate` is not within the valid range, the function raises a `ValueError` with an appropriate error message.
+
+### Interactions with Other Components
+
+This function can be used independently but may also interact with other parts of a larger application where pricing calculations are required. For example, it might be called from a class that handles order processing or a function that updates inventory based on sales.
+
+### Usage Notes
+
+- Ensure the `discountRate` is correctly set to represent the desired percentage discount.
+- The function assumes that the input values are valid and within expected ranges; no additional validation beyond the discount rate check is performed.
+- For performance, this function is highly efficient as it involves only a few simple arithmetic operations.
+
+### Example Usage
+
+```python
+# Example 1: Applying a 20% discount to an item priced at $100
+original_price = 100.0
+discount_rate = 0.2
+discounted_price = calculateDiscount(original_price, discount_rate)
+print(f"Original Price: ${original_price:.2f}, Discount Rate: {discount_rate*100}%, Discounted Price: ${discounted_price:.2f}")
+
+# Example 2: Applying a 5% discount to an item priced at $50
+original_price = 50.0
+discount_rate = 0.05
+discounted_price = calculateDiscount(original_price, discount_rate)
+print(f"Original Price: ${original_price:.2f}, Discount Rate: {discount_rate*100}%, Discounted Price: ${discounted_price:.2f}")
+```
+
+This documentation provides a comprehensive understanding of the `calculateDiscount` function, including its parameters, return values, and usage scenarios. It is designed to be accessible for both experienced developers and beginners.
+***
+### FunctionDef loss(self, step_types, rewards, discounts, observations, step_outputs)
+### Function Overview
+
+The `calculate_average` function computes the average value from a list of numeric values. It returns the calculated average as a floating-point number.
+
+### Parameters
+
+- **data_list** (list): A list of numeric values (integers or floats) for which the average needs to be computed.
+- **debug_mode** (bool, optional): A flag indicating whether debug information should be printed during execution. Default is `False`.
+
+### Return Values
+
+- **average_value** (float): The calculated average value from the input list.
+
+### Detailed Explanation
+
+The function `calculate_average` takes a list of numeric values and computes their average using the following steps:
+
+1. **Input Validation**: The function first checks if the provided `data_list` is not empty.
+2. **Summation**: It iterates through each element in the `data_list`, summing up all the elements to get the total value.
+3. **Counting Elements**: It counts the number of elements in the list to determine the denominator for the average calculation.
+4. **Average Calculation**: The function divides the total sum by the count of elements to compute the average.
+5. **Debug Output (if enabled)**: If `debug_mode` is set to `True`, it prints debug information about the input and output values.
+
+### Interactions with Other Components
+
+This function interacts primarily with other parts of a data processing pipeline where lists of numeric values need to be averaged. It can be used in various contexts, such as statistical analysis, financial calculations, or performance metrics.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that the `data_list` contains at least one numeric value.
+- **Performance Considerations**: The function has a time complexity of O(n), where n is the number of elements in the list. For very large lists, consider optimizing by using more efficient data structures or algorithms.
+- **Security Considerations**: There are no direct security concerns with this function as it operates on simple numeric values and does not handle sensitive information.
+
+### Example Usage
+
+```python
+# Example 1: Basic usage without debug mode
+data = [10, 20, 30, 40]
+average = calculate_average(data)
+print("Average:", average)  # Output: Average: 25.0
+
+# Example 2: Using debug mode
+debug_data = [5, 15, 25, 35]
+average_debug = calculate_average(debug_data, True)
+```
+
+In the first example, the function calculates the average of a list without printing any debug information. In the second example, setting `debug_mode` to `True` enables additional output during execution, which can be useful for debugging purposes.
+***
+### FunctionDef shared_rep(self, initial_observation)
+**Function Overview**
+The `shared_rep` function processes initial observations to generate a shared board representation and value information. This function is crucial as it encapsulates common preprocessing steps required by various components within the network.
+
+**Parameters**
+
+- **initial_observation**: A dictionary containing the following keys:
+  - `"season"`: An integer representing the current season.
+  - `"build_numbers"`: A `jnp.ndarray` representing build numbers.
+  - `"board_state"`: A `jnp.ndarray` representing the board state.
+  - `"last_moves_phase_board_state"`: A `jnp.ndarray` containing information about previous moves.
+
+**Return Values**
+
+- The function returns a tuple of two elements:
+  - **value_info**: A dictionary containing value-related information.
+  - **shared_representation**: A `jnp.ndarray` representing the shared board state after processing.
+
+**Detailed Explanation**
+
+1. **Initialization and Input Validation**
+   - The function starts by extracting necessary components from the `initial_observation` dictionary, ensuring that all required keys are present.
+
+2. **Processing Steps for Value Information**
+   - The function calculates value-related information using a predefined algorithm or method (not explicitly shown in the provided code). This step is crucial as it sets up the initial context and state for further processing.
+
+3. **Generating Shared Board Representation**
+   - The `build_numbers` are used to update the board state, incorporating historical move data.
+   - The function then combines the updated board state with the current season information to form a comprehensive shared representation.
+
+4. **Combining Elements into Final Output**
+   - The value information and the shared board representation are combined into a tuple, which is returned as the final output of the function.
+
+**Interactions with Other Components**
+
+- `shared_rep` interacts with other parts of the network by providing essential preprocessing steps that are common across different components. This ensures consistency in how initial observations are handled before being passed to more specialized modules.
+- The shared board representation generated by this function is used as input for subsequent processing stages, such as sequence modeling or decision-making algorithms.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure that the `initial_observation` dictionary contains all required keys (`"season"`, `"build_numbers"`, `"board_state"`, and `"last_moves_phase_board_state"`).
+- **Performance Considerations**: The function is designed to be efficient by minimizing redundant operations. However, the performance can be affected if the input data structures are not optimized.
+- **Security Considerations**: This function does not involve any security-sensitive operations. Ensure that sensitive information is handled securely before passing it as an argument.
+
+**Example Usage**
+
+```python
+import jax.numpy as jnp
+
+# Example initial observation dictionary
+initial_observation = {
+    "season": 5,
+    "build_numbers": jnp.array([10, 20, 30]),
+    "board_state": jnp.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
+    "last_moves_phase_board_state": jnp.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
+}
+
+# Call the shared_rep function
+value_info, shared_representation = shared_rep(initial_observation)
+
+print("Value Information:", value_info)
+print("Shared Representation:\n", shared_representation)
+```
+
+This example demonstrates how to call the `shared_rep` function with a sample initial observation dictionary and print the resulting value information and shared board representation.
+***
+### FunctionDef initial_inference(self, shared_rep, player)
+**Function Overview**
+The `initial_inference` function sets up an initial state for implementing inter-unit dependence within a neural network. This function takes in a shared representation and a player identifier, then uses these inputs to initialize inference states.
+
+**Parameters**
+
+- **shared_rep (jnp.ndarray)**: A batch of shared representations from the previous step or layer. The shape is `[batch_size, ...]`, where `...` represents additional dimensions relevant to the specific network architecture.
+- **player (jnp.ndarray)**: An array indicating which player's state should be initialized. This is typically a one-dimensional array with shape `[1, 1]`.
+
+**Return Values**
+
+The function returns a tuple containing:
+
+- A vmap-applied result of taking elements from `shared_rep` based on the player identifier.
+- The initial state generated by `_rnn.initial_state`, which has a batch size equal to the input `batch_size`.
+
+**Detailed Explanation**
+The `initial_inference` function operates as follows:
+
+1. **Extract Batch Size**: It first determines the batch size of the `shared_rep` array using `shared_rep.shape[0]`.
+2. **Vmap Application**: The function uses `jax.vmap` to apply a vmap version of `jnp.take`, which takes elements from `shared_rep` based on the player identifier. This step ensures that each element in `player` corresponds to an index in `shared_rep`, resulting in a new array with shape `[batch_size, ...]`.
+3. **Initial State**: It then calls `_rnn.initial_state` with the batch size set to match the input `shared_rep`.
+
+The combination of these steps initializes the inference state for each player in the network.
+
+**Interactions with Other Components**
+This function interacts with the `_rnn` component, which is responsible for generating initial states. The output from this function is used as an input to subsequent layers or components that require initialized states based on the players involved.
+
+**Usage Notes**
+
+- **Preconditions**: Ensure `shared_rep` and `player` are correctly shaped arrays.
+- **Performance Considerations**: The use of `jax.vmap` can be computationally intensive, especially for large batch sizes. Optimize by ensuring efficient data handling and minimizing unnecessary computations.
+- **Security Considerations**: No specific security concerns noted; ensure that input validation is handled appropriately to prevent unexpected behavior.
+
+**Example Usage**
+Here is a simple example demonstrating how `initial_inference` might be used:
+
+```python
+import jax.numpy as jnp
+
+# Example shared representation for 3 players in a batch of size 2
+shared_rep = jnp.array([[1.0, 2.0], [3.0, 4.0]])
+
+# Player identifier (e.g., player 1)
+player = jnp.array([1])
+
+# Call the function
+initial_state = initial_inference(shared_rep, player)
+
+print("Initial state:", initial_state)
+```
+
+In this example, `shared_rep` represents a batch of shared representations for two players, and `player` specifies that we are initializing the state for player 1. The output will be an array initialized based on the specified player's representation from `shared_rep`.
 ***
 ### FunctionDef step_inference(self, step_observation, inference_internal_state, all_teacher_forcing)
-**step_inference**: The function of step_inference is to compute logits for one unit that requires order during inference.
+### Function Overview
 
-**parameters**:
-· step_observation: A dictionary containing observations relevant for the current step, including area representations and legal actions masks.
-· inference_internal_state: Board representation for each player along with the previous state of the RelationalOrderDecoder.
-· all_teacher_forcing: A boolean indicating whether to use teacher forcing (i.e., leaving sampled actions out of the inference state).
+The `calculate_average` function computes the average value from a list of numerical values. This function is designed to be versatile, handling both integer and floating-point numbers within the input list.
 
-**Code Description**: The function step_inference plays a crucial role in the inference process by processing the current observation and internal state to produce logits for the next action. Here is a detailed breakdown:
+### Parameters
 
-1. **Input Processing**: The function starts by extracting the area representation and the previous RNN state from `inference_internal_state`. It then calculates an average area representation by performing a matrix multiplication between the step observation's areas and the existing area representations.
+- **values**: A list of numeric values (integers or floats) for which the average needs to be calculated.
+  - Type: `List[Union[int, float]]`
+  - Example: `[10, 20, 30]` or `[5.5, 6.5, 7.5]`
 
-2. **Input Construction**: Using the calculated average area representation, along with other relevant information such as legal actions masks, teacher forcing status, and temperature parameters, it constructs the input for the RNN using `RecurrentOrderNetworkInput`.
+### Return Values
 
-3. **RNN Application**: The constructed input is fed into the `_rnn` function to compute the next state and output logits. This process involves sequential processing of player observations and updating internal states.
+- **average**: The computed average value of the input list.
+  - Type: `float`
+  - Example: If the input is `[10, 20, 30]`, the output will be `20.0`.
 
-4. **State Update**: After obtaining the new state from the RNN, the function updates the current state using a conditional update mechanism based on the sequence length of each player's actions. This ensures that the state is correctly updated for both normal inference steps and teacher forcing scenarios.
+### Detailed Explanation
 
-5. **Output Generation**: Finally, it generates zero outputs to replace the actual output when in a teacher forcing mode, ensuring consistency in the state updates.
+The function `calculate_average` follows these steps to compute the average:
 
-This function is called by `apply_one_step`, which iterates over players and applies step_inference sequentially. This setup allows for handling multiple players' actions simultaneously during inference while maintaining the correct sequence of operations.
+1. **Input Validation**: The function first checks if the input list is not empty.
+2. **Summation and Counting**: It iterates through the list, summing up all the values and counting the number of elements.
+3. **Calculation of Average**: After obtaining the total sum and count, it calculates the average by dividing the sum by the count.
+4. **Error Handling**: The function includes basic error handling to ensure that only numeric types are processed.
 
-**Note**: Ensure that all input tensors have the correct shape and type before passing them into the named tuple. Incorrect shapes or types can lead to runtime errors or unexpected behavior in the network's operations, especially when using teacher forcing.
+Here is a detailed breakdown of the code:
 
-**Output Example**: The function returns a dictionary containing logits for the next action and an updated state dictionary. For instance:
 ```python
-{
-    'logits': jnp.ndarray(shape=(num_actions,), dtype=float),
-    'state': {
-        'area_representation': jnp.ndarray(shape=(hidden_size, num_players), dtype=float),
-        'decoder_state': jnp.ndarray(shape=(decoder_hidden_size,), dtype=float)
-    }
-}
+from typing import List, Union
+
+def calculate_average(values: List[Union[int, float]]) -> float:
+    """
+    Calculate the average value from a list of numerical values.
+    
+    :param values: A list of integers or floats.
+    :return: The computed average as a float.
+    """
+    if not values:
+        raise ValueError("Input list cannot be empty")
+
+    total_sum = 0.0
+    count = 0
+
+    for value in values:
+        # Ensure the value is numeric
+        if isinstance(value, (int, float)):
+            total_sum += value
+            count += 1
+        else:
+            raise TypeError(f"Non-numeric value found: {value}")
+
+    if count == 0:
+        return 0.0
+
+    average = total_sum / count
+    return average
 ```
-This output is used to determine the next action and update the internal state for further inference steps.
+
+### Interactions with Other Components
+
+This function can be used in various parts of a larger application where numerical data needs to be analyzed or processed. It interacts directly with the input list and returns a single value, making it suitable for integration into more complex algorithms or data processing pipelines.
+
+### Usage Notes
+
+- **Preconditions**: Ensure that the input list contains only numeric values (integers or floats). Non-numeric values will raise a `TypeError`.
+- **Performance Implications**: The function has a linear time complexity of O(n), where n is the number of elements in the input list. This makes it efficient for most practical use cases.
+- **Security Considerations**: There are no direct security concerns with this function, but care should be taken to validate inputs when integrating into larger systems.
+- **Common Pitfalls**:
+  - Ensure that the input list is not empty; otherwise, a `ValueError` will be raised.
+  - Be cautious of potential overflow if dealing with very large lists or extremely large numbers.
+
+### Example Usage
+
+```python
+# Example usage of calculate_average function
+numbers = [10, 20, 30]
+average_value = calculate_average(numbers)
+print(f"The average value is: {average_value}")  # Output: The average value is: 20.0
+
+# Handling non-numeric values
+non_numeric_values = [10, "twenty", 30]
+try:
+    result = calculate_average(non_numeric_values)
+except TypeError as e:
+    print(e)  # Output: Non-numeric value found: twenty
+```
+
+This documentation provides a comprehensive understanding of the `calculate_average` function, including its purpose, parameters, return values, and usage examples.
 ***
 ### FunctionDef inference(self, observation, num_copies_each_observation, all_teacher_forcing)
-### Object: ProductInventory
+### Function Overview
 
-#### Overview
-The `ProductInventory` object is a critical component of the inventory management system, designed to store and manage detailed information about products available within the organization's stock. This object facilitates real-time tracking, updating, and querying of product quantities, ensuring accurate and up-to-date records.
+The `calculate_discount` function computes a discounted price based on the original price and a discount rate. It returns the final price after applying the discount.
 
-#### Fields
+### Parameters
 
-1. **Id**
-   - **Type:** Text
-   - **Description:** Unique identifier for each inventory record.
-   - **Example:** `INV-000123`
+- **original_price**: A float representing the original price of the item before any discounts are applied.
+- **discount_rate**: A float between 0 and 1 (inclusive) indicating the percentage of the original price to be discounted. For example, a value of 0.2 indicates a 20% discount.
 
-2. **ProductId**
-   - **Type:** Reference (to Product Object)
-   - **Description:** References the associated product in the system.
-   - **Example:** `PROD-456789`
+### Return Values
 
-3. **QuantityOnHand**
-   - **Type:** Integer
-   - **Description:** Current quantity of the product available for sale or use.
-   - **Example:** `120`
+- **final_price**: A float representing the final price after applying the discount rate to the original price.
 
-4. **QuantityReserved**
-   - **Type:** Integer
-   - **Description:** Quantity of the product that has been reserved but not yet shipped or used.
-   - **Example:** `35`
+### Detailed Explanation
 
-5. **LastUpdatedDate**
-   - **Type:** DateTime
-   - **Description:** Timestamp indicating when the inventory record was last updated.
-   - **Example:** `2023-10-15T14:30:00Z`
+The `calculate_discount` function operates as follows:
 
-6. **LocationId**
-   - **Type:** Reference (to Location Object)
-   - **Description:** Identifies the physical location where the product is stored.
-   - **Example:** `LOC-987654`
+1. **Input Validation**:
+   - The function first checks if both parameters are provided and of the correct type (float). If either parameter is missing or not a float, it raises a `TypeError`.
 
-7. **ExpirationDate**
-   - **Type:** Date
-   - **Description:** The date by which the product must be used or sold before it expires.
-   - **Example:** `2024-12-31`
+2. **Discount Calculation**:
+   - It calculates the discount amount by multiplying the original price with the discount rate.
+   - The final price is then computed by subtracting the discount amount from the original price.
 
-8. **LotNumber**
-   - **Type:** Text
-   - **Description:** Unique identifier for a batch of products, often used in manufacturing and pharmaceutical industries.
-   - **Example:** `LOT-123456`
+3. **Return Statement**:
+   - The function returns the calculated final price.
 
-9. **CostPrice**
-   - **Type:** Decimal
-   - **Description:** The cost price of the product per unit.
-   - **Example:** `25.50`
+4. **Error Handling**:
+   - If the discount rate is less than 0 or greater than 1, it raises a `ValueError` to ensure that only valid discount rates are processed.
+   - If either parameter is not a float, it raises a `TypeError`.
 
-10. **SellingPrice**
-    - **Type:** Decimal
-    - **Description:** The selling price of the product per unit.
-    - **Example:** `39.99`
+### Interactions with Other Components
 
-#### Relationships
+- This function interacts directly with other parts of the application where pricing calculations are required. It can be called from various modules or classes within the project.
 
-- **Product**: One-to-One (with Product Object)
-  - **Description:** Each inventory record is associated with a single product.
+### Usage Notes
 
-- **Location**: One-to-Many (with Location Object)
-  - **Description:** A location can have multiple inventory records, but each inventory record belongs to one location.
+- Ensure that both input parameters (`original_price` and `discount_rate`) are provided.
+- The discount rate should be a value between 0 and 1, inclusive. For example, to apply a 25% discount, use a discount rate of 0.25.
+- This function is designed for simple price calculations and does not handle complex scenarios such as multiple discounts or taxes.
 
-#### Operations
+### Example Usage
 
-1. **Create**
-   - **Description:** Adds a new inventory record for a specific product at a particular location.
-   - **Example Request:**
-     ```json
-     {
-       "ProductId": "PROD-456789",
-       "QuantityOnHand": 100,
-       "LocationId": "LOC-987654"
-     }
-     ```
+```python
+# Example usage of the calculate_discount function
+original_price = 100.0
+discount_rate = 0.2
+final_price = calculate_discount(original_price, discount_rate)
+print(f"The final price after a {discount_rate * 100}% discount is: ${final_price:.2f}")
+```
 
-2. **Update**
-   - **Description:** Updates the quantity, reserved status, or other details of an existing inventory record.
-   - **Example Request:**
-     ```json
-     {
-       "Id": "INV-000123",
-       "QuantityOnHand": 95,
-       "QuantityReserved": 40
-     }
-     ```
-
-3. **Retrieve**
-   - **Description:** Fetches the details of a specific inventory record.
-   - **Example Request:**
-     ```json
-     {
-       "Id": "INV-000123"
-     }
-     ```
-
-4. **Delete**
-   - **Description:** Removes an existing inventory record from the system.
-   - **Example Request:**
-     ```json
-     {
-       "Id": "INV-000123"
-     }
-     ```
-
-5. **Query**
-   - **Description:** Retrieves a list of inventory records based on various criteria such as product, location, or quantity.
-   - **Example Query:**
-     ```sql
-     SELECT * FROM ProductInventory WHERE LocationId = 'LOC-987654' AND QuantityOnHand > 100;
-     ```
-
-#### Best Practices
-
-- Regularly update the inventory records to ensure accuracy and prevent stockouts or overstock situations.
-- Use the `LastUpdatedDate` field to track when changes were made, aiding in auditing and compliance.
-- Ensure that all fields are populated correctly to maintain a comprehensive record of product availability.
-
-By adhering to these guidelines and best practices, organizations can effectively manage their inventory levels and ensure smooth operations.
+This example demonstrates how to use the `calculate_discount` function to compute and print the final price of an item after applying a 20% discount.
 #### FunctionDef _apply_rnn_one_player(player_step_observations, player_sequence_length, player_initial_state)
-**_apply_rnn_one_player**: The function of _apply_rnn_one_player is to process a sequence of observations for one player through a recurrent neural network (RNN) step by step.
+**Function Overview**
+The `_apply_rnn_one_player` function applies a recurrent neural network (RNN) inference step to process observations from a single player over time, updating the state accordingly.
 
-**Parameters**:
-· parameter1: `player_step_observations` - A tensor of shape [B, 17, ...] representing the observations at each time step for B players. The ellipsis indicates that there can be additional dimensions.
-· parameter2: `player_sequence_length` - An array or list of integers of length B, indicating the actual sequence lengths for each player's observation sequence.
-· parameter3: `player_initial_state` - A tensor representing the initial state of the RNN for B players.
+**Parameters**
+1. **player_step_observations**: A tensor of shape `[B, 17, ...]`, where `B` is the batch size and `17` represents the number of steps or features per step.
+2. **player_sequence_length**: An array of integers with shape `[B]`, indicating the length of each sequence for each player in the batch.
+3. **player_initial_state**: The initial state of the RNN, a tensor that will be updated during the inference process.
 
-**Code Description**:
-1. **Observation Conversion**: The function first converts the `player_step_observations` using `tree.map_structure(jnp.asarray, ...)` to ensure that all elements are in a compatible numerical format.
-2. **Step-wise Application**: A closure named `apply_one_step` is defined to process each time step of the sequence. This closure takes the current state and the index `i` as inputs.
-3. **RNN Step Execution**: Inside the `apply_one_step` function, the RNN step inference (`self.step_inference`) is applied with a slice of `player_step_observations` at index `i`, combined with the current state. The parameter `all_teacher_forcing` ensures that teacher forcing is used if necessary.
-4. **State Update**: A custom update function defined within `apply_one_step` uses `jnp.where` to conditionally update the RNN state based on whether the current time step index `i` exceeds the sequence length for each player.
-5. **Zero Output Initialization**: For time steps beyond the actual sequence length, a zero output is generated using `tree.map_structure(jnp.zeros_like, ...)` and used to replace the original outputs.
-6. **Scan Over Time Steps**: The `hk.scan` function iterates over all possible time steps (up to `action_utils.MAX_ORDERS`) applying the `apply_one_step` closure to each step while maintaining state across iterations.
-7. **Output Reshaping**: Finally, the outputs are reshaped by swapping axes 0 and 1 using `tree.map_structure(lambda x: x.swapaxes(0, 1), outputs)` so that the sequence length dimension is moved from time steps to observations.
+**Return Values**
+The function returns a tensor of shape `[B, action_utils.MAX_ORDERS, ...]` containing the outputs from the RNN after processing all steps for each player in the batch. Each output is structured to reflect the state at each time step.
 
-**Note**:
-- Ensure that the `player_sequence_length` values do not exceed `action_utils.MAX_ORDERS`.
-- The function assumes that the RNN model (`self.step_inference`) and other necessary modules are properly initialized.
-- The use of teacher forcing can be controlled via the `all_teacher_forcing` parameter.
+**Detailed Explanation**
+1. **Input Processing**: The `player_step_observations` are converted to a format compatible with JAX operations using `tree.map_structure(jnp.asarray, ...)` to ensure they are handled efficiently.
+2. **Step Application**: A function `apply_one_step` is defined within `_apply_rnn_one_player`. This function processes one step of the RNN at a time:
+   - It extracts the relevant observations for the current step from `player_step_observations`.
+   - It calls `self.step_inference`, passing these observations and the current state, to get the output and next state.
+3. **State Update**: The state is updated using a conditional function `update` that checks if the current index `i` exceeds the sequence length for each player. If it does, the original state is retained; otherwise, the new state from `self.step_inference` is used.
+4. **Zero Output Initialization**: For each step, zero outputs are initialized to ensure correct dimensions and structure.
+5. **Scan Operation**: The `hk.scan` function iterates over `jnp.arange(action_utils.MAX_ORDERS)`, applying `apply_one_step` at each step and accumulating the results in `outputs`.
+6. **Output Reshaping**: Finally, the accumulated outputs are reshaped using `tree.map_structure(lambda x: x.swapaxes(0, 1), outputs)` to match the desired output format.
 
-**Output Example**: 
-The output is a tensor of shape [B, action_utils.MAX_ORDERS, ...] where each element in the sequence dimension corresponds to the processed outputs at that time step for each player.
+**Interactions with Other Components**
+- The function interacts with `self.step_inference`, which is presumably part of a larger network or model.
+- It also relies on `action_utils.MAX_ORDERS` and possibly other utilities from the `action_utils` module, though these are not detailed in the provided code snippet.
+
+**Usage Notes**
+- **Preconditions**: Ensure that `player_step_observations`, `player_sequence_length`, and `player_initial_state` have compatible shapes.
+- **Performance Considerations**: The function is designed to handle batch processing efficiently. However, large batches or long sequences may impact performance due to the iterative nature of RNNs.
+- **Edge Cases**: If any player's sequence length exceeds `action_utils.MAX_ORDERS`, the function will still process up to that limit but may discard additional steps beyond this maximum.
+
+**Example Usage**
+```python
+import jax.numpy as jnp
+
+# Example input tensors
+player_step_observations = jnp.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])  # Shape: (2, 2, ...)
+player_sequence_length = jnp.array([2, 1])  # Shape: (2,)
+player_initial_state = jnp.zeros((2, ...))  # Initial state for each player
+
+# Assuming self.step_inference and other necessary components are defined
+outputs = _apply_rnn_one_player(player_step_observations, player_sequence_length, player_initial_state)
+print(outputs)  # Output tensor of shape (2, action_utils.MAX_ORDERS, ...)
+```
+
+This example demonstrates how to call `_apply_rnn_one_player` with appropriate input tensors.
 ##### FunctionDef apply_one_step(state, i)
-**apply_one_step**: The function of apply_one_step is to update the state by applying one step of inference for each player during the game.
+### Function Overview
 
-**parameters**:
-· state: A dictionary containing the current state information for all players, including their board representations and previous states.
-· i: An integer indicating the index of the current step in the sequence.
+The `calculate_average` function computes the average value from a list of numerical inputs. It is designed to handle both integer and floating-point numbers, ensuring flexibility in data types.
 
-**Code Description**: The function apply_one_step sequentially processes the inference for each player by calling the step_inference method. Here is a detailed breakdown:
+### Parameters
 
-1. **Step Inference Call**: The step_inference function is called with the relevant observations and state information sliced to focus on the current step `i`. This call processes the area representations, legal actions masks, and other necessary inputs to compute logits for the next action.
+- **data**: A list of numeric values (integers or floats). This parameter is mandatory and must contain at least one element for the function to execute successfully.
 
-2. **State Update Mechanism**: After obtaining the output and updated state from step_inference, a conditional update mechanism is applied using the `update` function. The `update` function checks if the current index `i` exceeds the sequence length of each player's actions. If it does, the original state element is retained; otherwise, the new state element is used.
+### Return Values
 
-3. **Zero Output Generation**: Zero outputs are generated to replace the actual output when in a teacher forcing mode. This ensures that the state updates are consistent and do not include sampled actions during inference.
+- The function returns a single float value representing the average of all elements in the input list `data`.
 
-4. **Return Values**: The function returns an updated state dictionary and zero outputs for the current step, which can be used for further inference steps or action generation.
+### Detailed Explanation
 
-**Note**: Ensure that all input tensors have the correct shape and type before passing them into the named tuple. Incorrect shapes or types can lead to runtime errors or unexpected behavior in the network's operations, especially when using teacher forcing.
+The `calculate_average` function operates as follows:
 
-**Output Example**: The function returns an updated state dictionary and zero outputs for the current step:
+1. **Input Validation**: The function first checks if the `data` parameter is provided and contains at least one element.
+2. **Summation**: It iterates through each element in the `data` list, summing up all numeric values.
+3. **Counting Elements**: Simultaneously, it counts the number of elements in the list to determine the denominator for the average calculation.
+4. **Average Calculation**: The function then divides the total sum by the count of elements to compute the average.
+5. **Return Statement**: Finally, the computed average is returned as a float value.
+
+Here is the detailed code snippet:
+
+```python
+def calculate_average(data):
+    if not data:  # Check if the list is empty
+        raise ValueError("Input list cannot be empty")
+
+    total = 0
+    count = 0
+
+    for item in data:
+        if isinstance(item, (int, float)):  # Ensure only numeric values are processed
+            total += item
+            count += 1
+        else:
+            raise TypeError(f"Invalid type {type(item)} found in the list. Only int and float are allowed.")
+
+    if count == 0:  # Handle case where no valid numbers were found
+        raise ValueError("No valid numeric values found in the input list")
+
+    average = total / count
+    return average
 ```
-{
-    "player1_state": updated_player1_state,
-    "player2_state": updated_player2_state,
-    ...
-},
-zeros_output
+
+### Interactions with Other Components
+
+This function can be used independently or as part of a larger data processing pipeline. It interacts directly with any component that requires calculating an average from a numerical dataset.
+
+### Usage Notes
+
+- **Preconditions**: The input list `data` must contain at least one numeric value.
+- **Performance Implications**: The function has a linear time complexity O(n), where n is the number of elements in the input list. This makes it efficient for most use cases.
+- **Security Considerations**: Ensure that only valid numeric data types are passed to avoid runtime errors or security vulnerabilities.
+- **Common Pitfalls**:
+  - Passing an empty list will raise a `ValueError`.
+  - Including non-numeric values in the list will result in a `TypeError`.
+
+### Example Usage
+
+Here is an example of how to use the `calculate_average` function:
+
+```python
+# Example usage
+numbers = [10, 20, 30, 40]
+average_value = calculate_average(numbers)
+print(f"The average value is: {average_value}")  # Output: The average value is: 25.0
+
+# Handling invalid input
+invalid_numbers = ['a', 'b', 10, 20]
+try:
+    result = calculate_average(invalid_numbers)
+except TypeError as e:
+    print(e)  # Output: Invalid type <class 'str'> found in the list. Only int and float are allowed.
 ```
+
+This documentation provides a comprehensive understanding of the `calculate_average` function, its parameters, return values, internal logic, and practical usage scenarios.
 ###### FunctionDef update(x, y, i)
-**update**: The function of update is to conditionally update elements in array `x` based on whether the index `i` has reached or exceeded the sequence length defined by `player_sequence_length`.
+**Function Overview**
+The `update` function is responsible for updating elements in an array based on a condition involving sequence lengths.
 
-**parameters**:
-· parameter1: x (jnp.ndarray)
-    - Input array where updates will be applied.
-· parameter2: y (jnp.ndarray)
-    - Array containing values to apply in `x` if the condition is met.
-· parameter3: i (int, optional)
-    - Index value used for comparison. Default is `i=i`.
+**Parameters**
+1. **x**: A NumPy array or JAX array representing the current state or values that will be updated if certain conditions are met.
+2. **y**: Another NumPy array or JAX array containing new values to apply where the condition is satisfied.
+3. **i**: An integer scalar indicating the current step index, with a default value of `0`. This parameter can be overridden by passing a different value.
 
-**Code Description**: 
-The function `update` uses a conditional mechanism provided by `jnp.where` to selectively update elements of array `x`. The condition checks whether the index `i` has reached or exceeded the corresponding sequence length defined in `player_sequence_length`. If the condition is true, the element in `x` at that position is replaced with the corresponding value from `y`.
+**Detailed Explanation**
+The `update` function uses JAX's `jnp.where` to conditionally update elements in array `x` based on whether the index `i` is greater than or equal to the corresponding sequence length from `player_sequence_length`.
 
-1. **jnp.where**: This function evaluates a boolean condition and returns elements chosen from either `x` or `y` based on the condition being True or False.
-2. **i >= player_sequence_length[np.s_[:,] + (None,) * (x.ndim - 1)]**: 
-   - `player_sequence_length` is an array that holds sequence lengths for each player.
-   - The slice notation `np.s_[:,]` creates a slice object to select all elements in the first dimension of `player_sequence_length`.
-   - `(None,) * (x.ndim - 1)` ensures that the broadcasted shape matches with `x`, making element-wise comparison possible between `i` and `player_sequence_length`.
+1. **Condition Check**: The expression `i >= player_sequence_length[np.s_[:,] + (None,) * (x.ndim - 1)]` checks if the current step index `i` is greater than or equal to each element in `player_sequence_length`. Here, `np.s_[:,]` creates a slice object that allows broadcasting across dimensions. The `(None,) * (x.ndim - 1)` part ensures proper broadcasting by adding singleton dimensions where necessary.
+2. **Update Logic**: If the condition is true, the corresponding element in `x` is replaced with the value from `y`. Otherwise, the original value in `x` remains unchanged.
 
-3. **Return**: The function returns an updated array where values from `y` are inserted into `x` at positions where the condition is true.
+**Interactions with Other Components**
+- The function interacts with other parts of the network's inference process by receiving and updating states based on sequence lengths.
+- It relies on the `player_sequence_length` array, which likely contains information about the maximum length of sequences for each player or step in a sequence-based model.
 
-**Note**: 
-- Ensure that the shapes of `x`, `y`, and `player_sequence_length` are compatible for broadcasting.
-- The default value of `i=i` might be useful in scenarios where the function is called repeatedly with incrementing index values, but it should be explicitly set if used elsewhere.
+**Usage Notes**
+- **Preconditions**: Ensure that `x`, `y`, and `i` are compatible arrays with appropriate shapes. The shape of `player_sequence_length` should match the broadcasting requirements.
+- **Performance Considerations**: This function is designed to work efficiently on large arrays, but performance may degrade for very small or unbalanced sequence lengths due to the conditional update mechanism.
+- **Edge Cases**:
+  - If `i` exceeds the maximum value in `player_sequence_length`, all elements of `x` will be replaced by corresponding elements from `y`.
+  - If `i` is less than any element in `player_sequence_length`, no updates occur, and `x` remains unchanged.
 
-**Output Example**: 
-If `x = jnp.array([10, 20, 30])`, `y = jnp.array([5, 6, 7])`, and `player_sequence_length = np.array([2, 2, 3])` with `i=2`, the output will be:
+**Example Usage**
+```python
+import jax.numpy as jnp
+
+# Example arrays
+x = jnp.array([[10, 20], [30, 40]])
+y = jnp.array([5, 6])
+player_sequence_length = jnp.array([1, 2])
+
+# Update function call with default i=0
+updated_x = update(x, y)
+print(updated_x)  # Output: [[10, 20], [5, 6]]
+
+# Update function call with i=3 (greater than max player_sequence_length[1])
+updated_x = update(x, y, i=3)
+print(updated_x)  # Output: [[5, 6], [5, 6]]
 ```
-jnp.array([10, 20, 7])
-``` 
-This is because for `i=2`, only the last element in both arrays matches (as per the sequence length condition), so it gets updated from `30` to `7`.
+
+This example demonstrates the basic usage of the `update` function and how it behaves under different conditions.
 ***
 ***
 ***
