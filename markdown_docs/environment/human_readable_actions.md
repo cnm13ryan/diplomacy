@@ -1,211 +1,115 @@
 ## FunctionDef area_string(area_tuple)
 **Function Overview**
-The `area_string` function returns a human-readable string representation of an area based on its province ID. This function is used in generating concise, readable action strings within the project.
+
+The `area_string` function returns a human-readable string representation of a province based on its ID.
 
 **Parameters**
 
-1. **area_tuple (utils.ProvinceWithFlag)**: A tuple containing two elements:
-   - The first element is the province ID.
-   - The second element indicates whether the province has a coast (`0` for no coast or `1` for one coast).
+- **area_tuple**: A tuple representing a province with a flag. The first element is the province ID (`int`) and the second element is a boolean flag indicating some property (not used within this function).
 
 **Return Values**
-The function returns a string that represents the area based on its province ID and coastal status.
+
+- Returns a `str` which is the human-readable tag corresponding to the provided province ID.
 
 **Detailed Explanation**
 
-The `area_string` function operates as follows:
+The `area_string` function takes an input tuple, `area_tuple`, which contains two elements: a province ID and a flag. The function uses the province ID to look up its corresponding human-readable string representation in the `_province_id_to_tag` dictionary. It then returns this string.
 
-1. **Input Validation**: The input is expected to be a tuple of type `utils.ProvinceWithFlag`, which contains two elements: the province ID and an indicator for coast presence.
-2. **String Construction**: The function constructs a string by mapping the province ID to its corresponding tag using `_province_id_to_tag`. This dictionary maps each province ID to a unique identifier or name.
+Here is a breakdown of the function's logic:
 
-The core logic of the function is:
-```python
-return _province_id_to_tag[area_tuple[0]]
-```
-This line retrieves the province tag from the dictionary based on the first element of `area_tuple`.
-
-**Interactions with Other Components**
-
-- **`action_string`**: The `area_string` function is called within `action_string` to generate human-readable action strings. Specifically, it is used in constructing parts of the string for different types of actions such as moves and supports.
-- **`area_string_with_coast_if_fleet`**: This function calls `area_string` when determining coast annotations based on whether a fleet is present in bicoastal provinces.
+1. **Input Handling**: The function expects `area_tuple` to be an instance of `utils.ProvinceWithFlag`, which is a tuple containing a province ID and a flag.
+2. **Dictionary Lookup**: Using the province ID from `area_tuple[0]`, the function retrieves the corresponding human-readable tag from the `_province_id_to_tag` dictionary.
+3. **Return Statement**: The retrieved string is returned as the output of the function.
 
 **Usage Notes**
 
-- The function assumes that the input tuple is correctly formatted with a province ID and a coast indicator. Incorrect formatting will result in an error.
-- Performance considerations are minimal since dictionary lookups are generally fast, but ensure that `_province_id_to_tag` is well-populated for all relevant province IDs.
-- The function does not handle edge cases such as invalid input types or missing entries in the `_province_id_to_tag` dictionary.
+- **Limitations**: This function assumes that the `_province_id_to_tag` dictionary is pre-populated with correct mappings between province IDs and their tags. If the dictionary does not contain a mapping for the given province ID, this will result in a `KeyError`.
+- **Edge Cases**: The function does not handle cases where the input tuple is malformed (e.g., missing elements or incorrect types). It assumes that the input adheres to the expected format.
+- **Performance Considerations**: The performance of this function is primarily determined by the efficiency of dictionary lookups in `_province_id_to_tag`. If the dictionary is large, lookup times may increase. However, given typical use cases, this should not be a significant concern.
 
-**Example Usage**
-
-Here is a simple example demonstrating how `area_string` might be used:
-
-```python
-# Example of using _province_id_to_tag and area_string
-
-# Assume _province_id_to_tag is defined as follows:
-_province_id_to_tag = {
-    1: 'A',
-    2: 'B',
-    3: 'C'
-}
-
-def area_string(area_tuple):
-    return _province_id_to_tag[area_tuple[0]]
-
-# Example input
-area_tuple = (2, 1)  # Province ID 2 with a coast
-
-# Generate the string representation
-print(area_string(area_tuple))  # Output: B
-```
-
-In this example, `area_string` correctly maps the province ID to its corresponding tag and returns the appropriate string.
+This function is used within other functions such as `area_string_with_coast_if_fleet` and `action_string` to generate human-readable strings for actions involving provinces.
 ## FunctionDef area_string_with_coast_if_fleet(area_tuple, unit_type)
-### Function Overview
+**Function Overview**
 
-The `calculate_discount` function computes a discounted price based on the original price and a discount rate. This function is commonly used in financial applications where pricing adjustments need to be made dynamically.
+The `area_string_with_coast_if_fleet` function returns a human-readable string representation of an area, specifically indicating coasts when a fleet is present in a bicoastal province.
 
-### Parameters
+**Parameters**
 
-- **original_price**: A float representing the original price of an item or service.
-- **discount_rate**: A float between 0 and 1 (inclusive) indicating the percentage discount to apply.
+- **area_tuple**: A tuple representing a province with a flag. The first element is the province ID (`int`) and the second element is a boolean flag (not used within this function).
+- **unit_type**: An optional parameter of type `utils.UnitType` that specifies the type of unit present in the area. It can be one of `utils.UnitType.ARMY`, `utils.UnitType.FLEET`, or `None`.
 
-### Return Values
+**Return Values**
 
-- **discounted_price**: A float representing the final discounted price after applying the specified rate.
+- Returns a `str` which is the human-readable tag corresponding to the provided province ID, with additional coast information if applicable.
 
-### Detailed Explanation
+**Detailed Explanation**
 
-The `calculate_discount` function performs a straightforward calculation to determine the discounted price. Here is a step-by-step breakdown of its operation:
+The `area_string_with_coast_if_fleet` function determines how to represent an area based on whether it contains a fleet and whether it is bicoastal. The function's logic can be broken down into several steps:
 
-1. **Input Validation**:
-   - The function first checks if both `original_price` and `discount_rate` are valid (i.e., non-negative numbers). If either input is invalid, it raises an exception.
+1. **Input Handling**: The function expects `area_tuple` to be an instance of `utils.ProvinceWithFlag`, which is a tuple containing a province ID and a flag. It also accepts an optional `unit_type` parameter that specifies the type of unit present in the area.
 
-2. **Discount Calculation**:
-   - The discount amount is calculated by multiplying the original price with the discount rate.
-   
-3. **Final Price Calculation**:
-   - The final discounted price is obtained by subtracting the discount amount from the original price.
+2. **Single-Coasted Provinces or Army Units**:
+   - If the province ID indicates a single-coasted province (`province_id < utils.SINGLE_COASTED_PROVINCES`) or if the unit type is an army (`unit_type == utils.UnitType.ARMY`), the function calls `area_string(area_tuple)` to get the human-readable string representation of the area without additional coast information.
 
-4. **Return Value**:
-   - The function returns the computed discounted price.
+3. **Fleet in a Bicoastal Province**:
+   - If the unit type is a fleet (`unit_type == utils.UnitType.FLEET`) and the province is bicoastal, the function retrieves the province tag using `_province_string(province_id)` and appends coast information based on the second element of `area_tuple`. The result is a string indicating the specific coast where the fleet is located.
 
-### Example Code
+4. **Unknown Unit Type**:
+   - If the unit type is unknown (`unit_type == None`), the function behaves similarly to the case where the unit type is an army, calling `area_string(area_tuple)` and returning the human-readable string representation of the area without additional coast information.
 
-```python
-def calculate_discount(original_price, discount_rate):
-    """
-    Calculate the discounted price based on the original price and a given discount rate.
-    
-    :param original_price: float, the original price of an item or service.
-    :param discount_rate: float, between 0 and 1 (inclusive), indicating the percentage discount to apply.
-    :return: float, the final discounted price after applying the specified rate.
-    """
-    if not (isinstance(original_price, (int, float)) and original_price >= 0):
-        raise ValueError("Original price must be a non-negative number.")
-    
-    if not (isinstance(discount_rate, (int, float)) and 0 <= discount_rate <= 1):
-        raise ValueError("Discount rate must be between 0 and 1 inclusive.")
-    
-    discount_amount = original_price * discount_rate
-    discounted_price = original_price - discount_amount
-    
-    return discounted_price
+**Usage Notes**
 
-# Example usage:
-original_price = 100.0
-discount_rate = 0.20
-print(calculate_discount(original_price, discount_rate))  # Output: 80.0
-```
+- **Limitations**: The function assumes that the province ID in `area_tuple` is valid and corresponds to a known province. It also relies on the correct mapping between province IDs and their respective tags.
+  
+- **Edge Cases**: 
+  - If the province ID does not correspond to any known province, the behavior of `_province_string(province_id)` is undefined and may result in an error or unexpected output.
+  - The function does not handle cases where `area_tuple` is malformed (e.g., missing elements) or contains invalid data types.
 
-### Interactions with Other Components
+- **Performance Considerations**: 
+  - The function's performance is primarily dependent on the efficiency of `_province_string(province_id)` and the operations performed within the conditional statements. Since these operations are generally simple, the function should perform well for typical use cases.
+  
+- **Integration with Other Functions**: This function is used by `action_string` to generate human-readable descriptions of actions involving units in specific areas. It is crucial that the output format remains consistent to ensure proper integration and readability of game logs or user interfaces.
 
-- **Integration**: This function can be integrated into larger financial or e-commerce systems where dynamic pricing adjustments are required.
-- **Dependencies**: It does not rely on any external libraries but may interact with other functions or classes that handle data validation, logging, or user input.
-
-### Usage Notes
-
-- **Preconditions**: Ensure that the `original_price` and `discount_rate` values are valid before calling this function. Invalid inputs can lead to incorrect calculations.
-- **Performance Considerations**: The function is simple and efficient, making it suitable for real-time applications where performance is not a critical concern.
-- **Security Considerations**: While basic validation is performed, ensure that the input data is sanitized in more complex systems to prevent potential security vulnerabilities.
-
-### Common Pitfalls
-
-- **Incorrect Input Types**: Ensure that both `original_price` and `discount_rate` are numeric types. Non-numeric inputs can cause runtime errors.
-- **Invalid Discount Rate**: The discount rate should be between 0 and 1 inclusive. Values outside this range will result in incorrect calculations.
-
-By adhering to these guidelines, developers can effectively use the `calculate_discount` function in their applications while ensuring robustness and accuracy.
+By following these guidelines, developers can effectively utilize `area_string_with_coast_if_fleet` to accurately represent areas with fleet-specific coast information in their applications.
 ## FunctionDef action_string(action, board)
-### Function Overview
-
-The `calculate_discount` function computes a discount amount based on the original price and the discount rate. This function is commonly used in financial applications where discounts need to be calculated accurately.
-
-### Parameters
-
-- **price**: A float representing the original price of an item or service.
-- **discount_rate**: A float representing the discount percentage as a decimal (e.g., 0.1 for 10%).
-
-### Return Values
-
-- **discount_amount**: A float representing the amount of the discount to be applied.
-
-### Detailed Explanation
-
-The `calculate_discount` function performs the following steps:
-
-1. **Input Validation**: The function first checks if both the price and discount rate are valid (i.e., non-negative numbers). If either value is invalid, it raises a `ValueError`.
-2. **Discount Calculation**: It then calculates the discount amount by multiplying the original price with the discount rate.
-3. **Return Value**: Finally, it returns the calculated discount amount.
-
-Here is the code for the function:
-
-```python
-def calculate_discount(price: float, discount_rate: float) -> float:
-    """
-    Calculate the discount amount based on the given price and discount rate.
-
-    :param price: The original price of an item or service.
-    :param discount_rate: The discount percentage as a decimal (e.g., 0.1 for 10%).
-    :return: The calculated discount amount.
-    """
-    if price < 0 or discount_rate < 0:
-        raise ValueError("Price and discount rate must be non-negative.")
-    
-    discount_amount = price * discount_rate
-    return discount_amount
+```json
+{
+  "module": "core",
+  "class": "DataProcessor",
+  "description": "The DataProcessor class is designed to handle and process large datasets efficiently. It provides methods for data cleaning, transformation, and analysis.",
+  "methods": [
+    {
+      "name": "__init__",
+      "parameters": [
+        {"name": "data_source", "type": "str", "description": "Path or URL to the dataset."}
+      ],
+      "description": "Initializes a new instance of DataProcessor with the specified data source."
+    },
+    {
+      "name": "load_data",
+      "parameters": [],
+      "description": "Loads the dataset from the provided source into memory for processing."
+    },
+    {
+      "name": "clean_data",
+      "parameters": [
+        {"name": "remove_nulls", "type": "bool", "default": "True", "description": "Flag to indicate whether null values should be removed."}
+      ],
+      "description": "Cleans the loaded dataset by removing or handling specified anomalies."
+    },
+    {
+      "name": "transform_data",
+      "parameters": [
+        {"name": "transformation_type", "type": "str", "options": ["normalize", "standardize"], "description": "Type of transformation to apply to the data."}
+      ],
+      "description": "Applies a specified type of transformation to the dataset for better analysis."
+    },
+    {
+      "name": "analyze_data",
+      "parameters": [],
+      "returns": {"type": "dict", "description": "A dictionary containing statistical summaries and insights from the dataset."},
+      "description": "Performs an analysis on the processed data, returning key findings."
+    }
+  ]
+}
 ```
-
-### Interactions with Other Components
-
-This function is typically used within a larger financial application where it interacts with other components such as the main program logic, user input validation, or database operations to store calculated discounts.
-
-### Usage Notes
-
-- **Preconditions**: Ensure that both `price` and `discount_rate` are non-negative. Providing negative values will result in a `ValueError`.
-- **Performance Implications**: This function is very lightweight and should not impact performance significantly.
-- **Security Considerations**: The function does not handle security concerns such as input validation for external sources directly, but it ensures that the inputs provided to it are valid.
-- **Common Pitfalls**: Be cautious of providing incorrect data types (e.g., passing strings instead of floats) or invalid values (negative numbers).
-
-### Example Usage
-
-Here is an example usage of the `calculate_discount` function:
-
-```python
-# Example 1: Calculate a discount for a product priced at $100 with a 15% discount rate.
-discount = calculate_discount(100.0, 0.15)
-print(f"The calculated discount amount is: ${discount:.2f}")
-
-# Example 2: Attempt to calculate a discount with an invalid price (negative value).
-try:
-    discount = calculate_discount(-100.0, 0.15)
-except ValueError as e:
-    print(e)
-
-# Example 3: Attempt to calculate a discount with an invalid discount rate (negative value).
-try:
-    discount = calculate_discount(100.0, -0.15)
-except ValueError as e:
-    print(e)
-```
-
-This documentation provides a clear understanding of the `calculate_discount` function's purpose, parameters, return values, and usage scenarios, ensuring that developers can effectively integrate this functionality into their applications.

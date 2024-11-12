@@ -1,72 +1,55 @@
 ## FunctionDef get_config
+---
+
 **Function Overview**
-The `get_config` function returns a configuration dictionary containing settings for the network. This configuration includes details such as the network class, its parameters, and various operational flags.
+
+The `get_config` function returns a configuration dictionary (`config_dict.ConfigDict`) tailored for setting up a network with specific parameters and settings.
 
 **Parameters**
 
-- None
+- **None**: The function does not accept any parameters.
 
 **Return Values**
-- A `config_dict.ConfigDict` object that contains the following attributes:
-  - `network_class`: The class of the network.
-  - `network_kwargs`: A dictionary containing keyword arguments for initializing the network. These include:
-    - `rnn_ctor`: The constructor function for the RNN (Recurrent Neural Network).
-    - `rnn_kwargs`: Keyword arguments for the RNN constructor, including:
-      - `adjacency`: Normalized adjacency matrix derived from province order and MDF content.
-      - `filter_size`: Size of the filter used in the network.
-      - `num_cores`: Number of cores in the network.
-  - `name`: Name of the network configuration.
-  - `num_players`: Number of players involved in the network.
-  - `area_mdf`: The map definition for the area.
-  - `province_mdf`: The map definition for provinces.
-  - `is_training`: A boolean indicating whether the network is in training mode.
-  - `shared_filter_size`: Size of shared filters used in the network.
-  - `player_filter_size`: Size of player-specific filters.
-  - `num_shared_cores`: Number of shared cores in the network.
-  - `num_player_cores`: Number of player-specific cores.
-  - `value_mlp_hidden_layer_sizes`: Hidden layer sizes for the value MLP (Multi-Layer Perceptron).
-  - `actions_since_last_moves_embedding_size`: Size of the embedding used to represent actions since the last move.
+
+- **config_dict.ConfigDict**: A configuration dictionary containing all the necessary settings to initialize a network.
 
 **Detailed Explanation**
-The `get_config` function initializes a configuration dictionary and populates it with various settings required by the network. Here is a step-by-step breakdown:
 
-1. **Initialization**: A `config_dict.ConfigDict` object is created.
-2. **Setting Network Class**: The `network_class` attribute is set to `network.Network`.
-3. **Setting RNN Constructor and Keyword Arguments**:
-   - The `rnn_ctor` attribute is set to `network.RelationalOrderDecoder`.
-   - The `rnn_kwargs` dictionary contains several key-value pairs, including:
-     - `adjacency`: This adjacency matrix is derived from the province order and MDF content.
-     - `filter_size`: Set to 64.
-     - `num_cores`: Set to 4.
+The `get_config` function is designed to configure a network by populating a `ConfigDict` with various parameters and nested configurations. Here's a breakdown of its logic:
 
-4. **Setting Other Attributes**:
-   - `name` is set to "delta".
-   - `num_players` is set to 7.
-   - `area_mdf` and `province_mdf` are set to specific map definitions (`MapMDF.BICOASTAL_MAP` and `MapMDF.STANDARD_MAP`, respectively).
-   - `is_training` is set to `False`.
-   - `shared_filter_size` is set to 160.
-   - `player_filter_size` is set to 160.
-   - `num_shared_cores` is set to 12.
-   - `num_player_cores` is set to 3.
-   - `value_mlp_hidden_layer_sizes` is a tuple containing the size of hidden layers in the value MLP, which is `(256,)`.
-   - `actions_since_last_moves_embedding_size` is set to 10.
+1. **Initialization**: The function starts by creating an instance of `config_dict.ConfigDict`, which will hold all the configuration settings.
 
-**Interactions with Other Components**
-- The function interacts with other parts of the project through the use of classes and functions such as `network.Network`, `network.RelationalOrderDecoder`, `province_order.build_adjacency()`, `province_order.get_mdf_content()`, and `province_order.MapMDF`.
+2. **Network Class Assignment**:
+   - `config.network_class = network.Network`: This line assigns the `Network` class from the `network` module to the `network_class` attribute in the configuration dictionary. This specifies that the network being configured is an instance of the `Network` class.
+
+3. **Network Keyword Arguments (kwargs)**:
+   - The function then sets up a complex nested structure within `config.network_kwargs`, which includes several key parameters and configurations:
+     - **RNN Constructor (`rnn_ctor`)**: Specifies the constructor for the Recurrent Neural Network (RNN) component, set to `network.RelationalOrderDecoder`.
+     - **RNN Keyword Arguments (`rnn_kwargs`)**:
+       - **Adjacency Matrix**: The adjacency matrix is constructed using a series of nested functions and methods from the `province_order` module. This includes building an adjacency matrix based on map data (`province_order.build_adjacency`) and normalizing it (`network.normalize_adjacency`). The map data itself is retrieved using `province_order.get_mdf_content`, with the standard map configuration specified by `province_order.MapMDF.STANDARD_MAP`.
+       - **Filter Size**: Set to 64, this parameter likely controls the size of filters used in convolutional layers.
+       - **Number of Cores (`num_cores`)**: Set to 4, indicating the number of parallel processing units or cores used by the RNN.
+     - Additional Parameters:
+       - `name`: Set to "delta", possibly a unique identifier for this configuration.
+       - `num_players`: Set to 7, representing the number of players in the network's context.
+       - `area_mdf` and `province_mdf`: These are set to different map configurations (`MapMDF.BICOASTAL_MAP` and `MapMDF.STANDARD_MAP`, respectively), likely defining the geographical or thematic areas for the network.
+       - `is_training`: Set to False, indicating that this configuration is not intended for training purposes but rather for inference or evaluation.
+       - **Shared Filter Size (`shared_filter_size`) and Player Filter Size (`player_filter_size`)**: Both set to 160, these parameters control the size of filters used in shared and player-specific layers.
+       - **Number of Shared Cores (`num_shared_cores`) and Number of Player Cores (`num_player_cores`)**: Set to 12 and 3, respectively, indicating the number of cores allocated for shared and player-specific computations.
+       - **Value MLP Hidden Layer Sizes**: A tuple `(256,)`, specifying the size of hidden layers in a Multi-Layer Perceptron (MLP) used for value estimation.
+       - **Actions Since Last Moves Embedding Size**: Set to 10, controlling the dimensionality of embeddings representing actions taken since the last move.
+
+4. **Return Statement**:
+   - Finally, the function returns the fully populated configuration dictionary (`config`), which can be used to initialize and configure a network instance according to the specified settings.
 
 **Usage Notes**
-- **Preconditions**: Ensure that all required modules (`config_dict`, `network`, `province_order`) are properly imported.
-- **Performance Considerations**: The configuration settings, such as the number of cores and filter sizes, can significantly impact performance. Adjust these parameters based on specific requirements and computational resources.
-- **Security Considerations**: This function does not involve any security-sensitive operations. However, ensure that sensitive data is handled securely when using this configuration in a larger system.
 
-**Example Usage**
-```python
-from network import get_config
+- **Complexity**: The function involves multiple nested configurations and dependencies on various modules (`network`, `province_order`). Ensure that all required modules and their methods are correctly imported and available in the runtime environment.
+  
+- **Performance Considerations**: The configuration includes parameters for parallel processing (e.g., number of cores), which can significantly impact performance. Adjust these settings based on the available hardware resources to optimize execution speed.
 
-# Get the network configuration
-config = get_config()
+- **Limitations**: This function is tailored to a specific network architecture and configuration. It may not be directly applicable or adaptable to other types of networks without modifications.
 
-print(config)
-```
+---
 
-This example demonstrates how to call `get_config` and print the resulting configuration dictionary.
+This documentation provides a comprehensive overview of the `get_config` function, detailing its purpose, parameters, return values, logic flow, and usage considerations.
