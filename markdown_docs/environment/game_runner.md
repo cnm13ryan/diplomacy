@@ -1,253 +1,186 @@
 ## ClassDef DiplomacyTrajectory
-## Function Overview
+**Function Overview**: The `DiplomacyTrajectory` class is designed to store data from a Diplomacy game, including observations, legal actions, taken actions, step outputs, and final returns.
 
-**DiplomacyTrajectory** is a class designed to store and manage data from a game of Diplomacy, including observations, legal actions, taken actions, step outputs, and final returns.
+**Parameters**:
+- No parameters are required for the initialization of the `DiplomacyTrajectory` class. All internal attributes are initialized with default values within the constructor.
 
-## Parameters
+**Return Values**:
+- The `DiplomacyTrajectory` class does not return any value from its methods. It is primarily used to store and manage game data throughout the lifecycle of a Diplomacy game simulation.
 
-The `DiplomacyTrajectory` class does not have any parameters in its constructor. However, it initializes several attributes:
+**Detailed Explanation**:
+The `DiplomacyTrajectory` class encapsulates the state and progression of a Diplomacy game by maintaining lists for various types of game-related data:
+- **observations**: A list that stores observations from each step in the game. These observations are expected to be instances of `utils.Observation`.
+- **legal_actions**: A list of numpy arrays, where each array represents the set of legal actions available at a given step.
+- **actions**: A list of numpy arrays, representing the actions taken by players during each step.
+- **step_outputs**: A list of dictionaries containing outputs from each game step. The keys and values in these dictionaries are not specified within the provided code but would likely include information relevant to the game state after an action is taken.
+- **returns**: An optional numpy array that stores the final returns or outcomes of the game once it has terminated.
 
-- **self.observations**: A list that stores instances of `utils.Observation`, representing the state of the game at each turn.
-- **self.legal_actions**: A list that stores numpy arrays (`np.ndarray`) containing legal actions available to players at each turn.
-- **self.actions**: A list that stores numpy arrays (`np.ndarray`) of actions taken by players during each turn.
-- **self.step_outputs**: A list that stores dictionaries (`Dict[str, Any]`) with outputs from the policies for each step.
-- **self.returns**: An optional numpy array (`Optional[np.ndarray]`) that holds the final returns or outcomes of the game.
+The class provides two methods:
+1. `append_step`: This method appends data from a single step in the game to the respective lists within the `DiplomacyTrajectory` instance. It takes four parameters: an observation, legal actions, taken actions, and outputs from the step.
+2. `terminate`: This method is called when the game ends, setting the final returns of the game.
 
-## Return Values
+**Usage Notes**:
+- The class assumes that all data provided to it (observations, legal actions, etc.) are correctly formatted as specified in its attributes. There is no validation or error handling for incorrect data types or formats.
+- The `returns` attribute is optional and can be set at any point after the game has ended, but typically this would be done via the `terminate` method.
+- **Limitations**: The class does not handle concurrent modifications to the lists it maintains. If multiple threads are modifying the trajectory simultaneously, external synchronization mechanisms should be used.
+- **Edge Cases**: Since `returns` is optional and can be set at any point after game termination, care must be taken to ensure that this value is correctly assigned once the game has concluded.
+- **Potential Areas for Refactoring**:
+  - **Encapsulation**: The class could benefit from more encapsulation of its internal state. For example, making the lists private and providing getter methods would prevent external code from modifying them directly.
+  - **Validation**: Adding validation to ensure that data appended to the trajectory is correctly formatted can help catch errors early in the game simulation process.
+  - **Immutability**: If possible, using immutable data structures for `observations`, `legal_actions`, `actions`, and `step_outputs` could improve thread safety and reduce bugs related to unintended modifications.
+- **Refactoring Techniques**:
+  - **Encapsulation**: Introduce private attributes and public getter methods as described above. This follows the principle of encapsulation, which is a fundamental aspect of object-oriented design.
+  - **Validation**: Implement input validation in the `append_step` method to ensure that all data provided adheres to expected formats. This can be done using assertions or custom validation functions.
+  - **Immutability**: Where feasible, use immutable data structures for storing game data. In Python, tuples can be used instead of lists when immutability is required. Alternatively, consider using libraries like `pydantic` for data validation and immutability enforcement.
 
-The `DiplomacyTrajectory` class does not return any values directly. Instead, it manages and stores data related to a game of Diplomacy throughout its lifecycle.
-
-## Detailed Explanation
-
-### Class Initialization
-
-- **Attributes**:
-  - `observations`: Initializes as an empty list to store observations from each turn.
-  - `legal_actions`: Initializes as an empty list to store legal actions available at each turn.
-  - `actions`: Initializes as an empty list to record the actions taken by players during each turn.
-  - `step_outputs`: Initializes as an empty list to store outputs from policies for each step.
-  - `returns`: Initializes as `None` and is set later when the game terminates.
-
-### Methods
-
-1. **append_step**:
-   - **Purpose**: Appends data from a single step of the game to the respective lists.
-   - **Parameters**:
-     - `observation`: An instance of `utils.Observation` representing the current state of the game.
-     - `legal_actions`: A numpy array (`np.ndarray`) containing legal actions available at this turn.
-     - `actions`: A numpy array (`np.ndarray`) of actions taken by players during this turn.
-     - `step_outputs`: A dictionary (`Dict[str, Any]`) with outputs from policies for this step.
-   - **Logic**: This method appends the provided data to the respective lists (`observations`, `legal_actions`, `actions`, and `step_outputs`).
-
-2. **terminate**:
-   - **Purpose**: Sets the final returns or outcomes of the game.
-   - **Parameters**:
-     - `returns`: A numpy array (`np.ndarray`) representing the final results of the game.
-   - **Logic**: This method assigns the provided `returns` to the `self.returns` attribute.
-
-### Game Data Management
-
-The `DiplomacyTrajectory` class is primarily used by the `run_game` function, which manages the game loop and calls `append_step` for each turn. After the game concludes, it calls `terminate` with the final returns.
-
-## Usage Notes
-
-- **Data Storage**: The class efficiently stores game data in lists, allowing for easy access and analysis after the game has ended.
-- **Edge Cases**:
-  - If no actions are taken during a turn, an empty numpy array is appended to `actions`.
-  - If there are no legal actions available, an empty numpy array is appended to `legal_actions`.
-- **Performance Considerations**: The use of lists and numpy arrays ensures that data storage and retrieval operations are efficient. However, for very long games or high-frequency updates, memory usage may increase significantly.
-
-This documentation provides a comprehensive overview of the `DiplomacyTrajectory` class, its purpose, attributes, methods, and usage within the context of managing game data in a Diplomacy simulation.
+This documentation provides a comprehensive overview of the `DiplomacyTrajectory` class, its purpose, usage, and potential areas for improvement based on the provided code structure.
 ### FunctionDef __init__(self)
-## Function Overview
+**Function Overview**: The `__init__` function initializes a new instance of the `DiplomacyTrajectory` class, setting up lists and variables to store observations, legal actions, taken actions, step outputs, and returns.
 
-The `__init__` function initializes a new instance of the `DiplomacyTrajectory` class, setting up essential attributes to track observations, legal actions, taken actions, step outputs, and returns throughout a game trajectory.
+- **Parameters**: 
+  - This function does not accept any parameters. It is an initializer that sets default values for instance variables when a new object of the class is created.
+  
+- **Return Values**:
+  - The `__init__` method does not return any value. Its purpose is to initialize the internal state of the newly created object.
 
-## Parameters
+- **Detailed Explanation**: 
+  - Upon instantiation, several lists and an optional array are initialized within the `DiplomacyTrajectory` instance.
+  - `observations`: A list intended to store instances of `utils.Observation`, likely representing different states or snapshots of a game environment over time.
+  - `legal_actions`: A list that will hold numpy arrays, presumably representing sets of actions that are permissible at various points in the game.
+  - `actions`: Another list for storing numpy arrays, which represent the actual actions taken during gameplay.
+  - `step_outputs`: A list to capture dictionaries containing outputs from each step or transition within the game process. These could include rewards, next states, and other relevant data.
+  - `returns`: An optional numpy array that might be used to store cumulative returns or scores associated with the trajectory of actions taken in a game.
 
-- **self**: The instance of the `DiplomacyTrajectory` class being initialized. This parameter is implicitly passed when an object is created using the class constructor.
-
-## Return Values
-
-- None. The function initializes attributes within the instance and does not return any value.
-
-## Detailed Explanation
-
-The `__init__` function serves to establish a new game trajectory by initializing several key lists and one optional attribute:
-
-1. **self.observations**: This list is intended to store instances of `utils.Observation`. Each observation represents the state of the game at a particular point in time, capturing all relevant information necessary for decision-making.
-
-2. **self.legal_actions**: This list holds numpy arrays (`np.ndarray`) representing the set of legal actions available to players at each step of the trajectory. Legal actions are those that adhere to the rules of the game and can be taken from the current state.
-
-3. **self.actions**: Another list of numpy arrays, `self.actions`, is used to record the actual actions taken by players during the game. Each action corresponds to a legal action chosen at a specific step.
-
-4. **self.step_outputs**: This list contains dictionaries (`Dict[str, Any]`) that store outputs from each step of the game. The dictionary keys and values can vary depending on what information is deemed necessary to capture the outcome of each step.
-
-5. **self.returns**: An optional numpy array (`Optional[np.ndarray]`) that may be used to store the returns or rewards associated with each step in the trajectory. Returns could represent scores, points, or other metrics indicating the success or failure of actions taken during the game.
-
-The function does not perform any complex logic or calculations; it simply sets up these lists and attributes to ensure they are ready for use as the game progresses.
-
-## Usage Notes
-
-- **Initialization**: The `__init__` method is automatically called when a new instance of `DiplomacyTrajectory` is created. Developers should not call this method directly but rather instantiate the class using standard Python syntax (e.g., `trajectory = DiplomacyTrajectory()`).
-
-- **Data Types**: Ensure that all data added to these lists adheres to the expected types (`utils.Observation`, `np.ndarray`, and `Dict[str, Any]`). Incorrect data types can lead to runtime errors or unexpected behavior.
-
-- **Performance Considerations**: The use of lists for storing observations, actions, and step outputs is straightforward but may not be efficient for very large trajectories. Developers should consider using more memory-efficient data structures if the trajectory size becomes a concern.
-
-- **Optional Attributes**: The `self.returns` attribute is optional and may remain `None` throughout the game if returns are not being tracked. This flexibility allows developers to customize the class according to their specific needs without modifying the core initialization logic.
+- **Usage Notes**:
+  - Since this initializer does not accept any parameters, it is essential for the user to populate these lists and arrays after object creation through appropriate methods or logic within the `DiplomacyTrajectory` class.
+  - The use of numpy arrays suggests that numerical operations on actions and returns are likely common. This could be optimized further using vectorized operations if performance becomes an issue.
+  - The optional nature of `returns` indicates flexibility in how this attribute is used, but it might benefit from a default value or initialization strategy to prevent potential errors when accessed without being set.
+  - **Refactoring Suggestions**:
+    - If the lists grow large and memory usage becomes a concern, consider using generators or more memory-efficient data structures.
+    - To improve modularity, encapsulate the logic for updating these attributes into separate methods. This would adhere to the Single Responsibility Principle (SRP) from Martin Fowler's catalog, making the class easier to understand and maintain.
+    - If the `DiplomacyTrajectory` class is expected to be extended or reused in different contexts, consider using constructor parameters to allow customization of initial values, enhancing flexibility. This aligns with the Open/Closed Principle (OCP) from Martin Fowler's catalog, making the class more adaptable to future changes without altering existing code.
 ***
 ### FunctionDef append_step(self, observation, legal_actions, actions, step_outputs)
-### Function Overview
+**Function Overview**: The `append_step` function is designed to store information about a single step in a game trajectory by appending observations, legal actions, taken actions, and step outputs to respective lists.
 
-**append_step**: Appends a step's observation, legal actions, actions taken, and step outputs to their respective lists within a `DiplomacyTrajectory` instance.
+**Parameters**:
+- **observation (utils.Observation)**: Represents the current state of the game environment at the time of the step.
+- **legal_actions (np.ndarray)**: An array containing all actions that are permissible in the current state of the game.
+- **actions (np.ndarray)**: An array representing the actions taken by the agents during this step.
+- **step_outputs (Dict[str, Any])**: A dictionary holding various outputs resulting from the step, such as rewards or transitions.
 
-### Parameters
+**Return Values**: This function does not return any values. It modifies the internal state of the `DiplomacyTrajectory` object by appending data to its lists.
 
-- **observation (`utils.Observation`)**: The current state of the game as observed by all players.
-- **legal_actions (`np.ndarray`)**: A NumPy array containing the legal actions available for each player at the current step.
-- **actions (`np.ndarray`)**: A NumPy array containing the actions taken by each player during the current step.
-- **step_outputs (`Dict[str, Any]`)**: A dictionary containing outputs from policies executed during the current step.
+**Detailed Explanation**: 
+The `append_step` function is a method within the `DiplomacyTrajectory` class, designed to capture and store all relevant information about a single step in a game. The function takes four parameters: `observation`, `legal_actions`, `actions`, and `step_outputs`. Each of these parameters represents different aspects of the game state at the time of the step.
 
-### Return Values
+- **Observation**: This parameter is appended to the `observations` list, which likely holds all observations made throughout the trajectory.
+- **Legal Actions**: The array of legal actions for this step is appended to the `legal_actions` list, capturing what moves were possible at that point in the game.
+- **Actions**: The actual actions taken by the agents during this step are stored in the `actions` list.
+- **Step Outputs**: A dictionary containing various outputs from the step (e.g., rewards) is added to the `step_outputs` list.
 
-- None. The function modifies the `DiplomacyTrajectory` instance in place by appending data to its internal lists.
+The function's logic involves appending each of these parameters to their respective lists within the `DiplomacyTrajectory` object. This allows for a chronological record of all steps taken during a game, which can be useful for analysis or replay purposes.
 
-### Detailed Explanation
+**Usage Notes**: 
+- **Limitations**: The function assumes that the input data is correctly formatted and valid according to the expectations of the `DiplomacyTrajectory` class. It does not perform any validation on the inputs.
+- **Edge Cases**: If the game trajectory object is being used in a multi-threaded environment, appending steps concurrently could lead to race conditions. Care should be taken to ensure thread safety if necessary.
+- **Refactoring Suggestions**:
+  - **Encapsulation**: To improve maintainability and encapsulation, consider making the lists private (prefix with an underscore) and provide getter methods for accessing them.
+  - **Validation**: Implement input validation within `append_step` to ensure that the data being appended is of the expected type and format. This can prevent errors later in the program.
+  - **Separation of Concerns**: If the function grows more complex, consider breaking it down into smaller functions or methods. For example, a separate method could handle appending each type of data (observations, actions, etc.), improving readability and modularity.
 
-The `append_step` method is a core component of the `DiplomacyTrajectory` class, responsible for recording each step of a game of diplomacy. It captures and stores essential information about the game state at each turn, which can be used later for analysis or replay.
-
-#### Logic and Flow
-
-1. **Appending Observations**: The method starts by appending the current observation to `self.observations`. This observation reflects the state of the game board, including positions of units, supply centers, and other relevant information visible to all players.
-
-2. **Recording Legal Actions**: Next, it appends the legal actions available to each player at this step to `self.legal_actions`. These actions are represented as a NumPy array where each element corresponds to a player's set of possible moves or decisions.
-
-3. **Storing Player Actions**: The method then records the actions taken by each player during this step in `self.actions`. Similar to legal actions, these are stored as a NumPy array, with each entry corresponding to a player’s chosen action(s).
-
-4. **Capturing Step Outputs**: Finally, it appends any outputs generated by policies during this step to `self.step_outputs`. This dictionary can contain various pieces of information such as policy decisions, confidence scores, or other relevant data.
-
-### Usage Notes
-
-- **Data Integrity**: Ensure that the provided `observation`, `legal_actions`, `actions`, and `step_outputs` are correctly formatted and correspond to the current game state. Incorrect data can lead to inconsistencies in the trajectory.
-  
-- **Performance Considerations**: The method appends data to lists, which is generally efficient for sequential operations. However, if the number of steps becomes very large, consider optimizing memory usage or using more efficient data structures.
-
-- **Edge Cases**: If any of the input parameters are `None` or improperly formatted, it may lead to errors or unexpected behavior. Always validate inputs before calling this method.
-
-By following these guidelines and considerations, developers can effectively use the `append_step` method to capture and manage game trajectories in a structured manner.
+By adhering to these guidelines, developers can ensure that `append_step` remains robust, maintainable, and easy to understand as the project evolves.
 ***
 ### FunctionDef terminate(self, returns)
-## Function Overview
+**Function Overview**: The `terminate` function is designed to assign a given set of returns to the `returns` attribute of the `DiplomacyTrajectory` class instance.
 
-The `terminate` function is responsible for finalizing a game trajectory by setting its return values.
+**Parameters**:
+- **returns**: This parameter represents the data that will be assigned to the `returns` attribute of the `DiplomacyTrajectory` instance. The exact nature and structure of this data are not specified in the provided code snippet, but it is expected to be a value or collection relevant to the context of the game trajectory.
 
-## Parameters
+**Return Values**: This function does not return any values.
 
-- **returns**: A sequence of values representing the outcome or result of the game. This parameter is used to update the internal state of the `DiplomacyTrajectory` object with the final results.
+**Detailed Explanation**:
+The `terminate` function operates by taking one argument, `returns`, and directly assigns this value to the `returns` attribute of the instance on which it is called. The logic is straightforward: upon invocation, the function updates the state of the object by storing the provided `returns` data within it. This action could signify the end of a game trajectory or some other significant event in the simulation where final results are recorded.
 
-## Return Values
+**Usage Notes**:
+- **Limitations**: Since the nature of the `returns` parameter is not specified, developers must ensure that the data passed to this function aligns with what the rest of the system expects. Mismatched data types or structures could lead to runtime errors or unexpected behavior.
+- **Edge Cases**: Consider scenarios where `returns` might be `None`, an empty collection, or a value outside expected ranges. The function itself does not handle such cases, so additional validation should be performed before calling `terminate`.
+- **Potential Areas for Refactoring**:
+  - **Introduce Validation**: Before assigning the `returns` parameter to the attribute, consider adding input validation to ensure that the data meets certain criteria (e.g., type checking, value range checks). This can prevent runtime errors and improve robustness.
+    - **Refactoring Technique**: Use **Guard Clauses** from Martin Fowler's catalog to handle invalid inputs early in the function.
+  - **Encapsulation of Assignment Logic**: If additional logic needs to be performed when setting the `returns` attribute (e.g., logging, triggering other processes), encapsulate this logic within a separate method. This keeps the `terminate` function focused on its primary responsibility and enhances modularity.
+    - **Refactoring Technique**: Apply **Replace Method with Method Object** if the assignment logic becomes complex enough to warrant its own class or object.
 
-This function does not return any value; it modifies the `DiplomacyTrajectory` object in place by setting its `returns` attribute.
-
-## Detailed Explanation
-
-The `terminate` function is a simple method within the `DiplomacyTrajectory` class. Its primary purpose is to store the final results of a game into the trajectory object, which can then be used for analysis or further processing.
-
-### Logic and Flow
-
-1. **Parameter Assignment**: The function takes a single parameter, `returns`, which contains the final outcomes of the game.
-2. **State Update**: It assigns this `returns` value to the `self.returns` attribute of the `DiplomacyTrajectory` instance, effectively storing the results within the trajectory object.
-
-### Algorithms
-
-- The function does not implement any complex algorithms or computations. It is a straightforward assignment operation.
-
-## Usage Notes
-
-- **Limitations**: This function assumes that the `returns` parameter provided is valid and correctly formatted according to the expectations of the `DiplomacyTrajectory` class.
-- **Edge Cases**: If `returns` is `None`, it will overwrite any existing return values stored in the trajectory object. Ensure that `returns` always contains meaningful data relevant to the game's outcome.
-- **Performance Considerations**: Since this function involves a simple attribute assignment, its performance impact is negligible. However, calling this function multiple times on the same trajectory object without reinitialization may lead to unexpected behavior.
-
-This documentation provides a comprehensive understanding of the `terminate` function, ensuring that developers can effectively use and integrate it within their projects.
+This documentation provides a clear understanding of the `terminate` function's role, parameters, and considerations for usage and potential improvements.
 ***
 ## FunctionDef _draw_returns(points_per_supply_centre, board, num_players)
-**Function Overview**
+**Function Overview**:  
+_`_draw_returns` computes the normalized returns (number of supply centers) for each player when a game ends in a draw._
 
-The `_draw_returns` function computes the returns (number of supply centers) when a game ends in a draw.
+**Parameters**:
+- `points_per_supply_centre`: A boolean flag indicating whether the return should be calculated based on the number of supply centers per player.
+- `board`: A NumPy array representing the game board, where each element corresponds to a province controlled by a player or is neutral.
+- `num_players`: An integer specifying the total number of players in the game.
 
-**Parameters**
+**Return Values**:  
+- The function returns a NumPy array of floats, representing the normalized returns for each player. Each value indicates the proportion of supply centers that player controls relative to the total number of supply centers controlled by all players combined.
 
-- `points_per_supply_centre`: A boolean indicating whether to assign points per supply center in a draw. If `True`, each player receives points based on their number of supply centers; if `False`, players receive either 0 or 1 point.
-  
-- `board`: A NumPy array representing the game board, which contains information about the supply centers controlled by each player.
+**Detailed Explanation**:
+The `_draw_returns` function calculates the distribution of points among players in a game scenario where the outcome is a draw. The logic hinges on whether the `points_per_supply_centre` flag is set to True or False.
+- **If `points_per_supply_centre` is True**: 
+  - For each player, it computes the number of supply centers they control using the `utils.sc_provinces(i, board)` function, where `i` ranges from 0 to `num_players - 1`.
+  - It then creates a list of these counts.
+- **If `points_per_supply_centre` is False**:
+  - For each player, it checks if they control any supply centers using the `utils.sc_provinces(i, board)` function. If the player controls at least one supply center, they receive a score of 1; otherwise, they receive 0.
+- The list of scores (either counts or binary values) is then converted into a NumPy array with data type `np.float32`.
+- Finally, the function normalizes these scores by dividing each element by the sum of all elements in the array. This normalization ensures that the total of all returned values equals 1, representing the proportion of supply centers controlled by each player relative to the total.
 
-- `num_players`: An integer specifying the number of players in the game.
+**Usage Notes**:
+- **Limitations**: The function assumes that `utils.sc_provinces(i, board)` correctly identifies and counts the supply centers for each player. If this utility function is incorrect or incomplete, the results from `_draw_returns` will be inaccurate.
+- **Edge Cases**: 
+  - When all players have zero supply centers (`points_per_supply_centre=False`), the sum of returns would be zero, leading to a division by zero error. This scenario should be handled externally before calling `_draw_returns`.
+  - If `num_players` is less than or equal to zero, the function will not behave as expected and may raise an error when iterating over player indices.
+- **Potential Areas for Refactoring**:
+  - **Decomposition**: The logic could be decomposed into smaller functions. For example, separating the calculation of supply center counts and binary scores into distinct helper functions can improve readability and maintainability.
+    - Example: `calculate_supply_center_counts` and `calculate_binary_scores`.
+  - **Guard Clauses**: Introduce guard clauses at the beginning of the function to handle edge cases such as zero players or no supply centers. This prevents unnecessary computations and potential errors.
+    - Example: Check if `num_players <= 0` and raise a ValueError if true.
 
-**Return Values**
-
-The function returns a NumPy array containing the normalized returns for each player. The normalization is done by dividing the raw returns (either the count of supply centers or 0/1 based on possession) by the sum of all returns, ensuring that the total sum of returns equals 1.
-
-**Detailed Explanation**
-
-The `_draw_returns` function determines how points are distributed among players when a game ends in a draw. The logic is as follows:
-
-1. **Parameter Check**: The function receives three parameters: `points_per_supply_centre`, `board`, and `num_players`.
-
-2. **Return Calculation**:
-   - If `points_per_supply_centre` is `True`, the function calculates the number of supply centers each player controls using the `utils.sc_provinces(i, board)` method for each player `i`. The results are stored in a list called `returns`.
-   - If `points_per_supply_centre` is `False`, the function assigns 1 point to players who control at least one supply center and 0 points to those who do not. This is achieved using a list comprehension that checks if `utils.sc_provinces(i, board)` returns any provinces for each player.
-
-3. **Normalization**: The raw returns are then normalized by dividing each element in the `returns` list by the sum of all returns. This ensures that the total sum of the returns equals 1, providing a fair distribution of points among players.
-
-4. **Return Statement**: Finally, the function returns the normalized returns as a NumPy array with a data type of `np.float32`.
-
-**Usage Notes**
-
-- The function assumes that the `board` parameter is correctly formatted and contains valid information about supply centers.
-  
-- If `num_players` does not match the actual number of players in the game, it may lead to incorrect results.
-
-- Performance considerations are minimal since the function primarily involves list comprehensions and basic arithmetic operations. However, for very large boards or a high number of players, the performance could be impacted due to increased computation time.
-
-- The function is intended to be used within the context of a larger game simulation, such as in the `run_game` function provided in the references, where it determines the final distribution of points when a draw occurs.
+By adhering to these guidelines, developers can better understand the purpose and functionality of `_draw_returns`, ensuring correct usage and facilitating future modifications.
 ## FunctionDef run_game(state, policies, slots_to_policies, max_length, min_years_forced_draw, forced_draw_probability, points_per_supply_centre, draw_if_slot_loses)
-```python
-class DataProcessor:
-    def __init__(self):
-        """
-        Initializes a new instance of the DataProcessor class.
-        
-        The constructor does not take any parameters and sets up the initial state necessary for processing data.
-        """
-        pass
+**Function Overview**: The `run_game` function is designed to execute a game of diplomacy using specified policies and parameters, returning the trajectory of the game as a `DiplomacyTrajectory`.
 
-    def process_data(self, data):
-        """
-        Processes the given data.
+**Parameters**:
+- **state**: A `DiplomacyState` object representing the initial state of the game in Spring 1901.
+- **policies**: A sequence of policy objects that dictate the actions for each player. Each policy is responsible for generating actions based on the current game state and legal moves available.
+- **slots_to_policies**: A sequence mapping each player slot (position) to an index in the `policies` list, indicating which policy controls which player.
+- **max_length**: An optional integer specifying the maximum number of full diplomacy turns the game should run. If not provided, the game will continue until a terminal state is reached.
+- **min_years_forced_draw**: An integer representing the minimum number of years after which the game can be forced into a draw based on a probability.
+- **forced_draw_probability**: A float between 0 and 1 that represents the probability of forcing a draw each year after `min_years_forced_draw` has been reached.
+- **points_per_supply_centre**: A boolean flag indicating whether points should be awarded based on supply centers in a draw scenario, or if a simple win/loss system should be used.
+- **draw_if_slot_loses**: An optional integer representing a player slot. If this player is eliminated from the game, it will result in an automatic draw.
 
-        This method takes in a list of numerical values and returns a dictionary containing statistical information about the dataset.
-        
-        Parameters:
-        - data (list): A list of numerical values to be processed.
-        
-        Returns:
-        - dict: A dictionary with keys 'mean', 'median', and 'std_dev' representing the mean, median, and standard deviation of the input data respectively.
-        """
-        pass
+**Return Values**:
+- The function returns a `DiplomacyTrajectory` object that encapsulates the entire history of the game, including observations, legal actions, taken actions, and policy outputs at each turn.
 
-    def filter_data(self, data, threshold):
-        """
-        Filters out data points below a specified threshold.
+**Detailed Explanation**:
+The `run_game` function orchestrates the execution of a diplomacy game by iteratively applying policies to generate actions for players until the game reaches a terminal state or the maximum number of turns is reached. The function begins by validating that the length of `slots_to_policies` matches the expected number of players (7) and maps each policy index to its corresponding player slots.
 
-        This method takes in a list of numerical values and a threshold value. It returns a new list containing only those data points that are greater than or equal to the threshold.
-        
-        Parameters:
-        - data (list): A list of numerical values to be filtered.
-        - threshold (float): The minimum value a data point must have to be included in the result.
-        
-        Returns:
-        - list: A list containing only the data points that meet the threshold requirement.
-        """
-        pass
-```
+The function initializes the game year, turn number, trajectory object (`DiplomacyTrajectory`), and return values. It then enters a loop where it checks if the current state is terminal or if the maximum number of turns has been reached. If not, it proceeds with the following steps:
+
+1. **Observation**: The function retrieves the current game observation.
+2. **Year Checks**: At the start of each new year (Spring Moves), the function checks whether a forced draw should occur due to player elimination or based on the `forced_draw_probability`.
+3. **Legal Actions and Padding**: It calculates legal actions for all players, padding these actions to ensure uniformity across turns.
+4. **Action Generation**: For each policy, it generates actions for its controlled slots using the current observation and legal actions. The function ensures that each policy returns a consistent number of action lists corresponding to the number of slots it controls.
+5. **State Update**: The game state is updated with the generated actions, advancing the turn count.
+6. **Trajectory Logging**: The function logs the current step's details (observation, legal actions, taken actions, and policy outputs) into the trajectory object.
+
+Once the loop terminates, the function calculates the final returns if not already determined (e.g., due to a forced draw) and finalizes the trajectory with these returns before returning it.
+
+**Usage Notes**:
+- **Limitations**: The function assumes that the `DiplomacyState` and policy objects are correctly implemented and compatible. It does not handle exceptions or errors related to invalid states or policies.
+- **Edge Cases**: Consider scenarios where all players might be eliminated simultaneously, leading to an ambiguous draw condition. Also, ensure that the probability values for forced draws are within the valid range (0 to 1).
+- **Refactoring Suggestions**:
+  - **Extract Method**: Break down the main loop into smaller functions responsible for specific tasks such as year checks, action generation, and state updates. This can improve readability and modularity.
+  - **Replace Conditional with Polymorphism**: If different types of forced draw conditions are introduced in the future, consider using polymorphism to handle these cases more cleanly.
+  - **Introduce Guard Clauses**: At the beginning of the function, use guard clauses to handle edge cases like invalid `slots_to_policies` mappings or out-of-range probability values, making the main logic easier to follow.

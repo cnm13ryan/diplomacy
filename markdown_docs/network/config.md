@@ -1,55 +1,30 @@
 ## FunctionDef get_config
----
+**Function Overview**: The `get_config` function returns a configuration dictionary specifically tailored for network settings.
 
-**Function Overview**
+**Parameters**: 
+- **None**: The `get_config` function does not accept any parameters. It constructs and returns a pre-defined configuration.
 
-The `get_config` function returns a configuration dictionary (`config_dict.ConfigDict`) tailored for setting up a network with specific parameters and settings.
+**Return Values**:
+- **config_dict.ConfigDict**: A configuration dictionary containing all necessary parameters to initialize and configure the network, including class references and keyword arguments for various components like RNN constructors and adjacency matrices.
 
-**Parameters**
+**Detailed Explanation**:
+The `get_config` function is designed to encapsulate the creation of a complex configuration object used in setting up a network. Here's a step-by-step breakdown of its logic:
 
-- **None**: The function does not accept any parameters.
+1. **Initialization**: A new instance of `config_dict.ConfigDict` is created to hold all configuration settings.
+2. **Network Class Assignment**: The `network_class` attribute of the config dictionary is set to `network.Network`, indicating that this class will be used as the network's base class.
+3. **Keyword Arguments Configuration**:
+   - A nested call to `config_dict.create()` constructs a dictionary of keyword arguments (`rnn_kwargs`) for an RNN constructor specified by `rnn_ctor=network.RelationalOrderDecoder`.
+   - The adjacency matrix is generated using several nested function calls:
+     - `province_order.get_mdf_content(province_order.MapMDF.STANDARD_MAP)` retrieves content from a standard map file.
+     - This content is then used to build an adjacency matrix via `province_order.build_adjacency()`.
+     - Finally, the adjacency matrix is normalized with `network.normalize_adjacency()` before being assigned to `rnn_kwargs`.
+   - Other parameters such as `filter_size`, `num_cores`, and others are directly specified in the dictionary.
+4. **Return**: The fully populated configuration dictionary (`config`) is returned.
 
-**Return Values**
-
-- **config_dict.ConfigDict**: A configuration dictionary containing all the necessary settings to initialize a network.
-
-**Detailed Explanation**
-
-The `get_config` function is designed to configure a network by populating a `ConfigDict` with various parameters and nested configurations. Here's a breakdown of its logic:
-
-1. **Initialization**: The function starts by creating an instance of `config_dict.ConfigDict`, which will hold all the configuration settings.
-
-2. **Network Class Assignment**:
-   - `config.network_class = network.Network`: This line assigns the `Network` class from the `network` module to the `network_class` attribute in the configuration dictionary. This specifies that the network being configured is an instance of the `Network` class.
-
-3. **Network Keyword Arguments (kwargs)**:
-   - The function then sets up a complex nested structure within `config.network_kwargs`, which includes several key parameters and configurations:
-     - **RNN Constructor (`rnn_ctor`)**: Specifies the constructor for the Recurrent Neural Network (RNN) component, set to `network.RelationalOrderDecoder`.
-     - **RNN Keyword Arguments (`rnn_kwargs`)**:
-       - **Adjacency Matrix**: The adjacency matrix is constructed using a series of nested functions and methods from the `province_order` module. This includes building an adjacency matrix based on map data (`province_order.build_adjacency`) and normalizing it (`network.normalize_adjacency`). The map data itself is retrieved using `province_order.get_mdf_content`, with the standard map configuration specified by `province_order.MapMDF.STANDARD_MAP`.
-       - **Filter Size**: Set to 64, this parameter likely controls the size of filters used in convolutional layers.
-       - **Number of Cores (`num_cores`)**: Set to 4, indicating the number of parallel processing units or cores used by the RNN.
-     - Additional Parameters:
-       - `name`: Set to "delta", possibly a unique identifier for this configuration.
-       - `num_players`: Set to 7, representing the number of players in the network's context.
-       - `area_mdf` and `province_mdf`: These are set to different map configurations (`MapMDF.BICOASTAL_MAP` and `MapMDF.STANDARD_MAP`, respectively), likely defining the geographical or thematic areas for the network.
-       - `is_training`: Set to False, indicating that this configuration is not intended for training purposes but rather for inference or evaluation.
-       - **Shared Filter Size (`shared_filter_size`) and Player Filter Size (`player_filter_size`)**: Both set to 160, these parameters control the size of filters used in shared and player-specific layers.
-       - **Number of Shared Cores (`num_shared_cores`) and Number of Player Cores (`num_player_cores`)**: Set to 12 and 3, respectively, indicating the number of cores allocated for shared and player-specific computations.
-       - **Value MLP Hidden Layer Sizes**: A tuple `(256,)`, specifying the size of hidden layers in a Multi-Layer Perceptron (MLP) used for value estimation.
-       - **Actions Since Last Moves Embedding Size**: Set to 10, controlling the dimensionality of embeddings representing actions taken since the last move.
-
-4. **Return Statement**:
-   - Finally, the function returns the fully populated configuration dictionary (`config`), which can be used to initialize and configure a network instance according to the specified settings.
-
-**Usage Notes**
-
-- **Complexity**: The function involves multiple nested configurations and dependencies on various modules (`network`, `province_order`). Ensure that all required modules and their methods are correctly imported and available in the runtime environment.
-  
-- **Performance Considerations**: The configuration includes parameters for parallel processing (e.g., number of cores), which can significantly impact performance. Adjust these settings based on the available hardware resources to optimize execution speed.
-
-- **Limitations**: This function is tailored to a specific network architecture and configuration. It may not be directly applicable or adaptable to other types of networks without modifications.
-
----
-
-This documentation provides a comprehensive overview of the `get_config` function, detailing its purpose, parameters, return values, logic flow, and usage considerations.
+**Usage Notes**:
+- **Limitations**: The function does not allow for dynamic adjustments of its output, as it returns a static configuration based on predefined constants and methods.
+- **Edge Cases**: The function assumes that all referenced modules (`network`, `province_order`, `config_dict`) are correctly imported and contain the expected functions and classes. Any changes in these modules could lead to runtime errors if not handled appropriately.
+- **Potential Areas for Refactoring**:
+  - **Extract Method**: To improve readability, consider extracting complex logic into smaller functions. For example, the creation of the adjacency matrix could be moved to a separate function named `create_adjacency_matrix()`.
+  - **Configuration Management**: If there is a need to support multiple configurations or dynamic configuration changes, consider implementing a more flexible configuration management system.
+  - **Parameterization**: To enhance modularity and maintainability, parameters such as map types (`province_order.MapMDF.STANDARD_MAP`, `province_order.MapMDF.BICOASTAL_MAP`) could be passed as arguments to the function, allowing for greater flexibility in its usage.

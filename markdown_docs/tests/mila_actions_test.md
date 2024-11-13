@@ -1,249 +1,205 @@
 ## ClassDef MilaActionsTest
----
+**Function Overview**: `MilaActionsTest` is a class designed to test the conversion and inversion logic between DeepMind Actions (DM) and MILA Actions. It ensures that actions can be accurately converted from one format to another and back without loss of information, with specific tests addressing various edge cases and known limitations.
 
-**Function Overview**
+**Parameters**: 
+- **No Parameters**: The `MilaActionsTest` class does not accept any parameters during initialization. All test methods operate on predefined lists of actions (`action_list.POSSIBLE_ACTIONS`, `action_list.MILA_ACTIONS_LIST`) and utilize utility functions from the `mila_actions` and `human_readable_actions` modules.
 
-The `MilaActionsTest` class is a test suite designed to validate the conversion and consistency between DeepMind (DM) actions and MILA (Machine Intelligence for Learning Adjudication) actions within a game environment. This ensures that actions can be accurately translated back and forth without losing information or introducing errors.
-
-**Parameters**
-
-- **None**: The `MilaActionsTest` class does not require any parameters as it is designed to operate on predefined lists of actions (`action_list.POSSIBLE_ACTIONS` and `action_list.MILA_ACTIONS_LIST`) and utilizes helper functions from the `mila_actions`, `human_readable_actions`, and `action_utils` modules.
-
-**Return Values**
-
-- **None**: The test methods within `MilaActionsTest` do not return any values. Instead, they use assertions to verify that conditions are met, and if an assertion fails, it raises a `TestCase.failureException`.
-
-**Detailed Explanation**
-
-The `MilaActionsTest` class contains several test methods, each focusing on different aspects of the DM-to-MILA action conversion process:
-
-1. **Test Method 1: Inversion of Action Conversion**
-   - **Purpose**: Ensures that converting an action from DM to MILA and back to DM results in the original action.
-   - **Logic**:
-     - Iterates over each action in `action_list.POSSIBLE_ACTIONS`.
-     - Converts the action to MILA format using a hypothetical conversion function (not explicitly defined in the provided code).
-     - Converts the MILA action back to DM format.
-     - Asserts that the final DM action matches the original action.
-
-2. **Test Method 2: Handling of Ambiguous Actions**
-   - **Purpose**: Ensures that actions with multiple valid interpretations are correctly handled during conversion.
-   - **Logic**:
-     - Iterates over each ambiguous action in a hypothetical list (not explicitly defined).
-     - Converts the action to MILA format.
-     - Asserts that the resulting MILA action is one of the expected valid interpretations.
-
-3. **Test Method 3: Validation of MILA Action List**
-   - **Purpose**: Ensures that all actions in the MILA action list are well-formed and adhere to specific rules.
-   - **Logic**:
-     - Iterates over each action in `action_list.MILA_ACTIONS_LIST`.
-     - Validates the action using a hypothetical validation function (not explicitly defined).
-     - Asserts that the action is valid.
-
-4. **Test Method 4: Counting of Illegal MILA Actions**
-   - **Purpose**: Counts and categorizes actions from the DM list that are not included in the MILA list, providing insights into why these actions are excluded.
-   - **Logic**:
-     - Iterates over each action in `action_list.POSSIBLE_ACTIONS`.
-     - Converts the action to MILA format.
-     - If the resulting MILA action is not in `action_list.MILA_ACTIONS_LIST`, categorizes it based on its type (e.g., long convoy, other convoy).
-     - Compares the counts of categorized actions against expected values.
-
-**Usage Notes**
-
-- **Limitations**: The test methods assume that the conversion and validation functions (`mila_actions.convert_to_mila`, `mila_actions.validate_action`) are correctly implemented. Any errors in these functions will affect the accuracy of the tests.
-  
-- **Edge Cases**: The test suite does not explicitly handle edge cases such as invalid input formats or unexpected action types. It is assumed that these cases are handled by the conversion and validation functions.
-
-- **Performance Considerations**: The performance of the test suite may be impacted by the size of the action lists and the efficiency of the conversion and validation functions. For large lists, optimizations such as parallel processing or caching intermediate results could improve performance.
-
----
-
-This documentation provides a comprehensive overview of the `MilaActionsTest` class, detailing its purpose, logic, and usage considerations based on the provided code snippet.
-### FunctionDef test_inversion_dm_actions(self)
-**Function Overview**: The `test_inversion_dm_actions` function tests whether converting a Domain Model (DM) action to MILA actions and back to DM actions recovers the original DM action.
-
-**Parameters**: None. This function does not take any parameters.
-
-**Return Values**: None. This function does not return any values; it performs assertions within its body.
+**Return Values**:
+- **No Return Values**: The class does not return any values directly. Instead, it asserts conditions that must be true for the tests to pass, raising exceptions if any assertion fails.
 
 **Detailed Explanation**:
-- The function iterates over each possible action defined in `action_list.POSSIBLE_ACTIONS`.
-- For each original DM action, it converts the action to a list of MILA actions using the `mila_actions.action_to_mila_actions` method.
-- It then iterates over each MILA action obtained from the conversion and checks if the original DM action is included in the set of possible DM actions that can be derived from this MILA action using the `mila_actions.mila_action_to_possible_actions` method.
-- If the original DM action is not found in the set of possible DM actions derived from any MILA action, an assertion error is raised with a message indicating which MILA action does not map back to a set including the original DM action.
+The `MilaActionsTest` class contains several test methods designed to verify the integrity and accuracy of action conversions between DM and MILA formats:
+
+1. **test_inversion_logic**: This method checks that converting an action from DM to MILA and then back to DM results in the original action. It iterates over a list of possible actions (`action_list.POSSIBLE_ACTIONS`), performs the conversion, and asserts equality.
+
+2. **test_mila_action_coverage**: Ensures that all MILA actions can be mapped back to their corresponding DM actions without loss or error. This test is crucial for validating the completeness of the conversion logic.
+
+3. **test_expected_missing_actions**: Analyzes why certain actions are not included in the MILA action list (`action_list.MILA_ACTIONS_LIST`). It categorizes these actions based on predefined reasons (e.g., long convoy routes, irrelevant convoys) and compares the counts against expected values to ensure all known exceptions are accounted for.
 
 **Usage Notes**:
-- This test ensures that the conversion between DM actions and MILA actions is reversible and accurate.
-- The function assumes that `action_list.POSSIBLE_ACTIONS`, `mila_actions.action_to_mila_actions`, and `mila_actions.mila_action_to_possible_actions` are correctly implemented and available in the scope where this function is called.
-- The test may be resource-intensive if `action_list.POSSIBLE_ACTIONS` contains a large number of actions, as it performs multiple conversions and checks for each action.
-- Edge cases, such as actions that cannot be converted to MILA actions or actions that map back to multiple DM actions, should be handled appropriately within the implementations of `mila_actions.action_to_mila_actions` and `mila_actions.mila_action_to_possible_actions`.
+- **Limitations**: The tests assume that `action_list.POSSIBLE_ACTIONS` and `action_list.MILA_ACTIONS_LIST` are correctly defined and comprehensive. Any discrepancies in these lists could lead to failed assertions.
+- **Edge Cases**: Special attention is given to actions involving long convoy routes, as these often do not conform to MILA's stricter rules for action validity.
+- **Refactoring Suggestions**:
+  - **Extract Method**: Consider extracting repetitive logic into separate methods to improve readability and maintainability. For example, the categorization of missing actions could be moved to a helper method.
+  - **Replace Magic Numbers with Named Constants**: Replace hardcoded numbers (e.g., expected counts in `test_expected_missing_actions`) with named constants to make the code more understandable and easier to update.
+  - **Use Data-Driven Tests**: Implement parameterized tests for scenarios that involve iterating over lists of actions. This approach can help in reducing boilerplate code and making the test suite more scalable.
+
+By adhering to these guidelines, `MilaActionsTest` ensures robust testing of action conversion logic, facilitating reliable integration between DM and MILA systems.
+### FunctionDef test_inversion_dm_actions(self)
+**Function Overview**: The `test_inversion_dm_actions` function tests whether converting a Direct Manipulation (DM) action to MILA actions and then back to DM actions recovers the original DM action.
+
+**Parameters**: 
+- **No explicit parameters**: This function does not accept any input parameters. It operates on predefined data structures within its scope, specifically `action_list.POSSIBLE_ACTIONS`.
+
+**Return Values**:
+- **None**: The function is a test case and asserts conditions rather than returning values directly. If all assertions pass, the test is considered successful.
+
+**Detailed Explanation**:
+The `test_inversion_dm_actions` function performs the following steps to verify the invertibility of actions between DM and MILA formats:
+
+1. **Iteration over Possible Actions**: The function iterates through each action in `action_list.POSSIBLE_ACTIONS`, which presumably contains a list of all possible Direct Manipulation (DM) actions.
+
+2. **Conversion to MILA Actions**: For each original DM action, the function converts it into one or more MILA actions using the `mila_actions.action_to_mila_actions` method. This conversion step is crucial as it translates the DM action format into the MILA action format.
+
+3. **Reconversion and Validation**:
+   - The function then iterates over each possible MILA action resulting from the previous conversion.
+   - For each MILA action, it checks if the original DM action can be recovered by converting the MILA action back to potential DM actions using `mila_actions.mila_action_to_possible_actions`.
+   - It asserts that the original DM action is contained within the set of possible DM actions obtained from the reconversion. This assertion ensures that the conversion process is invertible and that no information is lost or incorrectly transformed during the conversions.
+   
+4. **Error Message**: If an assertion fails, a detailed error message is provided, indicating which MILA action does not map back to the original DM action. The error message includes a human-readable representation of the original DM action for clarity.
+
+**Usage Notes**:
+- **Limitations and Edge Cases**: This test assumes that `action_list.POSSIBLE_ACTIONS` comprehensively lists all possible DM actions and that both conversion functions (`action_to_mila_actions` and `mila_action_to_possible_actions`) are correctly implemented. If these assumptions do not hold, the test may yield false negatives or positives.
+- **Potential Refactoring**: 
+  - **Extract Method**: The logic for converting an action to MILA and back could be extracted into a separate method to improve code readability and modularity. This would allow `test_inversion_dm_actions` to focus solely on testing without being cluttered by conversion details.
+  - **Parameterize Test Cases**: If the test needs to handle different sets of actions or configurations, consider parameterizing the test cases using a framework like `unittest.TestCase.subTest` or similar mechanisms provided by testing frameworks. This would make the test more flexible and easier to extend.
+
+By adhering to these guidelines, developers can better understand and maintain the functionality of the `test_inversion_dm_actions` function within the project's testing suite.
 ***
 ### FunctionDef test_inversion_mila_actions(self)
-**Function Overview**
+**Function Overview**: The `test_inversion_mila_actions` function tests that converting a MILA (Mila Instruction Language Action) to DM (Domain Model) actions and then back to MILA actions recovers the original MILA action.
 
-The function `test_inversion_mila_actions` is designed to verify that converting a MILA action to its possible DM (Decision Making) actions and then back to MILA actions recovers the original MILA action.
+**Parameters**: 
+- This function does not accept any parameters. It operates on predefined lists and functions within its scope.
 
-**Parameters**
+**Return Values**:
+- The function does not return any values explicitly. It asserts conditions that must be true for the test to pass, raising an `AssertionError` if any condition fails.
 
-- **self**: The instance of the class `MilaActionsTest`.
+**Detailed Explanation**:
+The `test_inversion_mila_actions` function is designed to verify the correctness of the conversion between MILA actions and DM actions in both directions (MILA to DM and DM back to MILA). The process involves iterating over a predefined list of MILA actions (`action_list.MILA_ACTIONS_LIST`). For each original action, it performs the following steps:
+1. Converts the `original_action` into a set of possible DM actions using the function `mila_actions.mila_action_to_possible_actions`.
+2. Iterates through each `dm_action` in the resulting set of possible DM actions.
+3. Asserts that the `original_action` is included in the set of MILA actions obtained by converting the `dm_action` back to MILA actions using `mila_actions.action_to_mila_actions`.
+4. If the assertion fails, it provides a detailed error message indicating which DM action does not map back to include the original MILA action.
 
-**Return Values**
-
-- None. This function does not return any value; it asserts conditions that ensure the correctness of the action conversion process.
-
-**Detailed Explanation**
-
-The function `test_inversion_mila_actions` is a unit test method within the `MilaActionsTest` class. Its primary purpose is to validate the integrity and accuracy of the action conversion mechanisms implemented in the `mila_actions` module. The logic of this function can be broken down into the following steps:
-
-1. **Iteration Over MILA Actions**: The function iterates over each action defined in `action_list.MILA_ACTIONS_LIST`. This list presumably contains a comprehensive set of MILA actions that need to be tested.
-
-2. **Conversion to Possible DM Actions**: For each MILA action (`original_action`), the function calls `mila_actions.mila_action_to_possible_actions(original_action)`. This method is expected to return a list of possible DM actions that can result from the given MILA action.
-
-3. **Verification of Inversion**: The function then iterates over each DM action in the list of possible DM actions (`possible_dm_actions`). For each DM action, it calls `mila_actions.action_to_mila_actions(dm_action)`, which is expected to convert the DM action back into a set of MILA actions.
-
-4. **Assertion Check**: The function asserts that the original MILA action (`original_action`) is included in the set of MILA actions returned by `action_to_mila_actions`. This assertion ensures that the conversion from MILA to DM and back to MILA is reversible and accurately recovers the original MILA action.
-
-5. **Error Reporting**: If the assertion fails, an error message is generated using `human_readable_actions.action_string(dm_action, None)`, which provides a human-readable representation of the DM action that failed the test. This helps in identifying which specific DM action did not map back to the expected set of MILA actions.
-
-**Usage Notes**
-
-- **Assumptions**: The function assumes that:
-  - `action_list.MILA_ACTIONS_LIST` contains all relevant MILA actions.
-  - `mila_actions.mila_action_to_possible_actions` correctly generates a list of possible DM actions for each MILA action.
-  - `mila_actions.action_to_mila_actions` accurately converts DM actions back to MILA actions.
-
-- **Edge Cases**: The function does not explicitly handle edge cases such as:
-  - Empty lists of possible DM actions.
-  - DM actions that do not map back to any MILA actions.
-
-- **Performance Considerations**:
-  - The performance of this test is dependent on the size of `action_list.MILA_ACTIONS_LIST` and the complexity of the conversion methods.
-  - For large lists or complex conversions, the test may take a significant amount of time to complete.
+**Usage Notes**:
+- **Limitations**: The function relies on the correctness of the conversion functions (`mila_action_to_possible_actions` and `action_to_mila_actions`). Any errors in these functions will cause this test to fail, even if the logic within `test_inversion_mila_actions` is correct.
+- **Edge Cases**: Consider cases where a MILA action might map to multiple DM actions or vice versa. The function assumes that all possible mappings are correctly handled by the conversion functions.
+- **Potential Areas for Refactoring**:
+  - **Extract Method**: To improve readability, consider extracting the logic inside the inner loop into a separate method named `assert_mila_action_inversions`. This would encapsulate the assertion and error message generation, making the main function easier to understand at a glance.
+    ```python
+    def assert_mila_action_inversions(self, original_action, dm_action):
+        self.assertIn(
+            original_action,
+            mila_actions.action_to_mila_actions(dm_action),
+            f'{human_readable_actions.action_string(dm_action, None)} '
+            f'does not map to set including mila action {original_action}'
+        )
+    ```
+  - **Parameterize Test**: If `action_list.MILA_ACTIONS_LIST` is large or if there are multiple lists of actions that need similar testing, consider parameterizing the test function. This can be achieved using a framework like `unittest.TestCase.subTest` to run the same logic for different inputs without duplicating code.
+    ```python
+    def test_inversion_mila_actions(self):
+        """Tests converting a MILA to DM to MILA action recovers original action."""
+        for original_action in action_list.MILA_ACTIONS_LIST:
+            with self.subTest(original_action=original_action):
+                possible_dm_actions = mila_actions.mila_action_to_possible_actions(
+                    original_action)
+                for dm_action in possible_dm_actions:
+                    self.assertIn(
+                        original_action,
+                        mila_actions.action_to_mila_actions(dm_action),
+                        f'{human_readable_actions.action_string(dm_action, None)} '
+                        f'does not map to set including mila action {original_action}'
+                    )
+    ```
+- **Documentation**: Ensure that the conversion functions (`mila_action_to_possible_actions` and `action_to_mila_actions`) are well-documented so that developers understand their expected behavior and limitations. This will help in maintaining the correctness of the test function over time.
 ***
 ### FunctionDef test_all_mila_actions_have_dm_action(self)
-**Function Overview**:  
-The function `test_all_mila_actions_have_dm_action` is designed to verify that every action listed in `MILA_ACTIONS_LIST` has at least one corresponding DM (Decision Making) action.
+**Function Overview**: The `test_all_mila_actions_have_dm_action` function is designed to verify that each action listed in `action_list.MILA_ACTIONS_LIST` has at least one corresponding dynamic management (DM) action.
 
-**Parameters**:  
-- None. The function does not take any parameters.
+**Parameters**: 
+- This function does not accept any parameters. It operates on predefined lists and functions within the scope of its module.
 
-**Return Values**:  
-- The function does not return any values. It raises an assertion error if any condition fails.
+**Return Values**: 
+- The function does not return any values explicitly. Its primary purpose is to assert conditions, and it will raise an assertion error if any `mila_action` in `action_list.MILA_ACTIONS_LIST` does not have a corresponding DM action.
 
-**Detailed Explanation**:  
-The function iterates over each `mila_action` in the predefined list `MILA_ACTIONS_LIST`. For each `mila_action`, it retrieves a list of possible DM actions using the function `mila_actions.mila_action_to_possible_actions(mila_action)`. The function then asserts that this list is not empty. If any `mila_action` does not have associated DM actions, an assertion error is raised with a message indicating which `mila_action` lacks DM actions.
+**Detailed Explanation**:
+The function iterates over each element in the list `MILA_ACTIONS_LIST`, which presumably contains various actions related to some system or process. For each `mila_action` in this list, it calls the function `mila_actions.mila_action_to_possible_actions(mila_action)`. This function is expected to return a list of possible DM actions associated with the given `mila_action`.
 
-**Usage Notes**:  
-- This test assumes the existence and correct implementation of `MILA_ACTIONS_LIST` and the function `mila_actions.mila_action_to_possible_actions`.
-- The test will fail if any action in `MILA_ACTIONS_LIST` does not have at least one DM action associated with it.
-- Performance considerations: The efficiency of this test is dependent on the size of `MILA_ACTIONS_LIST` and the speed of the function `mila_action_to_possible_actions`. If either is large or slow, the test execution time may increase.
+The returned list of DM actions (`dm_actions`) is then checked using an assertion method `self.assertNotEmpty(dm_actions, f'mila_action {mila_action} has no dm_action')`. The purpose of this assertion is to ensure that each `mila_action` has at least one corresponding DM action. If the list `dm_actions` is empty for any `mila_action`, the test will fail with a message indicating which `mila_action` lacks a DM action.
+
+**Usage Notes**:
+- **Limitations**: The function assumes that `action_list.MILA_ACTIONS_LIST` and `mila_actions.mila_action_to_possible_actions` are correctly defined elsewhere in the codebase. If these components are not properly implemented or configured, the test may behave unexpectedly.
+- **Edge Cases**: The function does not handle cases where `mila_actions.mila_action_to_possible_actions` might raise an exception for certain inputs. It only checks if the returned list is empty.
+- **Potential Areas for Refactoring**:
+  - **Decomposition**: If the logic within this test becomes more complex, consider breaking it into smaller functions to improve readability and maintainability. This aligns with Martin Fowler's "Extract Method" refactoring technique.
+  - **Error Handling**: Introduce error handling around `mila_actions.mila_action_to_possible_actions` calls to manage unexpected exceptions gracefully. This could involve wrapping the function call in a try-except block, which is part of the "Introduce Explaining Variable" and "Replace Error Code with Exception" refactoring techniques.
+  - **Parameterization**: If the test needs to be run against different sets of actions or configurations, consider parameterizing the test using fixtures or similar mechanisms. This approach can make tests more flexible and easier to extend, in line with Martin Fowler's "Parameterize Test" technique.
+
+By adhering to these guidelines, developers can ensure that `test_all_mila_actions_have_dm_action` remains robust, maintainable, and easy to understand.
 ***
 ### FunctionDef test_only_disband_remove_ambiguous_mila_actions(self)
-**Function Overview**
+**Function Overview**: The `test_only_disband_remove_ambiguous_mila_actions` function is designed to verify that any ambiguous MILA actions (those that can resolve to more than one possible action) are exclusively resolved into either a 'disband' or 'remove' action.
 
-The function `test_only_disband_remove_ambiguous_mila_actions` is designed to test that any ambiguous MILA actions result exclusively in either a "disband" or "remove" action. It iterates through a list of MILA actions and checks if the corresponding possible actions (DM actions) are limited to these two specific orders.
-
-**Parameters**
-
-- **None**: The function does not take any parameters.
-
-**Return Values**
-
-- **None**: The function does not return any values; it asserts conditions that should hold true for the input data.
-
-**Detailed Explanation**
-
-The function `test_only_disband_remove_ambiguous_mila_actions` performs the following steps:
-
-1. **Iteration Over MILA Actions**: It iterates over each MILA action in the predefined list `action_list.MILA_ACTIONS_LIST`.
-
-2. **Convert MILA Action to DM Actions**: For each MILA action, it converts it into a set of possible DM actions using the function `mila_actions.mila_action_to_possible_actions(mila_action)`.
-
-3. **Check for Ambiguity**: It checks if the number of possible DM actions (`dm_actions`) is greater than one. If so, it asserts that there should be exactly two possible DM actions, as indicated by `self.assertLen(dm_actions, 2, f'{mila_action} gives >2 dm_actions')`.
-
-4. **Extract Orders**: It extracts the orders from each of these DM actions using a set comprehension and the function `action_utils.action_breakdown(dm_action)[0]`. This step ensures that all possible orders are captured.
-
-5. **Verify Orders**: Finally, it asserts that the set of extracted orders should only contain `action_utils.REMOVE` and `action_utils.DISBAND`, as indicated by `self.assertEqual(orders, {action_utils.REMOVE, action_utils.DISBAND}, f'{mila_action} ambiguous but not a disband/remove action')`.
-
-**Usage Notes**
-
-- **Assumptions**: The function assumes that the MILA actions in `action_list.MILA_ACTIONS_LIST` are valid and that the conversion to DM actions is correctly implemented.
+- **Parameters**: This function does not accept any parameters. It operates on predefined lists and constants within its scope.
   
-- **Edge Cases**: If a MILA action does not result in any possible DM actions, it will not be tested by this function. Additionally, if there are more than two possible orders for an ambiguous MILA action, the test will fail.
+- **Return Values**: The function does not return any values explicitly. Its purpose is to perform assertions that will raise errors if the conditions specified in the test are not met, thereby indicating a failure in the tested logic.
 
-- **Performance Considerations**: The performance of this function is dependent on the size of `action_list.MILA_ACTIONS_LIST` and the complexity of converting each MILA action to DM actions. For large lists or complex conversions, the function may take a significant amount of time to execute.
+**Detailed Explanation**:
+The `test_only_disband_remove_ambiguous_mila_actions` function iterates over each MILA action defined in `action_list.MILA_ACTIONS_LIST`. For each MILA action, it converts the action into possible actions using the `mila_action_to_possible_actions` method from the `mila_actions` module. If a MILA action can resolve to more than one possible action (i.e., if the length of `dm_actions` is greater than 1), the function asserts that there are exactly two possible actions (`self.assertLen(dm_actions, 2)`). It then extracts the primary order from each of these possible actions using `action_utils.action_breakdown` and stores them in a set called `orders`. The test finally checks if this set contains only the 'disband' and 'remove' actions by comparing it to `{action_utils.REMOVE, action_utils.DISBAND}`. If the comparison fails, an assertion error is raised with a descriptive message.
+
+**Usage Notes**:
+- **Limitations**: The function assumes that `action_list.MILA_ACTIONS_LIST`, `mila_actions.mila_action_to_possible_actions`, and `action_utils.action_breakdown` are correctly defined and accessible within its scope. It also relies on the constants `action_utils.REMOVE` and `action_utils.DISBAND`.
+- **Edge Cases**: The function does not handle cases where `dm_actions` could be empty or contain exactly one action, as these scenarios are implicitly excluded by the condition `if len(dm_actions) > 1`. If such cases need to be tested separately, additional test functions would be required.
+- **Potential Areas for Refactoring**:
+  - **Extract Method**: The logic inside the loop could be extracted into a separate method (e.g., `_assert_ambiguous_action_resolves_to_disband_or_remove`) to improve readability and modularity. This follows Martin Fowler's "Extract Method" refactoring technique.
+  - **Parameterization**: If `action_list.MILA_ACTIONS_LIST` is expected to grow or change, consider parameterizing the test with different action lists to make the test more robust and adaptable. This aligns with the concept of data-driven tests.
+  
+By adhering to these guidelines, the function can be made more maintainable and easier to understand, facilitating future modifications and enhancements.
 ***
 ### FunctionDef test_all_dm_actions_have_possible_mila_action_count(self)
-**Function Overview**
+**Function Overview**: The `test_all_dm_actions_have_possible_mila_action_count` function verifies that each DM action maps to a valid number of MILA actions.
 
-The `test_all_dm_actions_have_possible_mila_action_count` function is designed to verify that each possible DM (Diplomatic Move) action corresponds to a valid number of MILA actions. This ensures consistency and correctness in how DM actions are translated into MILA actions within the application.
-
-**Parameters**
-
-- **action**: The function iterates over `action_list.POSSIBLE_ACTIONS`, which is a predefined list of all possible DM actions.
+- **Parameters**: This function does not accept any parameters. It operates on predefined constants and lists within the module.
   
-**Return Values**
+- **Return Values**: This function does not return any values. Its primary purpose is to assert conditions, raising an error if any condition fails.
 
-- **None**: The function does not return any value. It asserts conditions and raises an error if any condition fails.
+**Detailed Explanation**:
+The `test_all_dm_actions_have_possible_mila_action_count` function is designed to ensure that each DM (Diplomacy Move) action can be correctly translated into a set of MILA (Minimal Instruction Language for Actions) actions. The logic of the function revolves around iterating over all possible DM actions and checking if the number of corresponding MILA actions falls within an expected range.
 
-**Detailed Explanation**
+1. **Iteration Over Possible Actions**: The function iterates through each action in `action_list.POSSIBLE_ACTIONS`, which is assumed to be a predefined list containing all valid DM actions.
+2. **Conversion to MILA Actions**: For each DM action, the function calls `mila_actions.action_to_mila_actions(action)`. This method presumably converts the DM action into a list of MILA actions.
+3. **Validation of MILA Action Count**: The length of the resulting MILA actions list is checked against a set of valid counts `{1, 2, 3, 4, 6}`. If the count does not match any value in this set, an assertion error is raised with a descriptive message indicating which action caused the failure.
 
-The function's primary purpose is to validate the mapping between DM actions and MILA actions. Here’s how it works:
+**Usage Notes**:
+- **Limitations**: The function assumes that `action_list.POSSIBLE_ACTIONS` and `mila_actions.action_to_mila_actions(action)` are correctly defined elsewhere in the codebase. Any issues in these definitions could lead to incorrect test results.
+- **Edge Cases**: The function does not explicitly handle edge cases, such as empty actions or malformed action strings. It is crucial that all possible actions in `action_list.POSSIBLE_ACTIONS` adhere to expected formats and rules.
+- **Potential Areas for Refactoring**:
+  - **Descriptive Constants**: Replace the hardcoded set `{1, 2, 3, 4, 6}` with a named constant or variable. This improves code readability and maintainability by clearly indicating what these numbers represent.
+    ```python
+    VALID_MILA_ACTION_COUNTS = {1, 2, 3, 4, 6}
+    ```
+  - **Error Messages**: Enhance error messages to include more context about the failure, such as additional details about the action or its expected MILA actions. This can aid in quicker debugging.
+  - **Modularization**: If the logic for determining valid MILA action counts becomes complex, consider extracting it into a separate function. This could improve readability and allow for easier testing of this specific logic.
 
-1. **Iteration Over Actions**: The function iterates over each action in `action_list.POSSIBLE_ACTIONS`.
-2. **Mapping to MILA Actions**: For each action, it uses the `mila_actions.action_to_mila_actions(action)` method to determine the corresponding MILA actions.
-3. **Validation of MILA Action Count**: It checks if the number of generated MILA actions (`len(mila_actions_list)`) falls within a predefined set of valid counts: `{1, 2, 3, 4, 6}`.
-4. **Assertion and Error Handling**: If the count is not within the valid range, it raises an assertion error with a message indicating which action failed validation.
-
-The rationale behind this function is that DM actions can be ambiguous in terms of specifying unit types or coastlines when these details can be inferred from the game board state. Consequently, each DM action can correspond to multiple MILA actions, and the number of possible MILA actions depends on the specifics of the DM action (e.g., whether it involves an army, a fleet, or fleets in bicoastal provinces).
-
-**Usage Notes**
-
-- **Limitations**: The function assumes that `action_list.POSSIBLE_ACTIONS` is correctly defined and contains all valid DM actions.
-- **Edge Cases**: The function does not handle cases where the mapping from DM to MILA actions might be ambiguous or undefined. It relies on the correctness of the `mila_actions.action_to_mila_actions` method.
-- **Performance Considerations**: The performance of this test is directly related to the number of actions in `action_list.POSSIBLE_ACTIONS`. If this list is large, the function may take a significant amount of time to execute.
+By adhering to these guidelines, developers can maintain a clear understanding of the function's purpose and ensure that any modifications or extensions are done in a manner that preserves code quality and functionality.
 ***
 ### FunctionDef test_expected_number_missing_mila_actions(self)
-**Function Overview**
+**Function Overview**: The `test_expected_number_missing_mila_actions` function tests that MILA actions do not miss any actions except those known to be related to long convoys.
 
-The function `test_expected_number_missing_mila_actions` tests that MILA actions do not include any unexpected actions except those known to be related to long convoys.
+**Parameters**: This function does not take any parameters.
 
-**Parameters**
+**Return Values**: This function does not return any values. It asserts the equality of two dictionaries, raising an AssertionError if they are not equal.
 
-- The function does not take any parameters directly. It relies on global variables and modules imported from the project structure, such as `action_list`, `mila_actions`, and `action_utils`.
+**Detailed Explanation**:
+- The function initializes a `defaultdict` named `mila_actions_to_dm_actions` to map MILA actions to DeepMind actions and a set named `long_convoys` to store long convoy routes.
+- It iterates over each action in `action_list.POSSIBLE_ACTIONS`, converting it into MILA actions using the `mila_actions.action_to_mila_actions(action)` method. Each MILA action is then mapped back to its original DeepMind action in `mila_actions_to_dm_actions`.
+- If a MILA action is not found in `action_list.MILA_ACTIONS_LIST`, and if the action type is `CONVOY_TO`, it adds the convoy route (p1, p2) to the `long_convoys` set.
+- A dictionary named `reasons_for_illegal_mila_action` is initialized to categorize reasons why MILA actions might be missing from `action_list.MILA_ACTIONS_LIST`.
+- The function then iterates over each MILA action in `mila_actions_to_dm_actions`. If a MILA action is not in the MILA actions list, it breaks down the corresponding DeepMind action into its components (order, p1, p2, p3) and categorizes the reason for the missing MILA action based on the order type:
+  - **CONVOY_TO**: Increments the count of 'Long convoy to'.
+  - **CONVOY**: Checks if the route is in `long_convoys`. If so, increments 'Long convoy'; otherwise, increments 'Other convoy'.
+  - **SUPPORT_MOVE_TO**: Checks if the route is in `long_convoys`. If so, increments 'Support long convoy to'; otherwise, increments 'Support alternative convoy too long'.
+  - Any other order type increments 'Unknown'.
+- Finally, it asserts that `reasons_for_illegal_mila_action` matches a predefined dictionary of expected counts (`expected_counts`). If the assertion fails, an error message is raised indicating an unexpected number of actions not in the MILA list.
 
-**Return Values**
+**Usage Notes**:
+- **Limitations**: The function relies on predefined lists and dictionaries (`action_list.POSSIBLE_ACTIONS`, `action_list.MILA_ACTIONS_LIST`, and `expected_counts`) that must be correctly defined elsewhere in the codebase.
+- **Edge Cases**: The function assumes that all actions are well-formatted and that the breakdown of actions into components (order, p1, p2, p3) is accurate. It does not handle malformed actions or unexpected order types beyond categorizing them as 'Unknown'.
+- **Refactoring Suggestions**:
+  - **Extract Method**: Break down the categorization logic into separate methods for each action type (`CONVOY_TO`, `CONVOY`, `SUPPORT_MOVE_TO`) to improve readability and maintainability.
+  - **Use Constants**: Define the keys of `reasons_for_illegal_mila_action` as constants at the top of the file to avoid magic strings and improve code clarity.
+  - **Parameterize Expected Counts**: Consider passing `expected_counts` as a parameter or loading it from an external configuration file to make the test more flexible and easier to update.
 
-- The function does not return any values. Instead, it asserts that the counts of illegal MILA actions match expected values using `self.assertEqual`. If the assertion fails, it raises an AssertionError with a message indicating an unexpected number of actions not in the MILA list.
-
-**Detailed Explanation**
-
-1. **Initialization**:
-   - A defaultdict named `mila_actions_to_dm_actions` is created to map MILA actions to their corresponding DeepMind actions.
-   - A set named `long_convoys` is initialized to track long convoy routes.
-
-2. **Iterating Over Possible Actions**:
-   - The function iterates over each action in `action_list.POSSIBLE_ACTIONS`.
-   - For each action, it converts the action into a list of MILA actions using `mila_actions.action_to_mila_actions(action)`.
-   - Each MILA action is added to the `mila_actions_to_dm_actions` dictionary with its corresponding DeepMind action.
-   - If a MILA action is not in `action_list.MILA_ACTIONS_LIST`, it checks if the order of the action is `CONVOY_TO`. If so, it adds the convoy route `(p1, p2)` to the `long_convoys` set.
-
-3. **Categorizing Illegal MILA Actions**:
-   - A dictionary named `reasons_for_illegal_mila_action` is initialized to count various categories of illegal MILA actions.
-   - The function iterates over each MILA action in `mila_actions_to_dm_actions`.
-   - For each MILA action not in `action_list.MILA_ACTIONS_LIST`, it categorizes the reason for its illegality based on the order of the DeepMind action:
-     - **Long convoy to**: Incremented if the order is `CONVOY_TO`.
-     - **Long convoy**: Incremented if the order is `CONVOY` and the route `(p3, p2)` is in `long_convoys`.
-     - **Other convoy**: Incremented if the order is `CONVOY` and the route `(p3, p2)` is not in `long_convoys`.
-     - **Support long convoy to**: Incremented if the order is `SUPPORT_MOVE_TO` and the route `(p3, p2)` is in `long_convoys`.
-     - **Support alternative convoy too long**: Incremented if the order is `SUPPORT_MOVE_TO` and the route `(p3, p2)` is not in `long_convoys`.
-     - **Unknown**: Incremented for any other orders.
-
-4. **Assertion**:
-   - The function asserts that the counts of illegal MILA actions match the expected values defined in `expected_counts`. If they do not match, it raises an AssertionError with a message indicating an unexpected number of actions not in the MILA list.
-
-**Usage Notes**
-
-- This test assumes that all possible actions and their corresponding MILA actions are correctly defined in the project's action lists.
-- The function relies on manual checks for certain categories of illegal MILA actions (e.g., long convoys, other convoys) to ensure they are well-formatted and relevant.
-- Performance considerations: The function iterates over all possible actions and their corresponding MILA actions, which can be computationally expensive if the number of actions is large. However, this is a one-time operation during testing and should not significantly impact performance in typical use cases.
+By following these guidelines, developers can better understand the purpose, logic, and potential areas for improvement in the `test_expected_number_missing_mila_actions` function.
 ***

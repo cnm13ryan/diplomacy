@@ -1,396 +1,238 @@
 ## FunctionDef bits_between(number, start, end)
----
+**Function Overview**: The `bits_between` function extracts a sequence of bits from a given integer between specified start and end positions.
 
-**Function Overview**
+**Parameters**:
+- **number (int)**: The integer number from which bits are to be extracted.
+- **start (int)**: The starting position of the bit sequence to extract, inclusive. Bit positions are zero-indexed from the least significant bit.
+- **end (int)**: The ending position of the bit sequence to extract, exclusive.
 
-The `bits_between` function extracts a specified range of bits from an integer number.
+**Return Values**: 
+- Returns an integer representing the bits between the `start` and `end` positions in the original number.
 
-**Parameters**
+**Detailed Explanation**:
+The function `bits_between` operates by first isolating a segment of bits from the input `number`. This is achieved through two primary bitwise operations:
 
-- **number**: An integer (`int`) from which bits are extracted.
-- **start**: The starting position (inclusive) of the bit range to extract, measured from the least significant bit (LSB), with 0 being the LSB.
-- **end**: The ending position (exclusive) of the bit range to extract.
+1. **Masking with `(1 << end)`**: The expression `(1 << end)` generates a binary number where all bits up to position `end` are set to 1, and all higher bits are set to 0. Performing a modulo operation (`%`) of `number` by this mask effectively truncates all bits beyond the `end` position, leaving only the lower significant bits up to `end`.
 
-**Return Values**
+2. **Shifting with `(1 << start)`**: The expression `(1 << start)` creates a binary number where the bit at position `start` is set to 1 and all other bits are set to 0. By performing integer division (`//`) of the result from step 1 by this mask, we effectively shift the desired bit segment down so that it starts at the least significant bit position.
 
-The function returns an integer representing the bits extracted from the specified range.
+The combination of these operations isolates and returns the sequence of bits between `start` and `end`.
 
-**Detailed Explanation**
+**Usage Notes**:
+- **Limitations**: The function assumes that `start` is less than or equal to `end`. Behavior is undefined if `start` exceeds `end`.
+- **Edge Cases**: 
+  - When `start` equals `end`, the result will always be zero because no bits are included in the range.
+  - If `number` has fewer bits than `end`, the modulo operation will still work correctly, as it effectively treats missing higher bits as zeros.
+- **Potential Refactoring**:
+  - **Introduce Named Constants**: For clarity, named constants could be introduced for `(1 << end)` and `(1 << start)`.
+  - **Add Input Validation**: Implement checks to ensure `start` is less than or equal to `end`, throwing an exception if this condition is not met.
+  - **Extract Bitmask Calculation**: Consider extracting the bit mask calculation into a separate helper function, enhancing modularity and reusability of code.
 
-The `bits_between` function is designed to isolate a specific range of bits within an integer. This is achieved through bitwise operations:
-
-1. **Bitmask Creation**: The expression `(1 << end)` creates a binary number with all bits set to 0 except for the bit at position `end`. For example, if `end` is 3, this results in the binary number `0b1000`.
-
-2. **Modulo Operation**: Applying the modulo operation (`%`) between `number` and `(1 << end)` effectively masks all bits above the `end` position, leaving only the bits from positions `start` to `end-1`.
-
-3. **Right Shift**: The result of the modulo operation is then right-shifted by `start` positions using the expression `// (1 << start)`. This operation moves the desired bit range to the least significant positions, making it easy to extract.
-
-The combination of these operations isolates and returns the bits between positions `start` and `end-1`.
-
-**Usage Notes**
-
-- **Range Specification**: The `start` and `end` parameters define a half-open interval `[start, end)`, meaning the bit at position `start` is included in the extraction, but the bit at position `end` is not.
-  
-- **Bit Positioning**: Ensure that `start` and `end` are within the valid range for the integer size. For example, if working with 32-bit integers, `start` should be between 0 and 31, inclusive, and `end` should be between 1 and 32.
-
-- **Performance Considerations**: The function is efficient due to its reliance on bitwise operations, which are generally fast. However, for very large numbers or in performance-critical applications, consider the impact of integer size on operation speed.
-
-**Examples**
-
-```python
-# Extract bits from position 2 to 4 (inclusive) of the number 18 (binary: 0b10010)
-result = bits_between(18, 2, 5)  # result is 2 (binary: 0b10)
-
-# Extract bits from position 0 to 3 (inclusive) of the number 29 (binary: 0b11101)
-result = bits_between(29, 0, 4)  # result is 13 (binary: 0b1101)
-```
-
----
-
-This documentation provides a comprehensive understanding of the `bits_between` function, its parameters, return values, and usage considerations.
+By adhering to these guidelines, developers can better understand and maintain the functionality provided by `bits_between`.
 ## FunctionDef actions_for_province(legal_actions, province)
-**Function Overview**
+**Function Overview**: The `actions_for_province` function filters and returns a sequence of actions that have their main unit located in a specified province.
 
-The `actions_for_province` function filters and returns actions from a given list that have their main unit located in a specified province.
+**Parameters**:
+- **legal_actions (Sequence[Action])**: A sequence of action objects representing legal actions that can be performed within the game environment.
+- **province (utils.ProvinceID)**: An identifier for the province whose actions need to be filtered from `legal_actions`.
 
-**Parameters**
+**Return Values**: 
+- Returns a sequence of `Action` objects where each action's main unit is located in the specified `province`.
 
-- **legal_actions**: A sequence of `Action` objects representing legal actions to be filtered. Each action is expected to have a structure that allows the extraction of a province ID.
-  
-- **province**: An instance of `utils.ProvinceID` specifying the province for which actions are to be returned.
+**Detailed Explanation**:
+The function `actions_for_province` iterates over each action within the provided `legal_actions`. For every action, it determines the province associated with the main unit using the `ordered_province(action)` function. If the determined province matches the given `province`, the action is added to a list named `actions`. After all actions have been processed, the function returns this list of filtered actions.
 
-**Return Values**
+The logic hinges on the assumption that each action has a method or attribute accessible via `ordered_province` which can be used to determine the province associated with the main unit of the action. The function does not handle cases where `action` might be `None`, although it checks for falsiness before appending, which is redundant if actions are expected to always be non-falsy.
 
-The function returns a sequence of `Action` objects from `legal_actions` where the main unit's province matches the specified `province`.
-
-**Detailed Explanation**
-
-The `actions_for_province` function iterates over each action in the provided list of legal actions. For each action, it uses the `ordered_province` function to extract the province ID associated with the action's main unit. If the extracted province ID matches the specified province and the action is valid (i.e., not null), the action is added to the result list.
-
-1. **Initialization**: An empty list named `actions` is initialized to store actions that meet the criteria.
-  
-2. **Iteration and Filtering**:
-   - The function iterates over each `action` in `legal_actions`.
-   - For each `action`, it calls `ordered_province(action)` to obtain the province ID associated with the action's main unit.
-   - It checks if the `action` is valid (i.e., not null) and if the extracted province ID matches the specified `province`.
-   - If both conditions are met, the `action` is appended to the `actions` list.
-
-3. **Return**: After iterating through all actions, the function returns the `actions` list containing only those actions whose main unit's province matches the specified `province`.
-
-**Usage Notes**
-
-- **Input Validation**: Ensure that all actions in `legal_actions` are valid and have a structure compatible with the `ordered_province` function.
-  
-- **Performance Considerations**: The function's performance is linear with respect to the number of actions in `legal_actions`. For large lists, consider optimizing the extraction process or parallelizing the filtering operations.
-
+**Usage Notes**:
+- **Limitations**: 
+  - The function assumes that `ordered_province(action)` correctly identifies the province of the main unit. If this function fails or returns incorrect data, the filtering will not work as intended.
+  - The check for `if action` before appending to `actions` is redundant if actions are expected to always be non-falsy. This could be removed for clarity and performance.
 - **Edge Cases**:
-  - If no actions match the specified province, an empty list is returned.
-  - If any action in `legal_actions` is null or improperly structured, it will be ignored during the filtering process.
-
-**Examples**
-
-```python
-# Example usage of actions_for_province
-
-# Assume legal_actions is a list of Action objects and target_province is a ProvinceID instance
-filtered_actions = actions_for_province(legal_actions, target_province)
-
-# filtered_actions now contains only those actions from legal_actions where the main unit's province matches target_province
-```
-
-This documentation provides a clear understanding of the `actions_for_province` function, its parameters, return values, and usage considerations.
-## FunctionDef construct_action(order, ordering_province, target_province, third_province)
-**Function Overview**
-
-The `construct_action` function is designed to construct an action representation for a given order, incorporating details about the ordering province, target province, and third province. The function returns this action as an integer without including an index.
-
-**Parameters**
-
-- **order (Order)**: An enumeration representing the type of action to be performed.
-- **ordering_province (utils.ProvinceWithFlag)**: A tuple containing the identifier for the province from which the order originates and a flag indicating whether it is a coast. This parameter can be `None` if not applicable.
-- **target_province (utils.ProvinceWithFlag)**: A tuple containing the identifier for the province to which the order is directed and a flag indicating whether it is a coast. This parameter can be `None` if not applicable.
-- **third_province (utils.ProvinceWithFlag)**: A tuple containing the identifier for a third province involved in the action, such as in a convoy order. This parameter can be `None` if not applicable.
-
-**Return Values**
-
-- Returns an integer (`ActionNoIndex`) representing the constructed action.
-
-**Detailed Explanation**
-
-The function `construct_action` constructs an integer representation of an action by encoding various details into specific bit positions within this integer. The process involves bitwise operations to set different parts of the integer based on the provided parameters:
-
-1. **Order Representation**: 
-   - The order type is encoded into the integer using a left shift operation (`<<`) with `ACTION_ORDER_START` as the shift amount.
-   - This sets the bits corresponding to the order type within the integer.
-
-2. **Ordering Province**:
-   - If an ordering province is provided, its identifier is encoded similarly by shifting it left by `ACTION_ORDERED_PROVINCE_START`.
-   - Additionally, if the order is of type `BUILD_FLEET`, the coast flag from the ordering province is also encoded using a shift with `ACTION_ORDERED_PROVINCE_COAST`.
-
-3. **Target Province**:
-   - If a target province is provided, its identifier is encoded by shifting it left by `ACTION_TARGET_PROVINCE_START`.
-   - For orders of type `MOVE_TO` or `RETREAT_TO`, the coast flag from the target province is also encoded using a shift with `ACTION_TARGET_PROVINCE_COAST`.
-
-4. **Third Province**:
-   - If a third province is provided, its identifier is encoded by shifting it left by `ACTION_THIRD_PROVINCE_START`.
-
-The bitwise OR operation (`|=`) is used to combine these encoded parts into the final integer representation of the action.
-
-**Usage Notes**
-
-- The function assumes that the input parameters are correctly formatted as specified (i.e., `utils.ProvinceWithFlag` tuples).
-- If any of the provinces (`ordering_province`, `target_province`, `third_province`) are not applicable, they should be passed as `None`. This will result in those parts being omitted from the final action representation.
-- The function does not handle invalid orders or province identifiers. It is expected that these checks are performed prior to calling this function.
-- Performance considerations: The function performs a fixed number of bitwise operations and conditional checks, making it efficient for constructing action representations.
-## FunctionDef action_breakdown(action)
-**Function Overview**
-
-The `action_breakdown` function **breaks down a given action into its component parts**, specifically extracting an order and three province identifiers with coast indicators.
-
-**Parameters**
-
-- **action**: A 32-bit or 64-bit integer representing the action to be broken down.
-
-**Return Values**
-
-- **order**: An integer between 1 and 13, indicating the type of action.
-- **p1**: A tuple containing a province ID and a coast indicator bit for the first ordered province.
-- **p2**: A tuple containing a province ID and a coast indicator bit for the target province.
-- **p3**: A tuple containing a province ID and a coast indicator bit for the third province.
-
-**Detailed Explanation**
-
-The `action_breakdown` function is designed to dissect an integer action into its constituent parts using bitwise operations. This process involves extracting specific ranges of bits from the action integer, which represent different components of the action:
-
-1. **Extracting the Order**: The order of the action is extracted by calling the `bits_between` function with parameters that define the start and end positions of the order bits within the action integer. The result is an integer representing the order.
-
-2. **Extracting Province IDs and Coast Indicators**:
-   - For each province (p1, p2, p3), the process involves two steps:
-     1. Extract the province ID by calling `bits_between` with parameters that define the start and end positions of the province bits.
-     2. Extract the coast indicator bit by calling `bits_between` again with parameters that define the start and end positions of the coast indicator bits.
-   - These two values are then combined into a tuple, where the first element is the province ID and the second element is the coast indicator bit.
-
-The function returns these extracted components as a tuple containing the order and three tuples for the provinces.
-
-**Usage Notes**
-
-- **Coast Indicator Bits**: The coast indicator bits returned by this function are not area IDs as returned by `province_id` or `area`. Developers should be aware of this distinction when interpreting the results.
+  - If `legal_actions` is an empty sequence, the function will return an empty list without any processing.
+  - If no actions have their main unit in the specified province, the function will also return an empty list.
+- **Potential Refactoring**:
+  - **Replace Temp with Query (Martin Fowler)**: The logic for determining if an action should be included could be encapsulated in a separate method or function. This would improve readability and make it easier to modify the criteria for including actions in the future.
+  - **Remove Dead Code**: If `action` is guaranteed to never be falsy, the check `if action` can be removed to simplify the code.
   
-- **Action Size**: The function assumes that the action is either a 32-bit or 64-bit integer. Passing an action outside this size range may lead to unexpected behavior.
+This refactoring would lead to a cleaner and more maintainable function.
+## FunctionDef construct_action(order, ordering_province, target_province, third_province)
+**Function Overview**: The `construct_action` function constructs a binary representation of an action based on the provided order and provinces involved, without including an action index.
 
-- **Performance Considerations**: The function relies on efficient bitwise operations, making it suitable for performance-critical applications where actions need to be processed quickly.
+**Parameters**:
+- **order**: An instance of `Order`, representing the type of action to be performed (e.g., build fleet, move to).
+- **ordering_province**: An instance of `utils.ProvinceWithFlag` or `None`. Represents the province from which the order originates. If not `None`, it includes a tuple where the first element is the province identifier and the second element is a flag indicating coastal status.
+- **target_province**: An instance of `utils.ProvinceWithFlag` or `None`. Represents the destination province for actions like move to or retreat to. Similar to `ordering_province`, it includes a tuple with a province identifier and a coast flag.
+- **third_province**: An instance of `utils.ProvinceWithFlag` or `None`. Represents an additional province, used in some orders (e.g., supporting another move). It also includes a tuple with a province identifier and a coast flag.
 
-**Examples**
+**Return Values**:
+- Returns an integer (`order_rep`) representing the constructed action without the action index. This binary representation encodes the order type and provinces involved using bitwise operations.
 
-```python
-# Example of breaking down a hypothetical action
-action = 0b10100000000000000000000000000001  # Hypothetical action binary representation
-order, p1, p2, p3 = action_breakdown(action)
-print(order)  # Output: The extracted order (integer between 1 and 13)
-print(p1)     # Output: Tuple (province ID, coast indicator bit) for the first ordered province
-print(p2)     # Output: Tuple (province ID, coast indicator bit) for the target province
-print(p3)     # Output: Tuple (province ID, coast indicator bit) for the third province
-```
+**Detailed Explanation**:
+The `construct_action` function constructs a binary-encoded action by shifting and combining bits from the provided parameters into a single integer. The process involves:
 
-This documentation provides a clear understanding of how the `action_breakdown` function operates, its parameters, return values, and usage considerations.
+1. Initializing `order_rep` to 0.
+2. Shifting the `order` value left by `ACTION_ORDER_START` positions and OR-ing it with `order_rep`. This encodes the type of order being performed.
+3. If `ordering_province` is not `None`, its province identifier is shifted left by `ACTION_ORDERED_PROVINCE_START` positions and combined with `order_rep`. If the order is `BUILD_FLEET`, the coast flag from `ordering_province` is also included, shifted by `ACTION_ORDERED_PROVINCE_COAST`.
+4. If `target_province` is not `None`, its province identifier is shifted left by `ACTION_TARGET_PROVINCE_START` positions and combined with `order_rep`. For orders like `MOVE_TO` or `RETREAT_TO`, the coast flag from `target_province` is also included, shifted by `ACTION_TARGET_PROVINCE_COAST`.
+5. If `third_province` is not `None`, its province identifier is shifted left by `ACTION_THIRD_PROVINCE_START` positions and combined with `order_rep`.
+
+This method of encoding uses bitwise operations to efficiently pack multiple pieces of information into a single integer, which can be useful for storage or transmission.
+
+**Usage Notes**:
+- **Limitations**: The function assumes that the provided constants (`ACTION_ORDER_START`, `ACTION_ORDERED_PROVINCE_START`, etc.) are correctly defined elsewhere in the codebase. If these values are incorrect or not set, the constructed action will be invalid.
+- **Edge Cases**: 
+  - When any of the provinces (`ordering_province`, `target_province`, `third_province`) is `None`, the corresponding bits remain unset in the final `order_rep`.
+  - The function does not validate whether the provided orders and provinces are logically consistent; it simply encodes them as given.
+- **Potential Refactoring**: 
+  - Consider using a class or named tuple to encapsulate the province information, which could improve readability by making the code self-documenting.
+  - Implement constants for bit shifts within the function or as part of an enum to make the code more maintainable and less error-prone. This aligns with the "Replace Magic Number with Symbolic Constant" refactoring technique from Martin Fowler's catalog.
+
+This documentation provides a clear understanding of `construct_action`'s purpose, parameters, return values, logic, and potential areas for improvement.
+## FunctionDef action_breakdown(action)
+**Function Overview**: The `action_breakdown` function is designed to decompose a given action into its constituent parts, specifically extracting the order and three province-related components including coast indicators.
+
+**Parameters**:
+- **action**: A 32-bit or 64-bit integer representing an action. This parameter encapsulates multiple pieces of information encoded within it, which `action_breakdown` decodes.
+
+**Return Values**:
+- **order**: An integer between 1 and 13 indicating the type of order specified in the action.
+- **p1**: A tuple consisting of a province ID and a coast indicator bit for the first province involved in the action.
+- **p2**: A tuple consisting of a province ID and a coast indicator bit for the second province involved in the action.
+- **p3**: A tuple consisting of a province ID and a coast indicator bit for the third province involved in the action.
+
+**Detailed Explanation**:
+The `action_breakdown` function operates by extracting specific bits from the provided `action` integer to decode its components. This process is achieved through the use of the `bits_between` function, which presumably extracts a sequence of bits from a given position and length within an integer.
+- The **order** is extracted using `bits_between(action, ACTION_ORDER_START, ACTION_ORDER_START+ACTION_ORDER_BITS)`, isolating the portion of the action that specifies the type of order.
+- For each province (p1, p2, p3), two pieces of information are retrieved:
+  - The **province ID** is obtained by calling `bits_between` with the start and length corresponding to the province's position in the action integer.
+  - The **coast indicator bit** is similarly extracted using `bits_between`, but with a different set of parameters that target the specific bit indicating whether the province has a coast.
+
+The function returns these components as separate values, making it easier for other parts of the program to process and utilize them individually.
+
+**Usage Notes**:
+- **Coast Indicator Bits**: It is important to note that the coast indicator bits returned by this function are not area IDs as returned by `province_id` and `area`. This distinction should be kept in mind when using these values.
+- **Bit Positions and Lengths**: The constants `ACTION_ORDER_START`, `ACTION_ORDER_BITS`, `ACTION_ORDERED_PROVINCE_START`, `ACTION_PROVINCE_BITS`, `ACTION_ORDERED_PROVINCE_COAST`, `ACTION_TARGET_PROVINCE_START`, `ACTION_TARGET_PROVINCE_COAST`, `ACTION_THIRD_PROVINCE_START`, and `ACTION_THIRD_PROVINCE_COAST` are crucial for the correct extraction of bits. These constants should be defined elsewhere in the codebase and accurately reflect the structure of the action integer.
+- **Refactoring Suggestions**:
+  - **Extract Method**: If the logic within `action_breakdown` becomes more complex, consider breaking it into smaller functions that handle specific parts of the bit extraction process. This would make the function easier to read and maintain.
+  - **Replace Magic Numbers with Named Constants**: Ensure all magic numbers used in the `bits_between` calls are replaced with named constants for better readability and maintainability.
+
+By adhering to these guidelines, developers can effectively utilize the `action_breakdown` function within their projects.
 ## FunctionDef action_index(action)
 **Function Overview**: The `action_index` function returns the index of a given action among all possible unit actions by performing a bitwise right shift operation.
 
 **Parameters**:
-- **action**: A required parameter that can be either an instance of `Action` or a NumPy array (`np.ndarray`). This represents the action for which the index is to be determined.
+- **action**: A variable that can be either an instance of `Action` or a NumPy array (`np.ndarray`). This parameter represents the action for which the index is to be determined.
 
 **Return Values**:
-- The function returns either an integer or a NumPy array, depending on the type of the input `action`. It represents the index of the action among all possible unit actions.
+- The function returns either an integer or a NumPy array, depending on the type of the input `action`. The returned value represents the index of the action among all possible unit actions.
 
 **Detailed Explanation**:
-The `action_index` function calculates the index of an action by performing a bitwise right shift operation (`>>`) on the `action` parameter. The number of positions to shift is determined by the constant `ACTION_INDEX_START`. This operation effectively extracts the higher-order bits from the `action`, which correspond to its index among all possible unit actions.
-
-The logic behind this function assumes that each action is represented as a binary number where the lower-order bits represent specific attributes or details of the action, and the higher-order bits represent its position or order in the sequence of all possible actions. By shifting these higher-order bits to the rightmost positions, the function isolates the index value.
+The `action_index` function calculates the index of an action by performing a bitwise right shift operation on the provided `action` parameter using the constant `ACTION_INDEX_START`. This operation effectively divides the action by `2 ** ACTION_INDEX_START`, assuming that `ACTION_INDEX_START` is defined elsewhere in the codebase. The purpose of this operation is to isolate or extract the index part of the action, which is assumed to be encoded within the higher bits of the action value.
 
 **Usage Notes**:
-- **Input Type**: The `action` parameter must be either an instance of `Action` or a NumPy array. Other types will result in a TypeError.
-- **Bitwise Operation**: The effectiveness of this function depends on the correct setting of `ACTION_INDEX_START`. If this constant does not accurately reflect the bit positions used to encode action indices, the returned index will be incorrect.
-- **Performance Considerations**: The bitwise operation is computationally efficient and operates in constant time. However, if `action` is a large NumPy array, memory usage should be considered due to the return of an array of indices.
+- **Limitations**: The function assumes that `ACTION_INDEX_START` is a predefined constant and that it correctly represents the number of bits by which actions are shifted. If this assumption does not hold, the function will not return accurate indices.
+- **Edge Cases**: 
+  - If `action` is an instance of `Action`, ensure that its internal representation supports bitwise operations.
+  - If `action` is a NumPy array, all elements must support bitwise operations and be compatible with the right shift operation.
+- **Potential Areas for Refactoring**:
+  - **Replace Magic Numbers**: The use of `ACTION_INDEX_START` as a constant is good practice. Ensure that this constant is well-documented and its value is clearly explained in the codebase.
+  - **Encapsulation**: Consider encapsulating the bitwise operation within a method of the `Action` class if actions are frequently manipulated in this way. This would improve modularity and maintainability by localizing the logic related to action indexing.
+  - **Type Checking**: Implement type checking or assertions at the beginning of the function to ensure that the input is either an instance of `Action` or a NumPy array, which can help prevent runtime errors.
 
-This function is crucial for mapping actions to their respective indices within a larger system that manages unit actions, allowing for efficient action management and retrieval based on index.
+By adhering to these guidelines, developers can better understand and maintain the functionality provided by the `action_index` function.
 ## FunctionDef is_waive(action)
-**Function Overview**
+**Function Overview**: The `is_waive` function determines whether a given action is classified as a waive based on specific bit manipulation.
 
-The `is_waive` function determines whether a given action is marked as "waived" by examining specific bits within the action's integer representation.
+**Parameters**:
+- **action**: An instance of either `Action` or `ActionNoIndex`. This parameter represents the action being evaluated to determine if it corresponds to a waive condition.
 
-**Parameters**
+**Return Values**:
+- Returns `True` if the action's order matches the constant `WAIVE`.
+- Returns `False` otherwise.
 
-- **action**: An instance of either `Action` or `ActionNoIndex`, from which the bit range is extracted to check if it corresponds to the "waived" status.
+**Detailed Explanation**:
+The function `is_waive` performs bit manipulation on the `action` parameter to extract a specific portion of its binary representation. This is achieved through the use of the `bits_between` function, which isolates bits from `ACTION_ORDER_START` to `ACTION_ORDER_START + ACTION_ORDER_BITS`. The extracted bits represent an order value associated with the action.
 
-**Return Values**
+The function then compares this extracted order value against the constant `WAIVE`. If they match, it signifies that the action is a waive, and the function returns `True`. Otherwise, it returns `False`.
 
-The function returns a boolean (`bool`) indicating whether the action is waived (`True`) or not (`False`).
+**Usage Notes**:
+- **Limitations**: The function relies on external constants (`ACTION_ORDER_START`, `ACTION_ORDER_BITS`, and `WAIVE`) which must be defined elsewhere in the codebase. These constants are critical for the correct functionality of `is_waive` and should not change unexpectedly.
+- **Edge Cases**: If the `action` parameter does not contain a valid order value within the specified bit range, or if the bits do not correspond to any recognized action type, the function will return `False`. This behavior is expected but may require additional validation in contexts where actions are guaranteed to have specific properties.
+- **Potential Areas for Refactoring**:
+  - **Introduce Named Constants**: If `ACTION_ORDER_START` and `ACTION_ORDER_BITS` are used frequently throughout the codebase, consider defining them as named constants within a dedicated module or class to improve readability and maintainability. This aligns with Martin Fowler's "Replace Magic Number with Symbolic Constant" refactoring technique.
+  - **Encapsulate Bit Manipulation**: The bit manipulation logic could be encapsulated in its own function if it is reused elsewhere. This would adhere to the Single Responsibility Principle, making `is_waive` easier to understand and maintain. This practice is similar to Martin Fowler's "Extract Method" refactoring technique.
+  - **Type Annotations and Documentation**: While type annotations are present, adding detailed docstrings for `bits_between`, `Action`, `ActionNoIndex`, and related constants would enhance the codebase by providing clear expectations and usage guidelines for developers. This aligns with Martin Fowler's emphasis on documentation as a form of refactoring to improve code clarity.
 
-**Detailed Explanation**
-
-The `is_waive` function checks if an action is marked as "waived" by extracting a specific range of bits from its integer representation. This is achieved through the following steps:
-
-1. **Bit Extraction**: The function calls `bits_between(action, ACTION_ORDER_START, ACTION_ORDER_START + ACTION_ORDER_BITS)` to extract the bit range that represents the order of the action.
-
-2. **Comparison with WAIVE Constant**: The extracted bit value is then compared with the constant `WAIVE`. If they match, it indicates that the action is marked as "waived".
-
-3. **Return Result**: The function returns `True` if the extracted bit value equals `WAIVE`, otherwise it returns `False`.
-
-**Usage Notes**
-
-- **Action Types**: The function accepts actions of type `Action` or `ActionNoIndex`. Ensure that the action object passed to the function is correctly instantiated and contains the necessary bit information.
-
-- **Constants Definition**: The constants `ACTION_ORDER_START`, `ACTION_ORDER_BITS`, and `WAIVE` must be defined elsewhere in the codebase. Their values determine the specific bit range used for checking the "waived" status.
-
-- **Performance Considerations**: Since the function relies on bitwise operations, it is efficient and suitable for use in performance-critical applications. However, ensure that the constants defining the bit positions are correctly set to avoid incorrect results.
-
-**Examples**
-
-```python
-# Assuming ACTION_ORDER_START = 0, ACTION_ORDER_BITS = 3, and WAIVE = 7 (binary: 0b111)
-action1 = Action(0b111)  # action is marked as waived
-action2 = Action(0b001)  # action is not marked as waived
-
-print(is_waive(action1))  # Output: True
-print(is_waive(action2))  # Output: False
-```
-
-This documentation provides a comprehensive understanding of the `is_waive` function, its parameters, return values, and usage considerations.
+By adhering to these notes, the function can be made more robust, maintainable, and easier to understand for future developers working within this codebase.
 ## FunctionDef ordered_province(action)
-**Function Overview**
+**Function Overview**: The `ordered_province` function extracts a specific range of bits from an action representation to determine the ordered province ID.
 
-The `ordered_province` function extracts a specific range of bits from an action, representing a province ID.
+**Parameters**:
+- **action**: A parameter that can be of type `Action`, `ActionNoIndex`, or `np.ndarray`. This represents the action data from which the province ID will be extracted.
 
-**Parameters**
+**Return Values**:
+- Returns a value of type `utils.ProvinceID` if the input is not an array, or a `np.ndarray` containing multiple province IDs if the input is an array. The returned value corresponds to the ordered province ID(s) extracted from the action data.
 
-- **action**: The input action from which the province ID is extracted. This can be an instance of `Action`, `ActionNoIndex`, or a NumPy array (`np.ndarray`).
+**Detailed Explanation**:
+The function `ordered_province` utilizes a helper function `bits_between`, which is assumed to be defined elsewhere in the codebase, to extract bits from the provided `action`. Specifically, it extracts bits starting at the position indicated by `ACTION_ORDERED_PROVINCE_START` and extending for a length specified by `ACTION_PROVINCE_BITS`. This extracted bit sequence represents the ordered province ID. If the input `action` is an array (`np.ndarray`), the function will return an array of province IDs, each corresponding to the respective action in the input array.
 
-**Return Values**
+**Usage Notes**:
+- **Limitations**: The function assumes that the constants `ACTION_ORDERED_PROVINCE_START` and `ACTION_PROVINCE_BITS` are correctly defined elsewhere in the codebase. Misconfiguration of these constants can lead to incorrect extraction of province IDs.
+- **Edge Cases**: If the input `action` is an empty array, the function will return an empty array. If the action data does not contain valid bits at the specified positions, the returned province ID(s) may be incorrect or undefined.
+- **Potential Areas for Refactoring**:
+  - **Extract Method**: If the logic for determining the bit range (`ACTION_ORDERED_PROVINCE_START` and `ACTION_PROVINCE_BITS`) is complex or used elsewhere, consider extracting it into a separate function to improve modularity.
+  - **Rename Variable**: The parameter name `action` is quite generic. Renaming it to something more descriptive (e.g., `action_data`) could enhance code readability.
+  - **Type Hinting and Documentation**: Adding detailed type hints and docstrings for the `bits_between` function can help clarify its purpose and usage, making the overall codebase easier to understand and maintain.
 
-The function returns either a `utils.ProvinceID` if the input is a single action, or a NumPy array of `utils.ProvinceID` values if the input is an array of actions.
-
-**Detailed Explanation**
-
-The `ordered_province` function leverages the `bits_between` utility to isolate and extract bits representing a province ID from an action. This extraction is based on predefined constants (`ACTION_ORDERED_PROVINCE_START` and `ACTION_PROVINCE_BITS`) that define the bit range within the action where the province ID is stored.
-
-1. **Bit Range Specification**: The function specifies the start and end positions for the bit range using the constants `ACTION_ORDERED_PROVINCE_START` and `ACTION_PROVINCE_BITS`. The start position marks the beginning of the bit range, while the end position indicates the first bit beyond the desired range.
-
-2. **Extraction Process**: The `bits_between` function is called with the action and the defined bit range. This function performs bitwise operations to isolate and extract the bits between the specified start and end positions.
-
-3. **Return Value**: Depending on whether the input is a single action or an array of actions, the function returns either a single `utils.ProvinceID` value or a NumPy array containing multiple `ProvinceID` values.
-
-**Usage Notes**
-
-- **Input Types**: The function accepts actions in various forms (`Action`, `ActionNoIndex`, or `np.ndarray`). Ensure that the input type is compatible with the expected operations.
-  
-- **Bit Range Constants**: The correctness of the extraction depends on accurate definitions of `ACTION_ORDERED_PROVINCE_START` and `ACTION_PROVINCE_BITS`. Misalignment can lead to incorrect province ID extraction.
-
-- **Performance Considerations**: The function's performance is influenced by the efficiency of the `bits_between` utility. For large arrays of actions, consider optimizing bitwise operations or using vectorized NumPy functions for better performance.
-
-**Examples**
-
-```python
-# Extract province ID from a single action
-action = Action(...)  # Assume this represents an action with a defined bit structure
-province_id = ordered_province(action)  # Returns the ProvinceID extracted from the action
-
-# Extract province IDs from an array of actions
-actions = np.array([Action(...), Action(...)])  # Array of actions
-province_ids = ordered_province(actions)  # Returns an array of ProvinceIDs extracted from each action
-```
-
-This documentation provides a clear understanding of the `ordered_province` function, its parameters, return values, and usage considerations.
+This documentation provides a clear understanding of the `ordered_province` function's role within the provided project structure, detailing how it processes input data to extract province IDs.
 ## FunctionDef shrink_actions(actions)
-**Function Overview**
+**Function Overview**: The `shrink_actions` function processes action data by retaining only the top and bottom byte pairs from each action entry.
 
-The `shrink_actions` function retains the top and bottom byte pairs of actions, effectively shrinking them while preserving critical information such as index, order, and ordered unit's area.
+**Parameters**:
+- **actions**: This parameter can be an instance of `Action`, a sequence (e.g., list or tuple) of `Action` objects, or a NumPy array. It represents the input actions that need to be processed.
 
-**Parameters**
+**Return Values**:
+- The function returns a NumPy array containing the "shrunk" actions, where each action has been reduced to retain only the top and bottom byte pairs.
 
-- **actions**: This parameter accepts an action or a sequence of actions in a specific format. It can be a single `Action`, a collection of `Actions` (like a list or tuple), or a NumPy array (`np.ndarray`). The function processes these inputs to extract and retain the relevant byte pairs.
+**Detailed Explanation**:
+The `shrink_actions` function begins by converting the input `actions` into a NumPy array. This conversion ensures that subsequent operations can be performed efficiently using NumPy's capabilities.
+- If the size of the `actions` array is zero, it immediately returns an empty NumPy array cast to `int32`.
+- For non-empty arrays, the function performs bitwise operations on each element:
+  - `(actions >> 32) & ~0xffff`: This operation shifts each action value right by 32 bits and then applies a bitwise AND with the complement of `0xffff` (which is `0xffff0000`). The result isolates the top byte pair from each action.
+  - `actions & 0xffff`: This operation retains only the bottom byte pair from each action.
+- These two results are added together to form the "shrunk" actions, which are then cast to `int32` before being returned.
 
-**Return Values**
+**Usage Notes**:
+- **Limitations**: The function assumes that the input actions are integers and that they contain at least 64 bits of information (to allow for meaningful top and bottom byte pair extraction). If this assumption is not met, the results will be incorrect.
+- **Edge Cases**: 
+  - When `actions` is an empty sequence or array, the function correctly returns an empty NumPy array.
+  - The behavior with non-integer actions or actions with fewer than 64 bits is undefined and should be avoided.
+- **Potential Areas for Refactoring**:
+  - **Extract Method**: If the bitwise operations become more complex in future development, they could be extracted into a separate helper function. This would improve readability and maintainability by isolating specific logic.
+  - **Type Annotations**: Adding more detailed type annotations or using custom types (e.g., `np.ndarray[int]`) can help clarify what is expected as input and output, reducing the chance of errors.
+  - **Documentation**: Enhancing inline comments to explain the bitwise operations could aid future developers in understanding the logic without needing to decipher it from scratch. This aligns with the "Add Explanation" refactoring technique.
 
-- Returns a NumPy array containing the "shrunk" actions, where each action is represented as an integer (`np.int32`). If the input `actions` are empty, it returns an empty array of type `np.int32`.
-
-**Detailed Explanation**
-
-The function begins by converting the input `actions` into a NumPy array using `np.asarray(actions)`. This ensures that all subsequent operations can be performed uniformly regardless of the initial format.
-
-If the size of the actions array is zero, indicating no actions were provided, the function immediately returns an empty array cast to `np.int32`.
-
-For non-empty arrays, the function performs a bitwise operation to retain the top and bottom byte pairs:
-- `(actions >> 32) & ~0xffff`: This part shifts the bits of each action right by 32 positions, effectively moving the top byte pair to the least significant position. The `& ~0xffff` then masks out the lower two bytes, leaving only the top byte pair.
-- `(actions & 0xffff)`: This operation retains the bottom byte pair by performing a bitwise AND with `0xffff`, which has bits set in the lower two bytes and zero elsewhere.
-
-The results of these two operations are added together using `((actions >> 32) & ~0xffff) + (actions & 0xffff)`. The addition combines the top and bottom byte pairs into a single integer, effectively shrinking each action while preserving the critical information encoded in these byte pairs. Finally, the result is cast to `np.int32` using `np.cast[np.int32]`.
-
-**Usage Notes**
-
-- **Input Format**: Ensure that the input actions are provided in a format compatible with NumPy arrays or can be converted into such an array. The function assumes a specific bit-level encoding of actions.
-  
-- **Empty Input Handling**: If no actions are provided (i.e., `actions.size == 0`), the function returns an empty array, which is useful for handling cases where action data might not always be available.
-
-- **Performance Considerations**: The function efficiently processes actions using NumPy operations, which are optimized for performance. However, users should ensure that the input size does not exceed memory limits to avoid potential performance degradation or errors.
-
-- **Edge Cases**: The function handles empty inputs gracefully by returning an empty array. It also assumes that the bit-level encoding of actions is consistent with the expected format; deviations may lead to incorrect results.
+By adhering to these guidelines, `shrink_actions` can be maintained and extended more effectively while ensuring its functionality remains clear and robust.
 ## FunctionDef find_action_with_area(actions, area)
-**Function Overview**
+**Function Overview**: The `find_action_with_area` function is designed to identify and return the first action from a list that corresponds to a specified area. If no such action exists, it returns 0.
 
-The **`find_action_with_area`** function identifies and returns the first action in a list that corresponds to a specified area. If no such action exists, it returns 0.
+**Parameters**:
+- **actions**: A sequence (such as a list or tuple) of actions, where each action can be either an `Action` or an `ActionNoIndex`. This parameter represents the collection of actions to search through.
+- **area**: An identifier for the area, represented by `utils.AreaID`. This parameter specifies the area in which the function should look for a corresponding action.
 
-**Parameters**
+**Return Values**:
+- The function returns the first action from the list that matches the specified area. If no matching action is found, it returns 0.
 
-- **actions**: A sequence of actions (`Sequence[Union[Action, ActionNoIndex]]`) representing potential actions associated with units.
-  
-- **area**: An `utils.AreaID` specifying the area for which an action is sought.
+**Detailed Explanation**:
+The `find_action_with_area` function begins by extracting the province ID from the provided `area` using the `utils.province_id_and_area_index(area)[0]` method. It then iterates over each action in the `actions` sequence. For each action, it checks if the ordered province of the action matches the extracted province ID. If a match is found, the function immediately returns that action. If the loop completes without finding any matching actions, the function returns 0.
 
-**Return Values**
+**Usage Notes**:
+- **Limitations**: The function assumes that `ordered_province` is defined elsewhere in the codebase and correctly identifies the province associated with an action. This assumption must be validated to ensure correct functionality.
+- **Edge Cases**: If the `actions` sequence is empty, the function will return 0 as expected since no actions are available for matching.
+- **Potential Refactoring**:
+  - **Extract Method**: The logic for determining if an action belongs to a specific province could be extracted into its own method. This would improve readability and maintainability by isolating this functionality.
+  - **Guard Clauses**: Introducing guard clauses at the beginning of the function can simplify the main body of code. For example, checking if `actions` is empty and immediately returning 0 could make the primary logic easier to follow.
+  - **Use of Sentinel Values**: Returning 0 when no action is found might not be ideal for all use cases, especially if actions are expected to be non-zero integers or other types. Consider using a more explicit sentinel value or raising an exception to indicate the absence of a matching action.
 
-The function returns either:
-- The first action (`int`) in the list that corresponds to the specified area.
-- 0 if no such action exists.
-
-**Detailed Explanation**
-
-The `find_action_with_area` function operates by iterating through a sequence of actions and checking each one to see if it matches the provided area. This matching is performed using the `ordered_province` function, which extracts the province ID from an action. The function then compares this extracted province ID with the province ID associated with the specified area.
-
-1. **Extracting Province ID from Area**: 
-   - The function begins by extracting the province ID from the provided area using `utils.province_id_and_area_index(area)[0]`. This method returns a tuple where the first element is the province ID, and the second element is an index related to the area.
-
-2. **Iterating Through Actions**:
-   - The function then iterates through each action in the provided sequence.
-   
-3. **Matching Province IDs**:
-   - For each action, it uses `ordered_province(a)` to extract the province ID associated with that action.
-   - It compares this extracted province ID with the province ID of the specified area.
-
-4. **Returning the Matching Action**:
-   - If a match is found (i.e., the extracted province ID from the action matches the province ID of the area), the function immediately returns the action.
-   
-5. **Handling No Match**:
-   - If no matching action is found after iterating through all actions, the function returns 0.
-
-**Usage Notes**
-
-- **Action Types**: The function accepts actions in the form of `Action` or `ActionNoIndex`. Ensure that the input actions are compatible with these types.
-  
-- **Area Specification**: The area must be a valid `utils.AreaID`. Incorrect or invalid area specifications can lead to unexpected behavior.
-
-- **Performance Considerations**: For large sequences of actions, consider optimizing the iteration process or using more efficient data structures to improve performance.
-
-**Examples**
-
-```python
-# Example 1: Finding an action for a specific area
-actions = [Action(...), ActionNoIndex(...)]  # List of actions
-area = utils.AreaID(...)  # Specify the area
-matching_action = find_action_with_area(actions, area)  # Returns the first matching action or 0
-
-# Example 2: Handling no matching action
-actions_no_match = [Action(...), ActionNoIndex(...)]  # Actions that do not match the area
-area = utils.AreaID(...)  # Specify the area
-result = find_action_with_area(actions_no_match, area)  # Returns 0 as no matching action is found
-```
-
-This documentation provides a clear understanding of the `find_action_with_area` function, its parameters, return values, and usage considerations.
+By adhering to these guidelines and refactoring suggestions, developers can enhance both the clarity and robustness of the `find_action_with_area` function.
