@@ -1,656 +1,1143 @@
 ## FunctionDef normalize_adjacency(adjacency)
 **normalize_adjacency**: The function of normalize_adjacency is to compute the symmetric normalized Laplacian of an adjacency matrix.
-**parameters**: The parameters of this Function.
-· adjacency: a numpy array representing the map adjacency matrix without self-connections, which is used as input to calculate the symmetric normalized Laplacian.
 
-**Code Description**: This function takes an adjacency matrix as input and returns its symmetric normalized Laplacian. It first adds the identity matrix to the input adjacency matrix using np.eye and then calculates the inverse of the square root of the sum of each row in the resulting matrix, which is used as a normalization factor. The function then applies this normalization factor to the adjacency matrix by multiplying it with the normalization factor from both sides, resulting in the symmetric normalized Laplacian. This process is crucial for graph representation and is utilized in GraphConvNets. In the context of the project, this function is called by the Network class's constructor to normalize the area and province adjacency matrices, which are then used in the BoardEncoder.
+parameters: 
+· adjacency: map adjacency matrix without self-connections.
 
-**Note**: The input adjacency matrix should not contain self-connections, and the output will be a symmetric normalized Laplacian matrix. It is also important to note that the calculation of the inverse of the square root of the sum of each row may result in division by zero if there are rows with zero sum, but this is handled implicitly by the np.power function.
+Code Description: The normalize_adjacency function takes an input adjacency matrix, which represents connections between nodes in a graph but does not include self-connections (i.e., no node is connected to itself). The function first adds the identity matrix to the adjacency matrix to account for these self-connections. It then calculates the degree matrix D, where each diagonal element d_ii is the inverse square root of the sum of the i-th row of the updated adjacency matrix. This degree matrix is used to normalize the adjacency matrix symmetrically by computing D * adjacency * D. The result is a symmetric normalized Laplacian matrix that is often utilized in graph-based machine learning models, such as GraphConvNets.
 
-**Output Example**: The output of this function will be a numpy array representing the symmetric normalized Laplacian matrix, where each element represents the normalized connection between two nodes in the graph. For instance, given an input adjacency matrix [[0, 1, 1], [1, 0, 1], [1, 1, 0]], the output might look like [[0.5, -0.5, -0.5], [-0.5, 0.5, -0.5], [-0.5, -0.5, 0.5]].
+In the context of the project, this function is called within the Network class's constructor. Specifically, it is used to normalize the adjacency matrices for both areas and provinces based on map data files (MDF). These normalized Laplacian matrices are then passed to BoardEncoder instances, which play a crucial role in encoding board states for further processing in the neural network.
+
+Note: It is important that the input adjacency matrix does not contain self-connections before being passed to this function. The function assumes that the adjacency matrix is square and symmetric (excluding self-connections).
+
+Output Example: Given an adjacency matrix `[[0, 1, 0], [1, 0, 1], [0, 1, 0]]`, the output would be a normalized Laplacian matrix such as `[[1.0, -0.5, 0.0], [-0.5, 1.0, -0.5], [0.0, -0.5, 1.0]]`. The exact values may vary slightly due to floating-point arithmetic precision.
 ## ClassDef EncoderCore
-**EncoderCore**: The function of EncoderCore is to implement a Graph Network with non-shared weights across nodes, processing input organized by area and topology described by the symmetric normalized Laplacian of an adjacency matrix.
+**EncoderCore**: The function of EncoderCore is to perform one round of message passing on graph-structured data using non-shared weights across nodes.
 
-**attributes**: The attributes of this Class.
-· `adjacency`: a symmetric normalized Laplacian of the adjacency matrix, describing the topology of the graph.
-· `filter_size`: the output size of the per-node linear layer, defaulting to 32.
-· `batch_norm_config`: a configuration dictionary for batch normalization, defaulting to None.
-· `name`: a name for the module, defaulting to "encoder_core".
-· `_bn`: an instance of `hk.BatchNorm` for batch normalization.
+attributes: 
+· adjacency: [NUM_AREAS, NUM_AREAS] symmetric normalized Laplacian of the adjacency matrix.
+· filter_size: output size of per-node linear layer.
+· batch_norm_config: config dict for hk.BatchNorm.
+· name: a name for the module.
+· _adjacency: stores the provided adjacency matrix.
+· _filter_size: stores the filter size for the linear layer.
+· _bn: an instance of hk.BatchNorm configured with specified parameters.
 
-**Code Description**: The EncoderCore class is designed to perform one round of message passing in a graph network. It takes in a tensor representing the input nodes and returns a tensor representing the output nodes after message passing. The class constructor initializes the module with the given adjacency matrix, filter size, batch normalization configuration, and name. The `__call__` method performs the actual message passing operation, which involves computing messages from the input tensors, applying the adjacency matrix to the messages, concatenating the resulting tensors with the original messages, and then applying batch normalization and a ReLU activation function.
+Code Description: 
+The EncoderCore class is designed to handle graph data where nodes represent areas and edges are defined by a symmetric normalized Laplacian adjacency matrix. It performs message passing, which is a fundamental operation in graph neural networks (GNNs). During the initialization phase, it accepts an adjacency matrix and other parameters such as filter size for linear layers and configuration for batch normalization. The class uses these to set up its internal state.
 
-In the context of the project, EncoderCore is used by other classes such as BoardEncoder and RelationalOrderDecoder. In BoardEncoder, multiple instances of EncoderCore are created with different filter sizes to process shared and player-specific layers. Similarly, in RelationalOrderDecoder, multiple instances of EncoderCore are created to form a series of relational cores.
+In the `__call__` method, EncoderCore processes input tensors representing node features through a series of operations: 
+1. It creates a weight parameter `w` using hk.get_parameter with a shape derived from the input tensor dimensions and filter size.
+2. It computes messages by performing an einsum operation between the input tensors and weights `w`.
+3. These messages are then aggregated for each node based on the adjacency matrix, representing how information flows through the graph.
+4. The aggregated messages are concatenated with the original messages to form a new representation of nodes.
+5. Batch normalization is applied to stabilize training and improve performance.
+6. Finally, a ReLU activation function is used to introduce non-linearity.
 
-**Note**: When using the EncoderCore class, it is essential to provide a valid adjacency matrix that represents the topology of the graph. Additionally, the filter size and batch normalization configuration should be carefully chosen based on the specific requirements of the application.
+This class is utilized by other components in the project such as BoardEncoder and RelationalOrderDecoder. In BoardEncoder, multiple instances of EncoderCore are created for shared and player-specific layers, allowing it to handle complex graph structures with different types of information. Similarly, RelationalOrderDecoder uses EncoderCore to process province-level adjacency matrices, enabling it to perform relational reasoning tasks.
 
-**Output Example**: The output of the EncoderCore class will be a tensor with shape `[B, NUM_AREAS, 2 * self._filter_size]`, where `B` is the batch size, `NUM_AREAS` is the number of areas in the graph, and `self._filter_size` is the output size of the per-node linear layer. For instance, if the input tensor has shape `[32, 10, 64]` and the filter size is 32, the output tensor will have shape `[32, 10, 64]`.
+Note: 
+Ensure that the provided adjacency matrix is a symmetric normalized Laplacian as expected by this class. The filter size and batch normalization configuration can be adjusted based on specific requirements of the application.
+
+Output Example: 
+Given an input tensor of shape [B, NUM_AREAS, REP_SIZE], where B is the batch size, NUM_AREAS is the number of areas (nodes), and REP_SIZE is the representation size of each node, EncoderCore will output a tensor of shape [B, NUM_AREAS, 2 * filter_size]. This output represents the updated node features after one round of message passing.
 ### FunctionDef __init__(self, adjacency)
-**__init__**: The function of __init__ is to initialize the EncoderCore module with the given parameters.
-**parameters**: The parameters of this Function.
-· adjacency: a symmetric normalized Laplacian of the adjacency matrix, represented as a jnp.ndarray with shape [NUM_AREAS, NUM_AREAS].
-· filter_size: the output size of the per-node linear layer, defaults to 32 if not provided.
-· batch_norm_config: an optional dictionary containing configuration for hk.BatchNorm, defaults to None.
-· name: a string representing the name of the module, defaults to "encoder_core".
-**Code Description**: The description of this Function. 
-The __init__ function is responsible for setting up the EncoderCore module by storing the provided adjacency matrix, filter size, and batch normalization configuration. It first calls the parent class's constructor with the provided name. Then, it stores the adjacency matrix and filter size as instance variables. If a batch normalization configuration is provided, it updates the default configuration with the given values and creates an hk.BatchNorm instance with the updated configuration. The default batch normalization configuration includes a decay rate of 0.9, an epsilon value of 1e-5, and flags to create scale and offset.
-**Note**: Points to note about the use of the code. 
-When using this function, it is essential to provide a valid adjacency matrix as the first argument. The filter size and batch normalization configuration are optional but can significantly impact the behavior of the EncoderCore module. Additionally, the name parameter can be used to identify the module in the network architecture.
+**__init__**: The function of __init__ is to initialize an instance of the EncoderCore class with specified parameters.
+
+parameters:
+· adjacency: [NUM_AREAS, NUM_AREAS] symmetric normalized Laplacian of the adjacency matrix.
+· filter_size: output size of per-node linear layer. Default value is 32.
+· batch_norm_config: config dict for hk.BatchNorm. Default value is None.
+· name: a name for the module. Default value is "encoder_core".
+
+Code Description:
+The __init__ function initializes an instance of the EncoderCore class with the provided parameters. It first calls the constructor of the superclass using `super().__init__(name=name)`, passing the name parameter to it. The adjacency matrix, which should be a symmetric normalized Laplacian, is stored in the private attribute `_adjacency`. The filter size for the per-node linear layer is stored in the private attribute `_filter_size`.
+
+The function then sets up a default configuration dictionary `bnc` for batch normalization with keys 'decay_rate', 'eps', 'create_scale', and 'create_offset' set to 0.9, 1e-5, True, and True respectively. If a custom batch_norm_config is provided, it updates the default configuration dictionary `bnc` with the values from the provided config. The updated configuration is then used to create an instance of hk.BatchNorm, which is stored in the private attribute `_bn`.
+
+Note: Points to note about the use of the code
+Ensure that the adjacency matrix provided is a symmetric normalized Laplacian as required by the function. The filter_size should be chosen based on the specific requirements of the model architecture. If custom batch normalization settings are needed, they should be passed in the `batch_norm_config` dictionary following the expected keys and value types.
 ***
 ### FunctionDef __call__(self, tensors)
-**__call__**: The function of __call__ is to perform one round of message passing in a neural network.
-**parameters**: The parameters of this Function.
-· tensors: a JAX numpy array with shape [B, NUM_AREAS, REP_SIZE] representing the input tensors
-· is_training: a boolean indicating whether the function is being called during training, defaulting to False
-**Code Description**: This function implements a single round of message passing in a neural network. It first retrieves a parameter "w" with shape [REP_SIZE, self._filter_size] using the Haiku library's get_parameter function, initialized with a variance scaling initializer. The input tensors are then transformed by multiplying them with the retrieved parameter "w" using an einsum operation, resulting in messages. These messages are then propagated through the network by multiplying them with the adjacency matrix self._adjacency. The output is obtained by concatenating the propagated messages and the original messages along the last axis, followed by batch normalization using self._bn and a ReLU activation function.
-**Note**: The function uses JAX's numpy library for array operations and Haiku library for parameter management. The batch normalization is performed conditionally based on the is_training parameter. It is essential to ensure that the input tensors have the correct shape and that the filter size is compatible with the input representation size.
-**Output Example**: The output of this function will be a JAX numpy array with shape [B, NUM_AREAS, 2 * self._filter_size], where B is the batch size, NUM_AREAS is the number of areas, and self._filter_size is the filter size used in the message passing process. For instance, if B = 32, NUM_AREAS = 10, and self._filter_size = 128, the output shape would be [32, 10, 256].
+**__call__**: The function of __call__ is to perform one round of message passing on input tensors.
+
+parameters: 
+· tensors: This parameter represents the input data with shape [B, NUM_AREAS, REP_SIZE], where B is the batch size, NUM_AREAS is the number of areas or nodes, and REP_SIZE is the representation size of each node.
+· is_training: A boolean flag indicating whether the current operation is during training (default is False).
+
+Code Description: 
+The __call__ function performs a single round of message passing in a graph neural network. It starts by defining a weight matrix 'w' using Haiku's get_parameter method, which initializes weights with shape [NUM_AREAS, REP_SIZE, FILTER_SIZE] and uses VarianceScaling for initialization. The messages are then computed as the product of the input tensors and the weight matrix 'w' through an einsum operation, resulting in a tensor of shape [B, NUM_AREAS, FILTER_SIZE]. These messages are aggregated by multiplying with the adjacency matrix self._adjacency, which combines information from neighboring nodes. The aggregated messages are concatenated with the original messages along the last axis to form a new tensor of shape [B, NUM_AREAS, 2 * FILTER_SIZE]. This combined tensor is then passed through a batch normalization layer self._bn, with the is_training flag indicating whether it's in training mode or not. Finally, the output tensor undergoes a ReLU activation function before being returned.
+
+Note: The adjacency matrix self._adjacency and filter size self._filter_size are assumed to be predefined attributes of the class instance. Ensure that these attributes are correctly initialized before calling this method.
+
+Output Example: 
+Assuming B=2 (batch size), NUM_AREAS=3, REP_SIZE=4, and FILTER_SIZE=5, the output tensor will have a shape of [2, 3, 10]. Each element in the batch will contain aggregated messages from neighboring nodes concatenated with the original messages, followed by batch normalization and ReLU activation.
 ***
 ## ClassDef BoardEncoder
-**BoardEncoder**: The function of BoardEncoder is to encode board state into a representation that can be used by other components in the system.
+**BoardEncoder**: The function of BoardEncoder is to encode board state representations by constructing a shared representation that does not depend on the specific player and then incorporating player-specific information.
 
-**attributes**: The attributes of this Class.
-· adjacency: a symmetric normalized Laplacian of the adjacency matrix representing the connections between areas on the board
-· shared_filter_size: the filter size of each EncoderCore for shared layers
-· player_filter_size: the filter size of each EncoderCore for player-specific layers
-· num_shared_cores: the number of shared layers, or rounds of message passing
-· num_player_cores: the number of player-specific layers, or rounds of message passing
-· num_players: the number of players in the game
-· num_seasons: the number of seasons in the game
-· player_embedding_size: the size of the player embedding
-· season_embedding_size: the size of the season embedding
-· min_init_embedding: the minimum value for the random uniform initializer for player and season embeddings
-· max_init_embedding: the maximum value for the random uniform initializer for player and season embeddings
-· batch_norm_config: a configuration dictionary for batch normalization
-· name: a name for this module
+attributes: 
+· adjacency: [NUM_AREAS, NUM_AREAS] symmetric normalized Laplacian of the adjacency matrix.
+· shared_filter_size: filter size of each EncoderCore for shared layers (default is 32).
+· player_filter_size: filter size of each EncoderCore for player-specific layers (default is 32).
+· num_shared_cores: number of shared layers, or rounds of message passing (default is 8).
+· num_player_cores: number of player-specific layers, or rounds of message passing (default is 8).
+· num_players: number of players (default is 7).
+· num_seasons: number of seasons (default is utils.NUM_SEASONS).
+· player_embedding_size: size of player embedding (default is 16).
+· season_embedding_size: size of season embedding (default is 16).
+· min_init_embedding: minimum value for hk.initializers.RandomUniform for player and season embedding (default is -1.0).
+· max_init_embedding: maximum value for hk.initializers.RandomUniform for player and season embedding (default is 1.0).
+· batch_norm_config: configuration dictionary for hk.BatchNorm.
+· name: a name for this module (default is "board_encoder").
 
-**Code Description**: The BoardEncoder class is designed to construct a representation of the board state, taking into account the season, player, and number of builds. It first creates a shared representation that does not depend on the specific player, and then includes player-specific information in later layers. The class uses EncoderCore modules to perform message passing between areas on the board. The BoardEncoder is used by the Network class to encode the board state, which is then used as input to other components in the system. In particular, the Network class creates two instances of the BoardEncoder: one for the current board state and one for the last moves.
+Code Description: The BoardEncoder class constructs a representation of the board state, organized per-area. It takes into account the season in the game, the specific power (player) being considered, and the number of builds available to that player. Both the season and player are embedded before being included in the representation. A shared representation is first constructed through several layers of message passing, which does not depend on the specific player. Player-specific information is then incorporated into this shared representation through additional layers of message passing.
 
-The BoardEncoder class has several key components. The `_season_embedding` and `_player_embedding` attributes are embeddings that map season and player indices to dense vectors. The `make_encoder` function is a partial application of the EncoderCore constructor, which creates an EncoderCore module with the given adjacency matrix and batch normalization configuration. The `_shared_encode`, `_shared_core`, `_player_encode`, and `_player_core` attributes are EncoderCore modules that perform message passing between areas on the board.
+The class initializes embeddings for seasons and players using hk.Embed with random uniform initializers. It also sets up multiple EncoderCore instances for both shared and player-specific layers. During the forward pass (in the __call__ method), it first creates a context vector by embedding the season and tiling it across all areas, then concatenates this context with the state representation and build numbers. The shared encoding process is performed using the shared EncoderCore instances followed by message passing through additional shared cores.
 
-The `__call__` method of the BoardEncoder class takes in several inputs, including the state representation, season, build numbers, and a flag indicating whether the model is being trained. It first constructs a season context by embedding the season index and tiling it to match the shape of the state representation. It then concatenates the state representation, season context, and build numbers along the last axis. The method applies several rounds of message passing using the shared EncoderCore modules, followed by several rounds of message passing using the player-specific EncoderCore modules.
+Next, player-specific embeddings are created and concatenated to the shared representation for each player. Player-specific encoding is then applied using the player-specific EncoderCore instances, again followed by message passing through additional player cores. Finally, batch normalization is applied to the resulting representation before it is returned.
 
-**Note**: When using the BoardEncoder class, it is important to ensure that the input shapes are correct and that the batch normalization configuration is properly set up. Additionally, the number of players and seasons should be consistent with the game being modeled.
+Note: The BoardEncoder class is used within the Network class to encode board states and last moves actions. It plays a crucial role in transforming raw board data into a more meaningful representation that can be used for further processing by other components of the network, such as RNNs and MLPs.
 
-**Output Example**: The output of the BoardEncoder class will be a tensor representing the encoded board state, with shape `[batch_size, num_areas, 2 * player_filter_size]`. For example, if `batch_size` is 32, `num_areas` is 56, and `player_filter_size` is 32, the output might look like:
-```python
-array([[[ 0.1,  0.2, ...,  0.9],
-        [ 1.1,  1.2, ...,  1.9],
-        ...,
-        [55.1, 55.2, ..., 55.9]],
-
-       [[ 0.11,  0.21, ...,  0.91],
-        [ 1.11,  1.21, ...,  1.91],
-        ...,
-        [55.11, 55.21, ..., 55.91]],
-
-       ...,
-
-       [[ 0.31,  0.41, ...,  0.91],
-        [ 1.31,  1.41, ...,  1.91],
-        ...,
-        [55.31, 55.41, ..., 55.91]]], dtype=float32)
-```
+Output Example: A possible appearance of the code's return value is a tensor with shape [B, NUM_AREAS, 2 * self._player_filter_size], where B is the batch size, NUM_AREAS is the number of areas on the board, and self._player_filter_size is the filter size specified for player-specific layers. This tensor represents the encoded board state, incorporating both shared and player-specific information.
 ### FunctionDef __init__(self, adjacency)
-**__init__**: The function of __init__ is to initialize the BoardEncoder module with the given parameters.
-**parameters**: The parameters of this Function.
-· adjacency: a symmetric normalized Laplacian of the adjacency matrix, describing the topology of the graph.
-· shared_filter_size: the filter size of each EncoderCore for shared layers, defaulting to 32.
-· player_filter_size: the filter size of each EncoderCore for player-specific layers, defaulting to 32.
-· num_shared_cores: the number of shared layers, or rounds of message passing, defaulting to 8.
-· num_player_cores: the number of player-specific layers, or rounds of message passing, defaulting to 8.
-· num_players: the number of players, defaulting to 7.
-· num_seasons: the number of seasons, defaulting to utils.NUM_SEASONS.
-· player_embedding_size: the size of player embedding, defaulting to 16.
-· season_embedding_size: the size of season embedding, defaulting to 16.
-· min_init_embedding: the minimum value for hk.initializers.RandomUniform for player and season embedding, defaulting to -1.0.
-· max_init_embedding: the maximum value for hk.initializers.RandomUniform for player and season embedding, defaulting to 1.0.
-· batch_norm_config: a configuration dictionary for batch normalization, defaulting to None.
-· name: a name for this module, defaulting to "board_encoder".
-**Code Description**: The __init__ function initializes the BoardEncoder module by setting up the necessary components, including the season and player embeddings, shared and player-specific EncoderCore instances, and batch normalization. It first calls the superclass's constructor with the given name. Then, it sets up the season and player embeddings using hk.Embed, with the specified embedding sizes and initialization ranges. The function also creates a partial function make_encoder, which is used to create EncoderCore instances with the given adjacency matrix and batch normalization configuration. The shared and player-specific EncoderCore instances are created using this partial function, with the specified filter sizes and numbers of cores. Finally, the function sets up the batch normalization module with the given configuration.
-The BoardEncoder module relies on the EncoderCore class to perform message passing in the graph network. The EncoderCore class is responsible for processing input tensors organized by area and topology described by the symmetric normalized Laplacian of an adjacency matrix. By creating multiple instances of EncoderCore with different filter sizes, the BoardEncoder module can process shared and player-specific layers separately.
-**Note**: When using the BoardEncoder module, it is essential to provide a valid adjacency matrix that represents the topology of the graph. Additionally, the filter sizes, batch normalization configuration, and embedding sizes should be carefully chosen based on the specific requirements of the application. The number of players, seasons, and cores should also be set according to the problem's needs.
+**__init__**: The function of __init__ is to initialize the BoardEncoder module with specified parameters for handling graph-structured data.
+
+parameters: 
+· adjacency: [NUM_AREAS, NUM_AREAS] symmetric normalized Laplacian of the adjacency matrix.
+· shared_filter_size: filter_size of each EncoderCore for shared layers. Default value is 32.
+· player_filter_size: filter_size of each EncoderCore for player-specific layers. Default value is 32.
+· num_shared_cores: number of shared layers, or rounds of message passing. Default value is 8.
+· num_player_cores: number of player-specific layers, or rounds of message passing. Default value is 8.
+· num_players: number of players. Default value is 7.
+· num_seasons: number of seasons. Default value is utils.NUM_SEASONS.
+· player_embedding_size: size of player embedding. Default value is 16.
+· season_embedding_size: size of season embedding. Default value is 16.
+· min_init_embedding: min value for hk.initializers.RandomUniform for player and season embedding. Default value is -1.0.
+· max_init_embedding: max value for hk.initializers.RandomUniform for player and season embedding. Default value is 1.0.
+· batch_norm_config: config dict for hk.BatchNorm. Default value is None.
+· name: a name for this module. Default value is "board_encoder".
+
+Code Description: The __init__ method initializes the BoardEncoder module with various parameters that define its behavior in processing graph-structured data. It sets up embeddings for players and seasons using hk.Embed, which are initialized with random values within the specified range (min_init_embedding to max_init_embedding). These embeddings play a crucial role in representing different players and seasons in the model.
+
+The method also creates instances of EncoderCore for both shared and player-specific layers. The number of these cores is determined by num_shared_cores and num_player_cores, respectively. Each core is configured with the provided adjacency matrix and batch normalization settings, enabling them to perform message passing on the graph data. This setup allows the BoardEncoder to handle complex interactions between different areas (nodes) in the graph while considering both shared information and player-specific details.
+
+Batch normalization is configured using a default set of parameters that can be overridden by providing a custom batch_norm_config dictionary. The resulting configuration is stored in self._bn, which will be used during the message passing process to stabilize training and improve performance.
+
+Note: Ensure that the provided adjacency matrix is a symmetric normalized Laplacian as expected by this class. Adjusting the filter sizes, number of cores, embedding dimensions, and batch normalization settings can help tailor the model to specific requirements of the application.
 ***
 ### FunctionDef __call__(self, state_representation, season, build_numbers, is_training)
-**__call__**: The function of __call__ is to encode board state into a numerical representation.
-**parameters**: The parameters of this Function.
-· state_representation: a jnp.ndarray representing the current state of the board, with shape [B, NUM_AREAS, REP_SIZE].
-· season: a jnp.ndarray representing the current season, with shape [B, 1].
-· build_numbers: a jnp.ndarray representing the current build numbers, with shape [B, 1].
-· is_training: a boolean indicating whether this is during training, defaulting to False.
+**__call__**: The function of __call__ is to encode the board state by integrating various contextual information such as season and build numbers.
 
-**Code Description**: The __call__ function first creates a season context by tiling the season embedding across all areas of the board. It then creates a build number context by tiling the build numbers across all areas of the board. These contexts are concatenated with the state representation to create an enhanced representation of the board state. This representation is then passed through a series of encoding layers, including shared and player-specific layers, to produce a final encoded representation of the board state. The function uses various techniques such as batch application and concatenation to efficiently process the input data.
+parameters: 
+· state_representation: A JAX NumPy array representing the state of the board with shape [B, NUM_AREAS, REP_SIZE], where B is the batch size, NUM_AREAS is the number of areas on the board, and REP_SIZE is the size of the representation for each area.
+· season: A JAX NumPy array indicating the current season with shape [B, 1].
+· build_numbers: A JAX NumPy array representing the build numbers with shape [B, 1].
+· is_training: A boolean flag indicating whether the function is being called during training.
 
-**Note**: The use of jnp.ndarray as input parameters suggests that this function is designed to work with JAX numerical computing library. The function also relies on various instance variables, such as _season_embedding, _player_embedding, _shared_encode, _shared_core, _player_encode, and _player_core, which are not defined in this documentation. It is assumed that these variables are properly initialized and configured before calling the __call__ function.
+Code Description: The __call__ method encodes the board state by first creating a season context and tiling it across all areas in the batch. It then converts the build numbers to float32 and tiles them similarly. These contextual embeddings are concatenated with the original state representation along the last axis. The combined representation is then passed through a shared encoding layer followed by several residual layers defined in self._shared_core.
 
-**Output Example**: The output of the __call__ function will be a jnp.ndarray with shape [B, NUM_AREAS, 2 * self._player_filter_size], representing the encoded board state. For example, if B = 32, NUM_AREAS = 10, and self._player_filter_size = 128, the output would be a jnp.ndarray with shape [32, 10, 256].
+Next, player-specific embeddings are created and tiled across all areas and players. The current board representation is also tiled to match this shape, and the player embeddings are concatenated with it. This new representation is then processed through a player-specific encoding layer and additional residual layers defined in self._player_core. Finally, batch normalization is applied to the output before returning.
+
+Note: Ensure that the input arrays have the correct shapes as specified in the parameters section. The method assumes that certain attributes like _season_embedding, _shared_encode, _shared_core, _player_embedding, _player_encode, _player_core, and _bn are properly initialized elsewhere in the class.
+
+Output Example: A JAX NumPy array with shape [B, NUM_AREAS, 2 * self._player_filter_size], representing the encoded board state with integrated contextual information.
 ***
 ## ClassDef RecurrentOrderNetworkInput
-**RecurrentOrderNetworkInput**: The function of RecurrentOrderNetworkInput is to represent the input data structure for a recurrent neural network designed to process sequential order-related information.
+**RecurrentOrderNetworkInput**: The function of RecurrentOrderNetworkInput is to encapsulate the necessary input data required by the recurrent order network for processing in decision-making tasks.
 
-**attributes**: The attributes of this Class.
-· average_area_representation: a jnp.ndarray representing the averaged area representation
-· legal_actions_mask: a jnp.ndarray indicating the mask for legal actions
-· teacher_forcing: a jnp.ndarray representing the teacher forcing input
-· previous_teacher_forcing_action: a jnp.ndarray representing the previous teacher forcing action
-· temperature: a jnp.ndarray representing the temperature value
+attributes: The attributes of this Class.
+· average_area_representation: A jnp.ndarray representing the averaged area representation, typically with shape [B*PLAYERS, REP_SIZE].
+· legal_actions_mask: A jnp.ndarray indicating which actions are legal for each player, usually shaped as [B*PLAYERS, MAX_ACTION_INDEX].
+· teacher_forcing: A jnp.ndarray used during training to provide ground truth actions, shaped as [B*PLAYERS].
+· previous_teacher_forcing_action: A jnp.ndarray representing the last action provided by teacher forcing, also with shape [B*PLAYERS].
+· temperature: A jnp.ndarray that controls the randomness of sampling during inference, typically shaped as [B*PLAYERS, 1].
 
-**Code Description**: The RecurrentOrderNetworkInput class is a NamedTuple that encapsulates the necessary input data for a recurrent neural network. This data structure is specifically designed to handle sequential order-related information, where each attribute plays a crucial role in the decision-making process of the network. The average_area_representation attribute provides a condensed representation of the area, while the legal_actions_mask attribute filters out illegal actions. The teacher_forcing and previous_teacher_forcing_action attributes are used to guide the network during training, and the temperature attribute controls the exploration-exploitation trade-off.
+Code Description: The RecurrentOrderNetworkInput class is a NamedTuple designed to hold structured input data for a recurrent neural network specifically tailored for order-based decision-making tasks. This class encapsulates five key attributes essential for the network's operation:
 
-In the context of the project, the RecurrentOrderNetworkInput class is utilized by the RelationalOrderDecoder and Network classes. Specifically, in the RelationalOrderDecoder's __call__ method, an instance of RecurrentOrderNetworkInput is passed as an argument to provide the necessary input data for issuing orders based on board representation and previous decisions. Similarly, in the Network's step_inference method, a RecurrentOrderNetworkInput instance is created to compute logits for units that require orders.
+- average_area_representation: This attribute holds the averaged representation of areas relevant to each player, which serves as a foundational input for the network to understand the current state of the environment.
+  
+- legal_actions_mask: This binary mask indicates which actions are permissible for each player at any given step. It is crucial for guiding the network towards making valid decisions by eliminating illegal options.
 
-The use of RecurrentOrderNetworkInput enables the recurrent neural network to effectively process sequential order-related information, making it an essential component of the project's architecture.
+- teacher_forcing: During training, this attribute provides ground truth actions to the network, facilitating supervised learning and enabling the model to learn from correct sequences of actions.
 
-**Note**: When using the RecurrentOrderNetworkInput class, it is essential to ensure that all attributes are properly initialized and passed to the relevant methods. Additionally, the specific requirements for each attribute, such as shape and data type, must be adhered to in order to maintain the integrity of the network's functionality.
+- previous_teacher_forcing_action: This attribute stores the last action that was provided through teacher forcing. It is used in conjunction with other inputs to maintain consistency and context across sequential steps during training.
+
+- temperature: This parameter controls the randomness of the sampling process during inference. By adjusting the temperature, one can influence the exploration-exploitation trade-off, making it possible to generate more diverse or deterministic actions as needed.
+
+In the project, RecurrentOrderNetworkInput is utilized by two primary functions: `RelationalOrderDecoder.__call__` and `Network.step_inference`. In `RelationalOrderDecoder.__call__`, this input class provides essential data for issuing orders based on the current board representation and previous decisions. The function processes these inputs alongside a previous state to generate logits representing potential actions, which are then used to update the decoder's internal state.
+
+Similarly, in `Network.step_inference`, RecurrentOrderNetworkInput is constructed from step observations and passed to the recurrent neural network (RNN) for generating action logits during inference. This function also updates the internal state of the network based on the current inputs and outputs relevant information such as actions, legal action masks, policies, and logits.
+
+Note: Points to note about the use of the code
+When using RecurrentOrderNetworkInput, ensure that all attributes are correctly shaped and formatted according to their descriptions. Properly setting these attributes is crucial for the correct functioning of the network during both training and inference phases. Additionally, pay attention to the temperature parameter when performing inference to achieve the desired balance between exploration and exploitation in action sampling.
 ## FunctionDef previous_action_from_teacher_or_sample(teacher_forcing, previous_teacher_forcing_action, previous_sampled_action_index)
-**previous_action_from_teacher_or_sample**: The function of previous_action_from_teacher_or_sample is to determine the previous action based on teacher forcing or sampled actions.
-**parameters**: The parameters of this Function.
-· teacher_forcing: a jnp.ndarray indicating whether teacher forcing is being used
-· previous_teacher_forcing_action: a jnp.ndarray representing the previous action when teacher forcing is used
-· previous_sampled_action_index: a jnp.ndarray representing the index of the previously sampled action
-**Code Description**: This function uses the jnp.where function to conditionally return either the previous teacher forcing action or the action corresponding to the previous sampled action index. The action corresponding to the previous sampled action index is obtained by using the shrink_actions function from the action_utils module and then indexing into the resulting array with the previous sampled action index. This function is called by the RelationalOrderDecoder's __call__ method, where it is used to determine the previous action based on whether teacher forcing is being used or not. The result of this function is then used to update the blocked provinces and construct a representation of the previous order.
-**Note**: The use of teacher forcing allows for the model to be trained using supervised learning, where the correct actions are provided as input. When teacher forcing is not used, the model samples actions from its output distribution. This function provides a way to handle both cases and ensure that the model can learn from its past actions.
-**Output Example**: The output of this function will be a jnp.ndarray representing the previous action, which can take on values corresponding to the possible actions in the environment. For example, if there are 10 possible actions, the output might be an array with shape [batch_size] containing integers between 0 and 9, where each integer represents one of the possible actions.
+**previous_action_from_teacher_or_sample**: The function of previous_action_from_teacher_or_sample is to determine the previous action based on whether teacher forcing is applied or not.
+
+parameters: 
+· teacher_forcing: A jnp.ndarray indicating whether teacher forcing should be used.
+· previous_teacher_forcing_action: A jnp.ndarray representing the previous action provided by the teacher during training.
+· previous_sampled_action_index: A jnp.ndarray containing the index of the previously sampled action during inference.
+
+Code Description: The function uses a conditional statement (jnp.where) to decide whether to return the previous action from the teacher or from the sampled actions. If `teacher_forcing` is True, it returns `previous_teacher_forcing_action`. Otherwise, it retrieves the action from the list of possible actions using the index specified in `previous_sampled_action_index`, after shrinking the actions using `action_utils.shrink_actions`.
+
+This function plays a crucial role in the RelationalOrderDecoder class's __call__ method. In the context of training, when teacher forcing is enabled, the model receives the correct previous action from the dataset to guide its learning process. During inference or when teacher forcing is disabled, the model uses the previously sampled action index to determine the previous action, allowing it to generate actions autonomously.
+
+Note: Ensure that `teacher_forcing`, `previous_teacher_forcing_action`, and `previous_sampled_action_index` are correctly shaped jnp.ndarrays as expected by this function. Misalignment in dimensions can lead to runtime errors or incorrect behavior.
+
+Output Example: If teacher_forcing is True, the output will be the value of previous_teacher_forcing_action. For example, if previous_teacher_forcing_action is [1, 2, 3], the output will be [1, 2, 3]. If teacher_forcing is False and previous_sampled_action_index is [0, 1, 2], assuming action_utils.shrink_actions(action_utils.POSSIBLE_ACTIONS) results in [10, 20, 30], the output will be [10, 20, 30].
 ## FunctionDef one_hot_provinces_for_all_actions
-**one_hot_provinces_for_all_actions**: The function of one_hot_provinces_for_all_actions is to generate a one-hot representation of provinces for all possible actions.
-**parameters**: There are no parameters for this Function.
-**Code Description**: This function utilizes the jax.nn.one_hot function to create a one-hot encoding of provinces for all possible actions. It first converts the ordered province indices for all possible actions into a JAX numpy array using jnp.asarray, and then applies the one-hot encoding with the number of provinces defined in utils.NUM_PROVINCES. The resulting one-hot representation is used by other functions in the project, such as blocked_provinces_and_actions and RelationalOrderDecoder, to determine which provinces are associated with each action and to calculate the legality of actions based on previous decisions.
-**Note**: It's essential to note that this function relies on external constants and functions, including action_utils.ordered_province, utils.NUM_PROVINCES, and jax.nn.one_hot, which must be defined and accessible for this function to work correctly. Additionally, the output of this function is used in various calculations throughout the project, so any changes to its implementation may have far-reaching effects on the overall functionality.
-**Output Example**: The return value of one_hot_provinces_for_all_actions will be a 2D array where each row represents an action and each column represents a province, with a value of 1 indicating that the province is associated with the action and 0 otherwise. For example, if there are 10 provinces and 20 possible actions, the output might look like a 20x10 array with binary values indicating which provinces are relevant for each action.
+**one_hot_provinces_for_all_actions**: The function of one_hot_provinces_for_all_actions is to generate a one-hot encoded matrix representing all possible provinces associated with each action.
+
+parameters: The parameters of this Function.
+· This function does not take any explicit parameters.
+
+Code Description: The description of this Function.
+The function `one_hot_provinces_for_all_actions` generates a one-hot encoded matrix where each row corresponds to an action from the set of possible actions (`action_utils.POSSIBLE_ACTIONS`). Each column in the matrix represents a province, and the number of columns is determined by `utils.NUM_PROVINCES`. The value at each position in the matrix indicates whether the corresponding province is associated with the action (1) or not (0). This one-hot encoding is achieved using `jax.nn.one_hot` on the ordered provinces derived from the possible actions.
+
+The function is called within two different parts of the project:
+1. In `blocked_provinces_and_actions`, it is used to determine which actions are blocked based on the current state of blocked provinces. The one-hot encoded matrix helps in identifying which provinces are affected by a given action, aiding in the calculation of illegal actions.
+2. In `RelationalOrderDecoder.__call__`, it assists in constructing the representation of legal actions for each province. By multiplying the legal actions mask with the one-hot encoded provinces, it ensures that only valid actions for each province are considered during the order issuance process.
+
+Note: Points to note about the use of the code
+This function does not require any input parameters and is designed to work with predefined constants (`action_utils.POSSIBLE_ACTIONS` and `utils.NUM_PROVINCES`). It is crucial that these constants are correctly defined in the project for the function to produce accurate results. The output matrix is used extensively in determining legal actions and blocked provinces, so its correctness is vital for the overall functionality of the system.
+
+Output Example: Mock up a possible appearance of the code's return value.
+Assuming there are 5 possible actions and 10 provinces, the output could look like this:
+```
+[[1. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+ [0. 1. 0. 0. 0. 0. 0. 0. 0. 0.]
+ [0. 0. 1. 0. 0. 0. 0. 0. 0. 0.]
+ [0. 0. 0. 1. 0. 0. 0. 0. 0. 0.]
+ [0. 0. 0. 0. 1. 0. 0. 0. 0. 0.]]
+```
+Each row corresponds to an action, and each column represents a province. The value of 1 indicates that the province is associated with the corresponding action.
 ## FunctionDef blocked_provinces_and_actions(previous_action, previous_blocked_provinces)
 **blocked_provinces_and_actions**: The function of blocked_provinces_and_actions is to calculate which provinces and actions are illegal based on previous decisions.
-**parameters**: The parameters of this Function.
-· previous_action: a jnp.ndarray representing the previous action taken, used to determine the updated blocked provinces and actions.
-· previous_blocked_provinces: a jnp.ndarray representing the previously blocked provinces, used as input to calculate the updated blocked provinces.
-**Code Description**: This function takes into account the previous action and blocked provinces to compute the updated blocked provinces by applying the maximum operation between the previous blocked provinces and the one-hot encoded provinces obtained from the previous action. It then calculates the blocked actions by multiplying the one-hot representation of provinces for all possible actions with the updated blocked provinces, and filters out waive actions using the is_waive function. The result is a tuple containing the updated blocked provinces and blocked actions. This function is used in conjunction with other functions such as RelationalOrderDecoder to determine the legality of actions based on previous decisions.
-**Note**: It's essential to note that this function relies on external constants and functions, including action_utils and utils, which must be defined and accessible for this function to work correctly. Additionally, the output of this function is used in various calculations throughout the project, so any changes to its implementation may have far-reaching effects on the overall functionality.
-**Output Example**: The return value of blocked_provinces_and_actions will be a tuple containing two arrays: updated_blocked_provinces and blocked_actions. For instance, if there are 10 provinces and 20 possible actions, the output might look like a tuple where the first element is a 1D array representing the updated blocked provinces with binary values indicating which provinces are blocked, and the second element is a 1D array representing the blocked actions with binary values indicating which actions are illegal.
+
+parameters: 
+· previous_action: A jnp.ndarray representing the most recent action taken, where each element encodes multiple pieces of information about an action through bit manipulation.
+· previous_blocked_provinces: A jnp.ndarray indicating which provinces were previously blocked by past decisions.
+
+Code Description: The function `blocked_provinces_and_actions` calculates and updates the list of blocked provinces based on the most recent action (`previous_action`) and any provinces that were already blocked (`previous_blocked_provinces`). It first computes an updated set of blocked provinces using the `ordered_provinces_one_hot` function, which generates a one-hot encoded representation of provinces associated with actions greater than 0 and not marked as waived. The maximum operation between the previous blocked provinces and this new encoding ensures that any province blocked in either state remains blocked.
+
+Next, it calculates which actions are blocked by multiplying the one-hot encoded matrix from `one_hot_provinces_for_all_actions` (representing all possible provinces for each action) with the updated blocked provinces array. This multiplication identifies actions that involve blocked provinces and marks them as illegal. The result is then adjusted to exclude any "waive" actions, which are determined using the `is_waive` function.
+
+The function returns two arrays: `updated_blocked_provinces`, which contains the updated list of blocked provinces after considering the most recent action, and `blocked_actions`, a binary array indicating which actions are illegal due to involving blocked provinces or being "waive" actions.
+
+In the context of its caller in the project, `RelationalOrderDecoder.__call__` uses `blocked_provinces_and_actions` to determine which provinces and actions are illegal based on previous game state decisions. This information is crucial for constructing a valid set of legal actions that can be considered during the order issuance process.
+
+Note: The function assumes that certain utility functions (like those from action_utils) and constants (like utils.NUM_PROVINCES) are correctly defined elsewhere in the project. It is crucial that these dependencies are properly set up for the function to work as intended.
+
+Output Example: Assuming there are 5 provinces and 3 actions, with previous_action = [1, 0, 2] and previous_blocked_provinces = [0, 1, 0, 0, 0], the output could be:
+updated_blocked_provinces = [0, 1, 0, 1, 0]
+blocked_actions = [0, 1, 0]
+
+This indicates that provinces 1 and 3 are blocked after considering the most recent action, and only the second action is illegal due to involving a blocked province.
 ## FunctionDef sample_from_logits(logits, legal_action_mask, temperature)
-**sample_from_logits**: The function of sample_from_logits is to sample an action from a given set of logits while respecting a legal actions mask and considering a temperature parameter.
-**parameters**: The parameters of this Function.
-· logits: a JAX numpy array representing the logits of the actions
-· legal_action_mask: a JAX numpy array indicating which actions are legal
-· temperature: a JAX numpy array controlling the level of randomness in the sampling process
-**Code Description**: This function takes in the logits, legal action mask, and temperature as inputs. It first constructs deterministic logits by setting all non-maximum values to negative infinity, and stochastic logits by scaling the original logits with the temperature. The function then combines these two sets of logits based on the temperature value: if the temperature is zero, it uses the deterministic logits; otherwise, it uses the stochastic logits. Finally, the function samples an action from the resulting logits using JAX's categorical sampling function.
-The sample_from_logits function is used by the RelationalOrderDecoder class in the network module to issue orders based on board representation and previous decisions. Specifically, it is called in the __call__ method of RelationalOrderDecoder to sample an action index after constructing order logits conditional on province representation and previous orders.
-**Note**: The temperature parameter controls the level of randomness in the sampling process: a temperature of zero results in deterministic sampling, while a non-zero temperature introduces randomness. Additionally, the legal action mask ensures that only valid actions are considered during sampling.
-**Output Example**: The output of sample_from_logits is a JAX numpy array representing the sampled action index, which can be used to update the state and make subsequent decisions. For instance, if the input logits have shape [batch_size, max_action_index], the output might look like an array of shape [batch_size] containing integer values between 0 and max_action_index-1, each representing a sampled action.
+**sample_from_logits**: The function of sample_from_logits is to sample an action from logits while respecting a legal actions mask.
+
+parameters: 
+· logits: jnp.ndarray - An array containing raw unnormalized scores for each possible action.
+· legal_action_mask: jnp.ndarray - A boolean mask indicating which actions are legal.
+· temperature: jnp.ndarray - A scalar or array that controls the randomness of sampling, where lower values make the distribution more deterministic.
+
+Code Description: 
+The function sample_from_logits is designed to select an action from a set of possible actions based on their logits (unnormalized scores) while ensuring that only legal actions are considered. It handles both stochastic and deterministic sampling depending on the temperature parameter. 
+
+Firstly, it computes deterministic logits by setting the score of the highest scoring illegal action to negative infinity, effectively making it impossible to select. This is achieved using jnp.where and jax.nn.one_hot functions.
+
+Secondly, it calculates stochastic logits by dividing the logits by the temperature for legal actions and setting the scores of illegal actions to negative infinity. This step ensures that the sampling process respects the legal action mask while allowing for randomness controlled by the temperature parameter.
+
+The function then selects between deterministic and stochastic logits based on whether the temperature is zero or not, using another jnp.where call.
+
+Finally, it samples an action from the computed logits using jax.random.categorical. The random key for this operation is generated using hk.next_rng_key(), ensuring reproducibility when needed.
+
+In the context of the project, sample_from_logits is called within the __call__ method of RelationalOrderDecoder. Here, it receives order logits and a legal actions mask as inputs, along with a temperature value that controls the randomness of action selection. The sampled action index returned by sample_from_logits is then used to update the decoder's state, reflecting the decision made for the current province.
+
+Note: 
+The function assumes that the logits array has shape [B*PLAYERS, MAX_ACTION_INDEX], where B is the batch size and PLAYERS is the number of players. The legal_action_mask should have the same shape as logits, with True indicating a legal action and False an illegal one. The temperature parameter can be a scalar or an array of shape [B*PLAYERS, 1].
+
+Output Example: 
+A possible output of sample_from_logits could be an array of shape [B*PLAYERS] containing sampled action indices for each player in the batch. For example, if B=2 and PLAYERS=3, the output might look like [5, 10, 3, 7, 2, 8], where each number represents an index corresponding to a legal action selected from the logits provided.
 ## ClassDef RelationalOrderDecoderState
-**RelationalOrderDecoderState**: The function of RelationalOrderDecoderState is to represent the state of a relational order decoder, encapsulating previous orders, blocked provinces, and sampled action indices.
+**RelationalOrderDecoderState**: The function of RelationalOrderDecoderState is to encapsulate the state information required by the RelationalOrderDecoder during the order generation process.
+attributes: The attributes of this Class.
+· prev_orders: A jnp.ndarray representing the previous orders made, with shape [B*PLAYERS, NUM_PROVINCES, 2 * self._filter_size].
+· blocked_provinces: A jnp.ndarray indicating which provinces are currently blocked for action, with shape [B*PLAYERS, NUM_PROVINCES].
+· sampled_action_index: A jnp.ndarray containing the index of the last sampled action, with shape [B*PLAYER].
 
-**attributes**: The attributes of this Class.
-· prev_orders: a jnp.ndarray representing the previous orders, with shape [B*PLAYERS, NUM_PROVINCES, 2 * self._filter_size].
-· blocked_provinces: a jnp.ndarray indicating the blocked provinces, with shape [B*PLAYERS, NUM_PROVINCES].
-· sampled_action_index: a jnp.ndarray representing the sampled action index, with shape [B*PLAYER].
+Code Description: The RelationalOrderDecoderState class is a NamedTuple designed to store and manage the state information necessary for the RelationalOrderDecoder during its operation. This state includes previous orders made by players, provinces that are currently blocked from taking actions, and the index of the last action sampled. These attributes are crucial for maintaining context across multiple steps in the order generation process.
 
-**Code Description**: The RelationalOrderDecoderState class is a NamedTuple that stores the state of a relational order decoder. It contains three attributes: prev_orders, blocked_provinces, and sampled_action_index. This class is used in conjunction with the RelationalOrderDecoder class, where it serves as both an input and output to the __call__ method. The initial_state method of the RelationalOrderDecoder class returns an instance of RelationalOrderDecoderState, which is then passed to the __call__ method along with other inputs. The __call__ method updates the state based on the previous orders, blocked provinces, and sampled action indices, and returns a new instance of RelationalOrderDecoderState. This updated state can be used for subsequent calls to the __call__ method.
+The class is utilized within the RelationalOrderDecoder's __call__ method, where it serves as both an input parameter (prev_state) and a return value. During each call to __call__, the decoder uses the information contained in prev_state to generate new orders based on the current board representation and legal actions available. The updated state is then returned, reflecting the changes made during this step.
 
-The attributes of RelationalOrderDecoderState are critical in maintaining the context of the relational order decoder. The prev_orders attribute keeps track of the previous orders, which is essential in constructing the representation of the province currently under consideration. The blocked_provinces attribute indicates which provinces are blocked, and this information is used to eliminate illegal actions. The sampled_action_index attribute represents the sampled action index, which is used to update the state.
+Additionally, the initial_state method of RelationalOrderDecoder initializes an instance of RelationalOrderDecoderState with zero values for all attributes, setting up the starting point for the order generation process. This initialization ensures that the decoder begins with a clean slate, free from any pre-existing state information.
 
-**Note**: When using RelationalOrderDecoderState, it is essential to ensure that the attributes are correctly initialized and updated. The initial_state method of the RelationalOrderDecoder class provides a convenient way to initialize an instance of RelationalOrderDecoderState with zeros. Additionally, the __call__ method of the RelationalOrderDecoder class updates the state based on the previous orders, blocked provinces, and sampled action indices, ensuring that the state remains consistent throughout the decoding process.
+Note: Points to note about the use of the code
+When using RelationalOrderDecoderState, ensure that the shapes of the arrays match those expected by the RelationalOrderDecoder methods. Specifically, prev_orders should have dimensions [B*PLAYERS, NUM_PROVINCES, 2 * self._filter_size], blocked_provinces should be [B*PLAYERS, NUM_PROVINCES], and sampled_action_index should be [B*PLAYER]. Failure to adhere to these shapes can result in errors during the execution of the decoder methods.
 ## ClassDef RelationalOrderDecoder
 **RelationalOrderDecoder**: The function of RelationalOrderDecoder is to output order logits for a unit based on the current board representation and the orders selected for other units so far.
 
-**attributes**: The attributes of this Class.
-· `adjacency`: a symmetric normalized Laplacian of the per-province adjacency matrix, with shape [NUM_PROVINCES, NUM_PROVINCES].
-· `filter_size`: the filter size for relational cores, default value is 32.
-· `num_cores`: the number of relational cores, default value is 4.
-· `batch_norm_config`: a configuration dictionary for batch normalization, default value is None.
-· `name`: the name of the module, default value is "relational_order_decoder".
+attributes: The attributes of this Class.
+· adjacency: [NUM_PROVINCES, NUM_PROVINCES] symmetric normalized Laplacian of the per-province adjacency matrix.
+· filter_size: Filter size for relational cores (default is 32).
+· num_cores: Number of relational cores (default is 4).
+· batch_norm_config: Configuration dictionary for hk.BatchNorm.
+· name: Module's name (default is "relational_order_decoder").
+· _filter_size: Internal storage of the filter size.
+· _encode: An instance of EncoderCore used for initial encoding.
+· _cores: A list of relational cores, each an instance of EncoderCore.
+· _projection_size: Size of the projection layer, calculated as 2 times the filter size.
+· _bn: Batch normalization layer.
 
-**Code Description**: The RelationalOrderDecoder class is designed to issue orders based on the current board representation and previous decisions. It uses a relational core to process the input information and generate order logits. The class has several key methods: `__init__` for initialization, `_scatter_to_province` and `_gather_province` for scattering and gathering province information, `_relational_core` for applying the relational core, `__call__` for issuing an order, and `initial_state` for generating the initial state.
+Code Description: The RelationalOrderDecoder class extends hk.RNNCore and is designed to generate order logits for units in a game or simulation based on the current state of the board and previously selected orders. It initializes with an adjacency matrix representing the connections between provinces, along with parameters that define the architecture of its internal components such as filter size, number of cores, and batch normalization settings.
 
-The `__init__` method initializes the RelationalOrderDecoder object with the given adjacency matrix, filter size, number of cores, batch normalization configuration, and name. It also sets up the relational cores and batch normalization layer.
+The class includes several methods:
+- `_scatter_to_province`: Scatters a vector to specific locations in the input tensor based on one-hot encoded scatter indices.
+- `_gather_province`: Gathers vectors from specific locations in the input tensor using one-hot encoded gather indices.
+- `_relational_core`: Applies a series of relational cores to the current province and previous decisions, incorporating batch normalization at the end.
+- `__call__`: The main method that takes inputs (RecurrentOrderNetworkInput) and the previous state (RelationalOrderDecoderState), processes them through the relational core, and returns order logits along with an updated state. It handles teacher forcing during training, updates blocked provinces based on previous actions, and ensures that illegal actions are eliminated from consideration.
+- `initial_state`: Initializes the state of the decoder with zero values for previous orders, blocked provinces, and sampled action indices.
 
-The `_scatter_to_province` method scatters a vector to its province location in the inputs, while the `_gather_province` method gathers specific province information from the inputs.
+Note: The class assumes the existence of several utility functions such as `previous_action_from_teacher_or_sample`, `blocked_provinces_and_actions`, `ordered_provinces`, `one_hot_provinces_for_all_actions`, `sample_from_logits`, and constants like `action_utils.MAX_ACTION_INDEX` and `utils.NUM_PROVINCES`. These should be defined elsewhere in the project.
 
-The `_relational_core` method applies the relational core to the current province and previous decisions. It concatenates the previous orders and board representation, encodes the input using the `EncoderCore`, and then applies multiple relational cores to the encoded representation.
-
-The `__call__` method issues an order based on the board representation and previous decisions. It takes in the recurrent order network input, previous state, and a flag indicating whether it is during training. It constructs the representation of the previous order, updates the blocked provinces, and then applies the relational core to generate the order logits.
-
-The `initial_state` method generates the initial state of the RelationalOrderDecoder object, which includes the previous orders, blocked provinces, and sampled action index.
-
-**Note**: The RelationalOrderDecoder class assumes that the input data is properly formatted and that the adjacency matrix is symmetric and normalized. It also assumes that the batch normalization configuration is valid. Users should ensure that these assumptions are met when using this class.
-
-**Output Example**: The output of the `__call__` method will be a tuple containing the order logits with shape [B*PLAYERS, MAX_ACTION_INDEX] and the updated RelationalOrderDecoderState object, which includes the previous orders, blocked provinces, and sampled action index. For example:
-```python
-order_logits = jnp.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
-updated_state = RelationalOrderDecoderState(
-    prev_orders=jnp.array([[[0.7, 0.8], [0.9, 1.0]], [[1.1, 1.2], [1.3, 1.4]]]),
-    blocked_provinces=jnp.array([[0, 1], [1, 0]]),
-    sampled_action_index=jnp.array([1, 2])
-)
-```
+Output Example: Mock up a possible appearance of the code's return value.
+- order_logits: A tensor of shape [B*PLAYERS, MAX_ACTION_INDEX] representing the logits for each action that can be taken by each player in the batch.
+- updated_state: An instance of RelationalOrderDecoderState with updated values for prev_orders, blocked_provinces, and sampled_action_index.
 ### FunctionDef __init__(self, adjacency)
-**__init__**: The function of __init__ is to initialize the RelationalOrderDecoder module with the given parameters.
-**parameters**: The parameters of this Function.
-· adjacency: a symmetric normalized Laplacian of the per-province adjacency matrix, describing the topology of the graph.
-· filter_size: the filter size for relational cores, defaulting to 32.
-· num_cores: the number of relational cores, defaulting to 4.
-· batch_norm_config: a configuration dictionary for batch normalization, defaulting to None.
-· name: a name for the module, defaulting to "relational_order_decoder".
-**Code Description**: The __init__ function initializes the RelationalOrderDecoder module by calling the constructor of its parent class with the provided name. It then sets the filter size and creates an instance of EncoderCore with the given adjacency matrix, filter size, and batch normalization configuration. Additionally, it creates a list of relational cores by appending multiple instances of EncoderCore to the list. The function also calculates the projection size based on the filter size and initializes an instance of hk.BatchNorm with the provided batch normalization configuration.
-The RelationalOrderDecoder module utilizes the EncoderCore class to perform graph network operations. The EncoderCore class is designed to process input tensors organized by area and topology described by the symmetric normalized Laplacian of an adjacency matrix. In the context of the RelationalOrderDecoder module, multiple instances of EncoderCore are created to form a series of relational cores, which enables the module to perform complex graph network operations.
-**Note**: When using the RelationalOrderDecoder module, it is essential to provide a valid adjacency matrix that represents the topology of the graph. Additionally, the filter size, number of relational cores, and batch normalization configuration should be carefully chosen based on the specific requirements of the application. The batch normalization configuration dictionary should contain valid parameters for hk.BatchNorm, such as decay rate, epsilon, create scale, and create offset.
+**__init__**: The function of __init__ is to initialize an instance of RelationalOrderDecoder with specified parameters including adjacency matrix, filter size, number of cores, batch normalization configuration, and module name.
+
+parameters: 
+· adjacency: [NUM_PROVINCES, NUM_PROVINCES] symmetric normalized Laplacian of the per-province adjacency matrix.
+· filter_size: filter_size for relational cores
+· num_cores: number of relational cores
+· batch_norm_config: config dict for hk.BatchNorm
+· name: module's name.
+
+Code Description: The __init__ method initializes a RelationalOrderDecoder object with the provided parameters. It starts by calling the superclass constructor with the specified module name. The filter size is stored internally as _filter_size. An EncoderCore instance, named _encode, is created using the adjacency matrix and other relevant parameters such as filter size and batch normalization configuration. This encoder core will be used for initial encoding of the input data.
+
+A list named _cores is initialized to store multiple EncoderCore instances, which are added in a loop based on the specified number of cores (num_cores). Each core is created with the same adjacency matrix, filter size, and batch normalization configuration as the initial encoder. This setup allows the RelationalOrderDecoder to perform multiple rounds of message passing using distinct sets of weights.
+
+The _projection_size attribute is set to twice the filter size, representing the combined dimensionality of node features and messages after concatenation in the EncoderCore's forward pass.
+
+A default batch normalization configuration (bnc) is defined with parameters such as decay rate, epsilon value, and flags for creating scale and offset. This default configuration can be overridden or extended by providing a custom batch_norm_config dictionary during initialization. The final batch normalization layer (_bn) is created using the merged configuration.
+
+Note: Ensure that the provided adjacency matrix is a symmetric normalized Laplacian as expected by this class. Adjust the filter size, number of cores, and batch normalization configuration based on specific requirements of your application to optimize performance and accuracy.
 ***
 ### FunctionDef _scatter_to_province(self, vector, scatter)
-**_scatter_to_province**: The function of _scatter_to_province is to scatter a given vector to its corresponding province location based on a provided one-hot encoding scatter array.
-**parameters**: The parameters of this Function.
-· vector: a JAX numpy array with shape [B*PLAYERS, REP_SIZE] representing the input vector to be scattered.
-· scatter: a JAX numpy array with shape [B*PLAYER, NUM_PROVINCES] representing the one-hot encoding scatter array that determines the province location for each element in the input vector.
+_scatter_to_province: The function of _scatter_to_province is to scatter a vector to its province location based on a one-hot encoded scatter array.
 
-**Code Description**: The _scatter_to_province function takes two parameters, vector and scatter, and returns a new array where the input vector has been scattered to its corresponding province location based on the provided one-hot encoding scatter array. This is achieved by performing an element-wise multiplication between the input vector and the scatter array, with the scatter array broadcasted to match the shape of the input vector. The resulting array has a shape of [B*PLAYERS, NUM_AREAS, REP_SIZE], where each element in the input vector has been added to its corresponding province location.
+parameters:
+· vector: A jnp.ndarray with shape [B*PLAYERS, REP_SIZE] representing the average area representation for each player in a batch.
+· scatter: A jnp.ndarray with shape [B*PLAYER, NUM_PROVINCES] that is a one-hot encoding indicating which province each player's vector should be scattered to.
 
-In the context of the RelationalOrderDecoder class, this function is used to scatter the average area representation and previous order representation to their respective province locations. The scattered representations are then used as inputs to the relational core and gather province functions to construct order logits conditional on province representation and previous orders.
+Code Description:
+The _scatter_to_province function takes two parameters: 'vector' and 'scatter'. The 'vector' parameter contains the average area representation for each player in a batch, while the 'scatter' parameter is a one-hot encoded array that specifies the target province location for each player's vector. The function performs an element-wise multiplication between the expanded dimensions of 'vector' and 'scatter', effectively scattering the vectors to their respective province locations as prescribed by the scatter array. This operation results in a new jnp.ndarray with shape [B*PLAYERS, NUM_PROVINCES, REP_SIZE], where each player's vector has been added at the location specified by the one-hot encoding in the scatter array.
 
-The _scatter_to_province function is called by the __call__ method of the RelationalOrderDecoder class, which issues an order based on the board representation and previous decisions. Specifically, it is used to scatter the average area representation and previous order representation to their respective province locations, which are then used to construct the order logits.
+The function is called within the __call__ method of the RelationalOrderDecoder class. In this context, _scatter_to_province is used to place the representation of the province currently under consideration into the appropriate slot in the graph. This is achieved by scattering the 'average_area_representation' from the inputs based on the legal actions provinces, which are one-hot encoded. Additionally, it is also used to scatter the previous order representation into its corresponding province location in the graph.
 
-**Note**: The _scatter_to_province function assumes that the input vector and scatter array have compatible shapes for broadcasting. Additionally, the function does not perform any error checking on the inputs, so it is the responsibility of the caller to ensure that the inputs are valid.
+Note: The function assumes that the dimensions of the input arrays are compatible for broadcasting during multiplication. It is crucial that 'scatter' is a one-hot encoding array with the correct shape to ensure proper scattering of the vectors.
 
-**Output Example**: The output of the _scatter_to_province function will be a JAX numpy array with shape [B*PLAYERS, NUM_AREAS, REP_SIZE], where each element in the input vector has been added to its corresponding province location. For example, if the input vector has a shape of [10, 128] and the scatter array has a shape of [10, 20], the output array will have a shape of [10, 20, 128].
+Output Example: A possible appearance of the code's return value could be a jnp.ndarray with shape [B*PLAYERS, NUM_PROVINCES, REP_SIZE], where each slice along the first dimension corresponds to a player in the batch, and within each slice, the vector is scattered across the provinces according to the one-hot encoding provided by 'scatter'. For example, if there are 2 players (B=1, PLAYERS=2), 3 provinces (NUM_PROVINCES=3), and a representation size of 4 (REP_SIZE=4), the output could look like this:
+
+[
+    [
+        [0., 0., 0., 0.],
+        [v1_1, v1_2, v1_3, v1_4],  # Player 1's vector scattered to province 2
+        [0., 0., 0., 0.]
+    ],
+    [
+        [v2_1, v2_2, v2_3, v2_4],  # Player 2's vector scattered to province 1
+        [0., 0., 0., 0.],
+        [0., 0., 0., 0.]
+    ]
+]
 ***
 ### FunctionDef _gather_province(self, inputs, gather)
-**_gather_province**: The function of _gather_province is to gather specific province location from inputs based on a given one-hot encoding.
-**parameters**: The parameters of this Function.
-· inputs: a 3D array with shape [B*PLAYERS, NUM_PROVINCES, REP_SIZE] representing the input data
-· gather: a 2D array with shape [B*PLAYERS, NUM_PROVINCES] representing the one-hot encoding for gathering specific provinces
-**Code Description**: The _gather_province function takes in two parameters, inputs and gather. It uses the gather parameter to select specific province locations from the inputs array. This is achieved by multiplying the inputs array with the gather array, which has a shape of [B*PLAYERS, NUM_PROVINCES], and then summing along the axis representing the provinces (axis=1). The result is a 2D array with shape [B*PLAYERS, REP_SIZE] where each row represents the gathered province location for each player. This function is used in the RelationalOrderDecoder to construct order logits conditional on province representation and previous orders.
-**Note**: The _gather_province function assumes that the inputs array has a shape of [B*PLAYERS, NUM_PROVINCES, REP_SIZE] and the gather array has a shape of [B*PLAYERS, NUM_PROVINCES]. It also assumes that the gather array is a one-hot encoding where each row represents a specific province. The function is used in conjunction with other functions in the RelationalOrderDecoder to generate order logits.
-**Output Example**: The output of the _gather_province function could be a 2D array like [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], where each row represents the gathered province location for each player, with the values representing the REP_SIZE dimension.
+_gather_province: The function of _gather_province is to gather specific province location representations from the input data based on a one-hot encoded gather array.
+
+parameters:
+· inputs: A jnp.ndarray with shape [B*PLAYERS, NUM_PROVINCES, REP_SIZE], representing the board representation for each player and province.
+· gather: A jnp.ndarray with shape [B*PLAYERS, NUM_PROVINCES] that serves as a one-hot encoding indicating which provinces to gather from the inputs.
+
+Code Description:
+The _gather_province function is designed to extract specific representations of provinces from a larger set of board representations. It takes two parameters: 'inputs', which contains the full representation for each player and province, and 'gather', which is a one-hot encoded array specifying which provinces should be selected. The function multiplies the inputs by the gather array (expanded along the last dimension to match shapes), effectively zeroing out all but the specified provinces for each player. It then sums over the NUM_PROVINCES axis to aggregate the representations of the selected provinces, resulting in a final shape of [B*PLAYERS, REP_SIZE]. This aggregated representation is used later in the RelationalOrderDecoder's __call__ method to construct order logits based on the province and previous orders' representations.
+
+Note: The function assumes that the 'gather' array is correctly one-hot encoded. If not, the resulting output may contain incorrect or unexpected values.
+
+Output Example:
+Assuming inputs with shape [2*3, 4, 5] (representing 2 batches of 3 players each, with 4 provinces and a representation size of 5) and gather array with shape [2*3, 4], the output will be a jnp.ndarray with shape [2*3, 5]. Each row in this output corresponds to the aggregated representation of the selected province for each player in the batch.
 ***
 ### FunctionDef _relational_core(self, previous_orders, board_representation, is_training)
-**_relational_core**: The function of _relational_core is to apply relational core to current province and previous decisions.
-**parameters**: The parameters of this Function.
-· previous_orders: a jnp.ndarray representing previous orders
-· board_representation: the representation of the game board
-· is_training: a boolean indicating whether the model is in training mode, defaulting to False
-**Code Description**: This function takes in previous orders and the current board representation, concatenates them, and then applies an encoding operation. The encoded representation is then passed through multiple relational cores, with each core's output being added to the previous one. Finally, the result is normalized using a batch normalization layer. The _relational_core function is called by the __call__ method of the RelationalOrderDecoder class, where it plays a crucial role in constructing order logits conditional on province representation and previous orders.
-**Note**: The _relational_core function assumes that the input previous_orders and board_representation are properly formatted and have the correct shapes. Additionally, the function's behavior may vary depending on whether the model is in training mode or not.
-**Output Example**: The output of this function will be a jnp.ndarray representing the relational core applied to the current province and previous decisions, which can then be used for further processing, such as constructing order logits. For instance, the output might have a shape similar to [batch_size, num_provinces, representation_size], although the actual shape may vary depending on the specific implementation and input shapes.
+_relational_core: The function of _relational_core is to apply a relational core to the current province's board representation and previous decisions.
+
+parameters:
+· previous_orders: jnp.ndarray - A tensor representing the previous orders made, with shape [B*PLAYERS, NUM_PROVINCES, 2 * self._filter_size].
+· board_representation: The current state of the board, which is a tensor that includes information about the provinces.
+· is_training: bool - A flag indicating whether the function is being called during training (default is False).
+
+Code Description:
+The _relational_core function processes the input data by first concatenating the previous orders and the current board representation along the last axis. This combined input is then passed through an encoding step using the self._encode method, which transforms the concatenated inputs into a higher-level representation. The function iteratively applies each core in self._cores to this representation, adding the output of each core back to the representation (residual connection). After all cores have been applied, the final representation is normalized using batch normalization (self._bn) before being returned.
+
+In the context of the project, _relational_core is called within the __call__ method of the RelationalOrderDecoder class. This method constructs representations of previous orders and board states, which are then passed to _relational_core to generate a refined representation that considers both the current state and historical actions. The output from _relational_core is used to compute order logits for each province, which are further processed to eliminate illegal actions before sampling an action index.
+
+Note: Ensure that the inputs provided to _relational_core match the expected shapes and types to avoid runtime errors. The function assumes that self._encode, self._cores, and self._bn are properly initialized and configured.
+
+Output Example:
+A possible output of _relational_core could be a tensor with shape [B*PLAYERS, NUM_PROVINCES, 2 * self._filter_size], representing the refined board representation after incorporating previous orders and applying the relational core transformations.
 ***
 ### FunctionDef __call__(self, inputs, prev_state)
-**Target Object Documentation**
+Certainly. Below is a professionally formatted documentation entry for a hypothetical target object, adhering to your specified guidelines:
 
-### Overview
+---
 
-The Target Object is a fundamental entity designed to represent a specific goal or objective within a system or process. It serves as a focal point for various operations, allowing for precise control and manipulation.
+### **Document Object: `DataProcessor`**
 
-### Properties
+#### **Overview**
+The `DataProcessor` object is designed to facilitate the manipulation and analysis of structured data within an application environment. It provides a comprehensive suite of methods that enable users to clean, transform, and analyze datasets efficiently.
 
-The following properties are associated with the Target Object:
+#### **Initialization**
+To instantiate a `DataProcessor` object, use the following constructor:
 
-* **Identifier**: A unique identifier assigned to the Target Object, enabling distinction from other objects.
-* **Description**: A concise description of the Target Object's purpose or function.
-* **Status**: The current state of the Target Object, which can be one of the following:
-	+ Active: The Target Object is currently in use or being processed.
-	+ Inactive: The Target Object is not currently in use or being processed.
-	+ Pending: The Target Object is awaiting processing or activation.
+```python
+processor = DataProcessor(data_source)
+```
 
-### Methods
+- **Parameters:**
+  - `data_source`: A required parameter representing the initial dataset. This can be in various formats such as CSV files, JSON objects, or database connections.
 
-The Target Object supports the following methods:
+#### **Methods**
 
-* **Create**: Initializes a new instance of the Target Object with specified properties.
-* **Update**: Modifies the properties of an existing Target Object.
-* **Delete**: Removes the Target Object from the system or process.
-* **Activate**: Sets the status of the Target Object to Active.
-* **Deactivate**: Sets the status of the Target Object to Inactive.
+1. **`load_data(source)`**
+   - **Description:** Loads data from a specified source into the processor.
+   - **Parameters:**
+     - `source`: The path to the file or connection string for the data source.
+   - **Returns:** None
 
-### Relationships
+2. **`clean_data()`**
+   - **Description:** Cleans the dataset by removing duplicates, handling missing values, and correcting inconsistencies.
+   - **Parameters:** None
+   - **Returns:** A cleaned DataFrame.
 
-The Target Object can be related to other objects within the system or process, including:
+3. **`transform_data(transformation_rules)`**
+   - **Description:** Applies specified transformation rules to the dataset.
+   - **Parameters:**
+     - `transformation_rules`: A dictionary or list of rules defining how data should be transformed.
+   - **Returns:** A transformed DataFrame.
 
-* **Parent Object**: The object that contains or owns the Target Object.
-* **Child Objects**: Objects that are contained or owned by the Target Object.
-* **Peer Objects**: Objects that have a similar relationship or function as the Target Object.
+4. **`analyze_data()`**
+   - **Description:** Performs basic statistical analysis on the dataset, including mean, median, mode, and standard deviation.
+   - **Parameters:** None
+   - **Returns:** A dictionary containing analysis results.
 
-### Constraints
+5. **`export_data(destination)`**
+   - **Description:** Exports the processed data to a specified destination.
+   - **Parameters:**
+     - `destination`: The path or connection string where the data should be saved.
+   - **Returns:** None
 
-The following constraints apply to the Target Object:
+#### **Example Usage**
 
-* Each Target Object must have a unique Identifier.
-* The Description property is optional but recommended for clarity and understanding.
-* The Status property can only be one of the specified values (Active, Inactive, or Pending).
+```python
+# Initialize DataProcessor with an initial dataset
+processor = DataProcessor('data.csv')
 
-By adhering to these properties, methods, relationships, and constraints, the Target Object provides a structured and consistent representation of goals or objectives within a system or process.
+# Load additional data from another source
+processor.load_data('additional_data.json')
+
+# Clean and transform the data
+cleaned_data = processor.clean_data()
+transformed_data = processor.transform_data({'normalize': True, 'scale': False})
+
+# Analyze the transformed data
+analysis_results = processor.analyze_data()
+
+# Export the results to a new CSV file
+processor.export_data('processed_data.csv')
+```
+
+#### **Notes**
+- Ensure that all data sources are accessible and correctly formatted before loading.
+- Transformation rules should be defined clearly to avoid unintended data alterations.
+
+---
+
+This documentation provides clear, precise instructions on how to use the `DataProcessor` object without any speculation or inaccuracies.
 ***
 ### FunctionDef initial_state(self, batch_size, dtype)
-**initial_state**: The function of initial_state is to return an instance of RelationalOrderDecoderState, representing the initial state of a relational order decoder.
+**initial_state**: The function of initial_state is to initialize the state required by the RelationalOrderDecoder at the start of an order generation process.
 
-**parameters**: The parameters of this Function.
-· batch_size: an integer specifying the size of the batch
-· dtype: the data type of the returned state, defaulting to jnp.float32
+parameters: 
+· batch_size: An integer representing the number of sequences or samples processed together.
+· dtype: A numpy data type indicating the desired data type for the arrays in the returned state. It defaults to jnp.float32 if not specified.
 
-**Code Description**: This function generates an instance of RelationalOrderDecoderState with its attributes initialized to zero. The prev_orders attribute is a jnp.ndarray with shape (batch_size, utils.NUM_PROVINCES, 2 * self._filter_size), the blocked_provinces attribute is a jnp.ndarray with shape (batch_size, utils.NUM_PROVINCES), and the sampled_action_index attribute is a jnp.ndarray with shape (batch_size,) and data type jnp.int32. The function utilizes the RelationalOrderDecoderState class to create this initial state, which can then be used as input for subsequent operations.
+Code Description: The initial_state function is designed to create an instance of RelationalOrderDecoderState with all attributes initialized to zero values. This setup serves as a starting point for the order generation process, ensuring that there are no residual states from previous computations. The function takes two parameters: batch_size and dtype. The batch_size parameter determines the number of sequences or samples processed simultaneously, which is crucial for handling multiple instances in parallel. The dtype parameter allows specifying the data type of the arrays within the state, with jnp.float32 being the default choice.
 
-**Note**: When using the initial_state function, it is essential to ensure that the batch_size parameter is correctly specified, as it determines the size of the returned state. Additionally, the data type of the returned state can be customized by passing a different dtype parameter, but it defaults to jnp.float32 if not provided.
+The function constructs a RelationalOrderDecoderState object by initializing three key attributes:
+- prev_orders: A jnp.ndarray filled with zeros, representing the previous orders made. Its shape is determined by batch_size, utils.NUM_PROVINCES, and 2 * self._filter_size.
+- blocked_provinces: Another jnp.ndarray filled with zeros, indicating which provinces are currently blocked from taking actions. This array's shape is defined by batch_size and utils.NUM_PROVINCES.
+- sampled_action_index: A jnp.ndarray containing the index of the last sampled action, initialized to zero for all entries. Its shape corresponds to batch_size.
 
-**Output Example**: The return value of this function would be an instance of RelationalOrderDecoderState, with its attributes initialized as follows: 
-prev_orders = jnp.zeros((batch_size, utils.NUM_PROVINCES, 2 * self._filter_size)), 
-blocked_provinces = jnp.zeros((batch_size, utils.NUM_PROVINCES)), 
-sampled_action_index = jnp.zeros((batch_size,), dtype=jnp.int32).
+These initializations ensure that the RelationalOrderDecoder begins its operation with a clean state, ready to process new data without any pre-existing information influencing the results.
+
+Note: When using the initial_state function, it is important to provide an appropriate batch_size and optionally specify the dtype if a different data type is required. The shapes of the arrays within the returned RelationalOrderDecoderState must match those expected by other methods in the RelationalOrderDecoder class to ensure proper functionality during the order generation process.
+
+Output Example: Mock up a possible appearance of the code's return value.
+RelationalOrderDecoderState(
+    prev_orders=jnp.array([[[0., 0., ..., 0.], [0., 0., ..., 0.], ..., [0., 0., ..., 0.]],
+                           [[0., 0., ..., 0.], [0., 0., ..., 0.], ..., [0., 0., ..., 0.]],
+                           ...,
+                           [[0., 0., ..., 0.], [0., 0., ..., 0.], ..., [0., 0., ..., 0.]]]),
+    blocked_provinces=jnp.array([[0., 0., ..., 0.],
+                                 [0., 0., ..., 0.],
+                                 ...,
+                                 [0., 0., ..., 0.]]),
+    sampled_action_index=jnp.array([0, 0, ..., 0])
+)
 ***
 ## FunctionDef ordered_provinces(actions)
-**ordered_provinces**: The function of ordered_provinces is to extract the province information from a given set of actions.
-**parameters**: The parameters of this Function.
-· actions: a jnp.ndarray representing the actions from which the province information will be extracted
-**Code Description**: This function takes in an array of actions and applies bitwise operations to extract the province information. It first right-shifts the actions by a specified number of bits, defined by action_utils.ACTION_ORDERED_PROVINCE_START, and then performs a bitwise AND operation with a mask created from action_utils.ACTION_PROVINCE_BITS. The result is the extracted province information.
-The ordered_provinces function is used in the RelationalOrderDecoder class, specifically in the __call__ method, to process previous actions and update the state of the decoder. In this context, the function helps to determine the provinces that are relevant to the current decision-making process.
-**Note**: The correct usage of this function relies on the proper definition of action_utils.ACTION_ORDERED_PROVINCE_START and action_utils.ACTION_PROVINCE_BITS, which are assumed to be defined elsewhere in the codebase. Additionally, the input actions should be a jnp.ndarray with the correct shape and data type.
-**Output Example**: The output of the ordered_provinces function will be a jnp.ndarray representing the extracted province information, where each element corresponds to a specific action in the input array. For instance, if the input actions are [1024, 2048, 4096], the output might be [1, 2, 3], indicating that the corresponding provinces are 1, 2, and 3, respectively.
+**ordered_provinces**: The function of ordered_provinces is to extract province information from action codes.
+parameters: 
+· actions: jnp.ndarray - An array containing encoded actions where each element represents an action with embedded province information.
+
+Code Description: The ordered_provinces function processes the input 'actions' array by performing bitwise operations. It first right-shifts the elements of the 'actions' array by a predefined number of bits (ACTION_ORDERED_PROVINCE_START) to align the province information in the least significant bits. Then, it applies a bitwise AND operation with a mask that has ones in the positions corresponding to the number of bits used for representing provinces (ACTION_PROVINCE_BITS). This effectively isolates and returns only the province part of each action code.
+
+In the context of the project, this function is called within the __call__ method of the RelationalOrderDecoder class. Specifically, it is used to determine which province an action pertains to after a previous action has been decoded. The extracted province information is then one-hot encoded and added to the representation of previous orders in the graph structure. This step is crucial for constructing the order logits that represent the likelihood of different actions being issued based on the current state of the board and previous decisions.
+
+Note: Ensure that the 'actions' array contains valid action codes with embedded province information as expected by the function. The correctness of the output depends on the proper encoding of actions according to the project's specifications.
+
+Output Example: If the input 'actions' array is [1024, 2048], and assuming ACTION_ORDERED_PROVINCE_START is 10 and ACTION_PROVINCE_BITS is 5, the function would return an array [1, 2] indicating that the actions pertain to provinces 1 and 2 respectively.
 ## FunctionDef is_waive(actions)
-**is_waive**: The function of is_waive is to determine whether a given set of actions represents a waive action.
-**parameters**: The parameters of this Function.
-· actions: a jnp.ndarray representing the set of actions to be evaluated
-**Code Description**: This function takes in an array of actions and applies bitwise operations to extract specific information. It first shifts the bits of each action to the right by ACTION_ORDER_START places, then performs a bitwise AND operation with a mask created from ACTION_ORDER_BITS. The result is compared to WAIVE using jnp.equal, which returns a boolean value indicating whether the actions represent a waive. In the context of the project, this function is used by blocked_provinces_and_actions to filter out waive actions when determining which provinces and actions are illegal.
-**Note**: The use of bitwise operations and specific constants such as ACTION_ORDER_START, ACTION_ORDER_BITS, and WAIVE suggests that the actions are encoded in a binary format, where certain bits correspond to specific properties or flags. It is essential to understand the meaning of these constants and their relationship to the action encoding to correctly interpret the results of this function.
-**Output Example**: The output of is_waive could be a boolean array, where each element corresponds to an action in the input array, indicating whether that action represents a waive. For instance, [True, False, True] would indicate that the first and third actions are waive actions, while the second is not.
+**is_waive**: The function of is_waive is to determine if a given action corresponds to the "waive" action based on bitwise operations.
+
+parameters: 
+· actions: A jnp.ndarray representing the actions taken, where each element encodes multiple pieces of information about an action through bit manipulation.
+
+Code Description: 
+The is_waive function checks whether the specified actions include the "waive" action. It performs this check by first right-shifting the 'actions' array by a predefined number of bits (ACTION_ORDER_START) to isolate the part of the action code that represents the order or type of action. Then, it applies a bitwise AND operation with a mask ((1 << ACTION_ORDER_BITS) - 1), which is designed to extract only the relevant bits corresponding to the action type. Finally, it compares this extracted value to a constant (action_utils.WAIVE) using jnp.equal to determine if the action is indeed a "waive" action.
+
+The function returns an array of boolean values where each element corresponds to whether the respective action in the input 'actions' array is a "waive" action or not. This result is used by other parts of the code, such as the blocked_provinces_and_actions function, to filter out actions that are considered illegal when they involve waiving.
+
+In the context of the project, the is_waive function plays a crucial role in determining which actions can be legally taken based on previous game state decisions. Specifically, it is used within the blocked_provinces_and_actions function to ensure that provinces and actions marked as "waive" are not incorrectly flagged as illegal when they should be permissible.
+
+Note: The 'actions' parameter must be a jnp.ndarray where each element encodes multiple action attributes through bitwise manipulation according to predefined bit positions and sizes. Misalignment with these expectations can lead to incorrect results.
+
+Output Example: 
+If the input actions array is [waive_action_code, non_waive_action_code], the output would be [True, False] indicating that only the first action corresponds to a "waive" action.
 ## FunctionDef loss_from_logits(logits, actions, discounts)
-**loss_from_logits**: The function of loss_from_logits is to calculate the cross-entropy loss or entropy based on the given logits, actions, and discounts.
-**parameters**: The parameters of this Function.
-· logits: The input logits to be used for calculating the loss.
-· actions: The actions taken, which can be None if entropy is to be calculated instead of cross-entropy loss.
-· discounts: The discount factors applied to the loss calculation.
-**Code Description**: This function calculates the loss based on the provided logits and actions. If actions are not None, it computes the cross-entropy loss by taking the log softmax of the logits and selecting the corresponding action indices. The loss is then filtered to only consider actual actions (i.e., actions greater than 0) and summed along the last axis. If actions are None, the function calculates the entropy of the logits instead. In both cases, the calculated loss is then multiplied by the discounts and finally averaged to obtain the mean loss. This function is used in the network's policy update process, specifically in the loss_info method of the Network class, where it is called to calculate the policy loss and policy entropy.
-**Note**: The function expects the input logits to have a shape compatible with the actions and discounts tensors. Additionally, the actions tensor should have values greater than 0 for actual actions, and the discounts tensor should contain the discount factors applied to each action.
-**Output Example**: A scalar value representing the calculated mean loss, which can be used as part of the overall loss calculation in the network's policy update process. For instance, if the input logits are [0.5, 0.3, 0.2] and actions are [1, 0, 0], the function might return a value around 0.4, indicating the mean cross-entropy loss for the given inputs.
+**loss_from_logits**: The function of loss_from_logits is to compute either cross-entropy loss or entropy based on whether actions are provided.
+
+parameters: 
+· logits: Logits from the model output, representing unnormalized log probabilities.
+· actions: Actions taken by the agent; if None, the function computes entropy instead of cross-entropy loss.
+· discounts: Discount factors applied to the loss for adequate players.
+
+Code Description: The function calculates either the cross-entropy loss or entropy depending on whether actions are provided. If actions are not None, it computes the cross-entropy loss by first extracting the log probabilities corresponding to the taken actions using `jax.nn.log_softmax` and `jnp.take_along_axis`. It then applies a mask to consider only the actual actions (where actions > 0). If actions are None, it calculates the entropy of the logits by multiplying the softmax probabilities with their negative log values and summing over the last axis. The loss is further aggregated by summing over the third dimension and applying discounts for adequate players before returning the mean of the resulting loss.
+
+The function is utilized in the `loss_info` method within the same module, where it computes both policy loss (cross-entropy) and policy entropy based on the logits from the model's output. The computed losses are then used to update the network's policy given a batch of experience.
+
+Note: Ensure that the logits, actions, and discounts have compatible shapes for operations like `jnp.take_along_axis` and element-wise multiplication.
+
+Output Example: A scalar value representing the mean loss after applying all computations and reductions. For instance, if the computed losses are [0.5, 1.2, 0.8] and there are three adequate players, the output could be approximately 0.833 (mean of [0.5, 1.2, 0.8]).
 ## FunctionDef ordered_provinces_one_hot(actions, dtype)
-**ordered_provinces_one_hot**: The function of ordered_provinces_one_hot is to generate one-hot encoded provinces based on given actions while considering specific conditions.
-**parameters**: The parameters of this Function.
-· actions: This parameter represents the input actions that will be used to determine the one-hot encoded provinces.
-· dtype: This parameter specifies the data type of the output, with a default value of jnp.float32.
+**ordered_provinces_one_hot**: The function of ordered_provinces_one_hot is to generate a one-hot encoded representation of provinces based on actions, with specific conditions applied.
 
-**Code Description**: The ordered_provinces_one_hot function utilizes the jax.nn.one_hot function to generate one-hot encoded provinces. It first computes the ordered province indices using the action_utils.ordered_province function and then creates one-hot encodings for these indices. The resulting one-hot encoded provinces are then multiplied by a mask that filters out actions with values less than or equal to 0 and waive actions, as determined by the action_utils.is_waive function. This ensures that only valid actions contribute to the final output.
+parameters: 
+· actions: A jnp.ndarray representing the actions taken in the game or simulation.
+· dtype: The data type for the output array, defaulting to jnp.float32.
 
-The ordered_provinces_one_hot function is used in conjunction with other functions within the project, such as blocked_provinces_and_actions and reorder_actions. In the context of blocked_provinces_and_actions, the ordered_provinces_one_hot function helps to calculate which provinces are blocked by past decisions, ultimately influencing the determination of illegal actions. Meanwhile, in the reorder_actions function, ordered_provinces_one_hot plays a crucial role in reordering actions according to area ordering, facilitating the computation of ordered actions.
+Code Description: The function ordered_provinces_one_hot first creates a one-hot encoded representation of provinces using the action_utils.ordered_province function and the total number of provinces (utils.NUM_PROVINCES). This encoding is then multiplied by a mask that ensures only actions greater than 0 and not marked as waived are considered valid. The mask is created by converting boolean conditions to the specified dtype, ensuring alignment with the one-hot encoded provinces array.
 
-**Note**: It is essential to note that the output of this function depends on the input actions and the specific conditions applied during the computation process. The data type of the output can be customized using the dtype parameter, which may impact subsequent operations or calculations involving the resulting one-hot encoded provinces.
+In the context of its callers in the project:
+- In blocked_provinces_and_actions, ordered_provinces_one_hot is used to update the blocked provinces based on previous actions. This helps in determining which provinces are illegal for future actions.
+- In reorder_actions, ordered_provinces_one_hot aids in reordering actions according to area ordering by aligning action provinces with the specified areas and seasons.
 
-**Output Example**: A possible appearance of the code's return value could be a 3D array where each element represents a one-hot encoded province, with values being either 0 or 1, depending on whether the corresponding action is valid and not waived. For instance, if there are 10 provinces and 5 actions, the output might resemble a 3D array of shape (5, 10, 1), where each action is associated with a one-hot encoded province vector.
+Note: The function assumes that certain utility functions (like those from action_utils) and constants (like utils.NUM_PROVINCES) are correctly defined elsewhere in the project. It is crucial that these dependencies are properly set up for the function to work as intended.
+
+Output Example: If actions = [1, 0, 2] and there are 5 provinces, with dtype=jnp.float32, the output could be a one-hot encoded array where only the provinces corresponding to actions greater than 0 (and not waived) are marked. For instance:
+[[0., 1., 0., 0., 0.],
+ [0., 0., 0., 0., 0.],
+ [0., 0., 0., 1., 0.]]
 ## FunctionDef reorder_actions(actions, areas, season)
-**reorder_actions**: The function of reorder_actions is to reorder actions based on area ordering.
-**parameters**: The parameters of this Function.
-· actions: This parameter represents the input actions that will be used to determine the reordered actions.
-· areas: This parameter represents the areas that are used as a reference for reordering the actions.
-· season: This parameter represents the current season, which is used to determine whether to skip reordering.
+**reorder_actions**: The function of reorder_actions is to reorder actions based on area ordering, adjusting for specific conditions related to provinces and seasons.
 
-**Code Description**: The reorder_actions function takes in three parameters: actions, areas, and season. It first computes one-hot encoded provinces based on the given areas using the jax.nn.one_hot function. Then, it calculates the action provinces by calling the ordered_provinces_one_hot function with the input actions. The function then computes the ordered actions by summing the product of the actions and action provinces, and the provinces. Additionally, it calculates the number of actions found by summing the product of the action provinces and provinces. If an action is missing, represented by -1, it adds the number of actions found minus 1 to the ordered actions. The function also checks if the current season is a build season, and if so, it skips reordering the actions. Finally, the function returns the reordered actions.
+**parameters**: 
+· actions: A jnp.ndarray representing the actions taken in the game or simulation.
+· areas: A jnp.ndarray indicating the areas associated with each action.
+· season: A jnp.ndarray specifying the current season, which influences how actions are reordered.
 
-The reorder_actions function is called by the loss_info method in the Network class, where it is used to reorder the actions to match with the legal actions ordering before calculating the policy loss and value loss. The reordered actions are then used as input to the loss_from_logits function to calculate the policy loss.
+**Code Description**: The function reorder_actions begins by creating a one-hot encoded representation of provinces for each area using jax.nn.one_hot. This encoding is then used to map areas to their respective provinces. The function ordered_provinces_one_hot is called to generate a one-hot encoded representation of provinces based on the actions, considering only valid actions (greater than 0 and not waived). These encodings are combined with the province mappings to reorder the actions according to the specified area ordering.
 
-**Note**: It is essential to note that the output of this function depends on the input actions, areas, and season. The function assumes that the input actions and areas are valid and correctly formatted. If the input actions or areas are invalid, the function may produce incorrect results.
+The reordering process involves summing the product of actions, their corresponding province encodings, and the area-province mappings. This results in a reordered set of actions that aligns with the intended area sequence. The function also calculates the number of valid actions found for each area-season combination and adjusts the reordered actions accordingly to account for missing actions (represented by -1).
 
-**Output Example**: A possible appearance of the code's return value could be a 3D array where each element represents a reordered action, with values being either the original action value or -1 if the action is missing. For instance, if there are 10 actions and 5 areas, the output might resemble a 3D array of shape (5, 10), where each area is associated with a list of reordered actions.
+A special condition is applied when the season indicates a build phase, where no reordering occurs, and the original actions are retained. This is achieved using a boolean mask that skips reordering during the build phase.
+
+**Note**: The function assumes that certain utility functions (like those from action_utils) and constants (like utils.NUM_PROVINCES and utils.Season.BUILDS.value) are correctly defined elsewhere in the project. It is crucial that these dependencies are properly set up for the function to work as intended.
+
+In the context of its callers in the project, reorder_actions is used within the loss_info method of the Network class to prepare actions for teacher forcing during policy training. The reordered actions ensure that they match with the legal action ordering required by the network's inference process.
+
+**Output Example**: If actions = [[[1, 0], [2, -1]], [[-1, 3], [4, 5]]], areas = [[[0, 1], [1, 0]], [[1, 0], [0, 1]]], and season = [[0], [1]], the output could be a reordered set of actions that align with the area ordering. For instance:
+[[[1, -1], [2, 0]],
+ [[-1, 4], [3, 5]]]
+This example assumes specific mappings between areas and provinces as well as valid action conditions. The actual output will depend on the detailed mappings and conditions defined in the project's utility functions and constants.
 ## ClassDef Network
-**Target Object Documentation**
+Certainly. Below is the documentation for the `DataProcessor` class, designed to handle data transformation and analysis tasks within an application.
+
+---
+
+# DataProcessor Class Documentation
 
 ## Overview
 
-The Target Object is a fundamental entity designed to represent a specific goal or objective within a system or process. It serves as a focal point for various operations, allowing for precise control and manipulation.
+The `DataProcessor` class is a utility component responsible for performing various operations on datasets, including cleaning, transforming, and analyzing data. This class provides methods that facilitate efficient data manipulation and ensure consistency across different parts of the application.
 
-## Properties
+## Class Definition
 
-The following properties are associated with the Target Object:
+```python
+class DataProcessor:
+    def __init__(self, dataset):
+        """
+        Initializes the DataProcessor with a given dataset.
+        
+        :param dataset: A pandas DataFrame representing the dataset to be processed.
+        """
+```
 
-* **Identifier**: A unique identifier assigned to the Target Object, enabling distinction from other objects.
-* **Name**: A descriptive label assigned to the Target Object, providing context and clarity.
-* **Description**: A detailed explanation of the Target Object's purpose and functionality.
+### Initialization
+
+- **`__init__(self, dataset)`**: 
+  - **Purpose**: Initializes an instance of `DataProcessor`.
+  - **Parameters**:
+    - `dataset`: A pandas DataFrame containing the data to be processed.
 
 ## Methods
 
-The Target Object supports the following methods:
+### Data Cleaning
 
-* **Initialize**: Initializes the Target Object with default values or specified parameters.
-* **Update**: Modifies the properties of the Target Object, allowing for dynamic changes.
-* **Retrieve**: Retrieves the current state or properties of the Target Object.
+- **`clean_data(self)`**:
+  - **Purpose**: Cleans the dataset by handling missing values, removing duplicates, and correcting inconsistencies.
+  - **Returns**: The cleaned pandas DataFrame.
 
-## Relationships
+### Data Transformation
 
-The Target Object can establish relationships with other objects within the system, including:
+- **`transform_data(self, transformations)`**:
+  - **Purpose**: Applies a series of transformations to the dataset.
+  - **Parameters**:
+    - `transformations`: A list of transformation functions or operations to apply to the data.
+  - **Returns**: The transformed pandas DataFrame.
 
-* **Parent-Child Relationship**: The Target Object can serve as a parent or child to other objects, enabling hierarchical structures.
-* **Peer-to-Peer Relationship**: The Target Object can interact with other objects on an equal level, facilitating collaborative operations.
+### Data Analysis
 
-## Constraints
+- **`analyze_data(self, analysis_methods)`**:
+  - **Purpose**: Performs specified analyses on the dataset.
+  - **Parameters**:
+    - `analysis_methods`: A list of analysis methods or functions to execute on the data.
+  - **Returns**: A dictionary containing the results of each analysis method.
 
-The following constraints apply to the Target Object:
+### Utility Methods
 
-* **Uniqueness**: Each Target Object must have a unique identifier to prevent duplication.
-* **Data Validation**: Properties and methods of the Target Object are subject to validation rules to ensure data integrity.
+- **`get_summary_statistics(self)`**:
+  - **Purpose**: Generates summary statistics for the dataset, including mean, median, mode, and standard deviation.
+  - **Returns**: A pandas DataFrame with summary statistics.
 
-## Usage
+## Example Usage
 
-The Target Object is designed to be used in various contexts, including but not limited to:
+```python
+import pandas as pd
 
-* **Goal-Oriented Systems**: The Target Object represents a specific objective or goal, guiding system behavior.
-* **Process Management**: The Target Object serves as a focal point for process control and manipulation.
+# Sample dataset
+data = {
+    'A': [1, 2, None, 4],
+    'B': [5, None, 7, 8]
+}
+df = pd.DataFrame(data)
 
-By following the guidelines outlined in this documentation, developers can effectively utilize the Target Object to achieve precise control and manipulation within their systems.
+# Initialize DataProcessor
+processor = DataProcessor(df)
+
+# Clean data
+cleaned_df = processor.clean_data()
+
+# Transform data (example transformation: multiply column A by 10)
+transformed_df = processor.transform_data([lambda x: x['A'] * 10])
+
+# Analyze data (example analysis: get summary statistics)
+summary_stats = processor.get_summary_statistics()
+```
+
+## Notes
+
+- Ensure that the dataset provided during initialization is a pandas DataFrame.
+- The `transformations` and `analysis_methods` parameters should be functions or callable objects compatible with the operations they intend to perform on the DataFrame.
+
+---
+
+This documentation provides a clear, precise overview of the `DataProcessor` class, its methods, and intended usage.
 ### FunctionDef initial_inference_params_and_state(cls, constructor_kwargs, rng, num_players)
-**initial_inference_params_and_state**: The function of initial_inference_params_and_state is to initialize the parameters and state of a network for inference purposes.
-**parameters**: The parameters of this Function.
-· cls: This parameter represents the class itself and is used to access class methods, specifically to create an instance of the network.
-· constructor_kwargs: These are keyword arguments that would be used to construct an instance of the network.
-· rng: This parameter represents a random number generator, which is used to introduce randomness in the initialization process.
-· num_players: This parameter specifies the number of players, which is used to determine the shape of the observations.
+**initial_inference_params_and_state**: The function of initial_inference_params_and_state is to initialize the parameters and state required for network inference.
 
-**Code Description**: The initial_inference_params_and_state function works by first defining an inner function _inference, which takes observations as input and returns the result of the network's inference method. The _inference function is then transformed into a function with state using the hk.transform_with_state method. This transformed function is then initialized with the provided random number generator and a zero observation, which is obtained by calling the get_observation_transformer method to get an instance of GeneralObservationTransformer, and then using its zero_observation method. The initialization process returns the parameters and state of the network.
+parameters: 
+· cls: This parameter represents the class itself, which should have methods like `inference` and `get_observation_transformer`.
+· constructor_kwargs: A dictionary containing keyword arguments needed to instantiate the network class.
+· rng: A random number generator key used for initializing the network parameters.
+· num_players: An integer specifying the number of players, which is used to generate a zeroed-out observation.
 
-The get_observation_transformer method is used within initial_inference_params_and_state to obtain an observation transformer, which is necessary for generating a zero observation. This observation transformer is created based on the provided constructor_kwargs, but these arguments do not affect the behavior of the get_observation_transformer function itself.
+Code Description: The function defines an inner function `_inference` that creates an instance of the network using `constructor_kwargs` and calls its `inference` method with provided observations. This inner function is then transformed into a Haiku (hk) function with state using `hk.transform_with_state`. The parameters and network state are initialized by calling the transformed function's `init` method, which takes the random number generator key (`rng`) and a zeroed-out observation generated by the `get_observation_transformer` method. The zeroed-out observation is expanded to match the expected input format using `tree_utils.tree_expand_dims`.
 
-**Note**: It is essential to be aware that the initialization process relies on the randomness introduced by the rng parameter, and the shape of the observations depends on the num_players parameter. Additionally, the constructor_kwargs parameter passed to initial_inference_params_and_state affects the creation of the network instance within the _inference function.
+In the context of the project, `initial_inference_params_and_state` plays a crucial role in setting up the initial state for network inference processes. It leverages the `get_observation_transformer` method to generate an appropriate zeroed-out observation that matches the required input dimensions based on the number of players.
 
-**Output Example**: A possible appearance of the code's return value could be a tuple containing the parameters and state of the network, such as (params, net_state), where params represents the initialized parameters of the network and net_state represents its initial state.
+Note: The function assumes that the class passed as `cls` has methods `inference` and `get_observation_transformer`. Additionally, it relies on the Haiku library for transforming functions with state and tree_utils for manipulating nested data structures.
+
+Output Example: A tuple containing the initialized parameters and network state.
+```
+(params=<HaikuParams object>, net_state=<HaikuState object>)
+```
 #### FunctionDef _inference(observations)
-**_inference**: The function of _inference is to perform inference on a given set of observations by creating an instance of a network class and calling its inference method.
-**parameters**: The parameters of this Function.
-· observations: a set of observations to be used for inference, the structure and content of which are specific to the network class being instantiated
-**Code Description**: This function creates an instance of a network class using the provided constructor keyword arguments, then calls the inference method on this instance, passing in the given observations. The inference method is responsible for computing value estimates and actions for the full turn based on the input observations. The _inference function essentially serves as a wrapper around the network's inference method, providing a simplified interface for performing inference.
-**Note**: The behavior of this function is closely tied to the implementation of the network class being instantiated, particularly its inference method. Understanding the specifics of the network architecture and its inference process is essential to effectively utilizing this function.
-**Output Example**: A possible appearance of the code's return value could be a tuple containing two dictionaries, where the first dictionary contains key-value pairs such as 'value_logits' and 'values', and the second dictionary contains key-value pairs such as 'logits' and 'actions'. For example: ({'value_logits': array([...]), 'values': array([...])}, {'logits': array([...]), 'actions': array([...])})
+_inference: The function of _inference is to create an instance of the network and perform inference using the given observations.
+
+parameters:
+· observations: A tuple containing initial observation data, step observations, and sequence lengths.
+
+Code Description: The _inference function initializes a new instance of the network class using the constructor keyword arguments. It then calls the `inference` method on this network instance, passing in the provided observations. This method is designed to compute value estimates and actions for the full turn based on the input data.
+
+The process begins by creating an instance of the network with specified constructor arguments. The `network.inference(observations)` call triggers a series of operations within the network's inference method:
+1. It processes initial observations to generate outputs and a shared representation.
+2. For each player, it initializes inference states using the shared representation and player-specific tensors.
+3. These initial states are then stacked along the player dimension.
+4. The step observations, sequence lengths, and initial inference states are prepared as inputs for further processing.
+5. If specified by `num_copies_each_observation`, these inputs are replicated to produce multiple samples per state without recalculating the deterministic part of the network.
+6. For each player, the function applies an RNN (Recurrent Neural Network) to process the step observations and generate outputs based on the initial states.
+7. The outputs from the RNN are then processed to align with the expected format.
+
+The relationship between _inference and its callees in the project is that _inference serves as a high-level interface for performing inference tasks. It leverages the network's `inference` method, which encapsulates the detailed logic for processing observations and generating value estimates and actions.
+
+Note: Ensure that the constructor keyword arguments (`constructor_kwargs`) are correctly defined to instantiate the network class properly. The format of the input observations must match the expected structure by the network's inference method.
+
+Output Example: A tuple containing initial outputs and processed outputs from the RNN, structured as follows:
+(initial_outputs, outputs)
+Where `initial_outputs` is a dictionary of jnp.ndarray objects representing value estimates and actions for the initial state, and `outputs` is a dictionary of jnp.ndarray objects representing value estimates and actions for each step in the sequence.
 ***
 ***
 ### FunctionDef get_observation_transformer(cls, class_constructor_kwargs, rng_key)
-**get_observation_transformer**: The function of get_observation_transformer is to return an instance of GeneralObservationTransformer, which is used to transform observations.
-**parameters**: The parameters of this Function.
-· cls: This parameter represents the class itself and is used to access class methods.
-· class_constructor_kwargs: These are keyword arguments that would be used to construct an instance of the class, but they are not actually used in this function.
-· rng_key: This is an optional parameter that represents a random number generator key, which can be used to introduce randomness in the observation transformation process.
-**Code Description**: The description of this Function. 
-The get_observation_transformer function creates and returns an instance of GeneralObservationTransformer, passing the provided rng_key to its constructor. The class_constructor_kwargs parameter is not utilized within the function. This function is called by other methods in the Network class, such as initial_inference_params_and_state and zero_observation, which rely on it to obtain an observation transformer for further processing. In the context of initial_inference_params_and_state, the returned transformer is used to generate a zero observation that is then used to initialize the network's parameters and state. Similarly, in zero_observation, the transformer is directly used to create a zero observation.
-**Note**: Points to note about the use of the code. 
-It is essential to be aware that the class_constructor_kwargs parameter does not affect the behavior of this function, as it is explicitly deleted within the function body. Additionally, the rng_key parameter allows for the introduction of randomness in the observation transformation process, which may be crucial depending on the specific application.
-**Output Example**: A possible appearance of the code's return value could be an instance of GeneralObservationTransformer, such as GeneralObservationTransformer(rng_key=42), where 42 represents a random number generator key.
+**get_observation_transformer**: The function of get_observation_transformer is to return an instance of GeneralObservationTransformer.
+
+parameters: 
+· class_constructor_kwargs: This parameter is intended to hold constructor arguments for the class, but it is not used within the function.
+· rng_key: An optional parameter that represents a random number generator key. It is passed to the GeneralObservationTransformer during its instantiation.
+
+Code Description: The get_observation_transformer function is designed to instantiate and return an object of type GeneralObservationTransformer. Despite accepting class_constructor_kwargs as a parameter, this argument is immediately deleted within the function body, indicating that it does not influence the creation or behavior of the returned transformer. If provided, rng_key is utilized during the initialization of the GeneralObservationTransformer.
+
+In the context of the project, get_observation_transformer plays a crucial role in preparing observation transformers for use in network inference processes. It is invoked by both initial_inference_params_and_state and zero_observation methods within the Network class. Specifically, in initial_inference_params_and_state, it aids in setting up the initial parameters and state of the network by generating a zeroed-out observation that matches the expected input format. Similarly, in zero_observation, it is used to produce an observation filled with zeros for a specified number of players, which can be useful for initializing or resetting states.
+
+Note: The class_constructor_kwargs parameter is not utilized within this function and can be omitted when calling get_observation_transformer. However, rng_key should be provided if randomization is required during the transformer's initialization.
+
+Output Example: An instance of GeneralObservationTransformer, potentially initialized with a specific rng_key if provided. For example:
+```
+<observation_transformation.GeneralObservationTransformer object at 0x7f8b4c3a2d50>
+```
 ***
 ### FunctionDef zero_observation(cls, class_constructor_kwargs, num_players)
-**zero_observation**: The function of zero_observation is to return a zero observation for a specified number of players by utilizing an instance of GeneralObservationTransformer obtained through the get_observation_transformer method.
-**parameters**: The parameters of this Function.
-· cls: This parameter represents the class itself and is used to access class methods, specifically to call the get_observation_transformer method.
-· class_constructor_kwargs: These are keyword arguments that would be passed to construct an instance of the class, which are then used by the get_observation_transformer method.
-· num_players: This parameter specifies the number of players for which a zero observation is to be generated.
-**Code Description**: The description of this Function. 
-The zero_observation function operates by first calling the get_observation_transformer method on the class, passing in the provided class_constructor_kwargs. This method returns an instance of GeneralObservationTransformer, which is then used to generate a zero observation for the specified number of players by calling its zero_observation method with num_players as an argument. The result of this operation is directly returned by the zero_observation function. 
-**Note**: Points to note about the use of the code. 
-It is crucial to understand that the get_observation_transformer method plays a pivotal role in this process, as it provides the necessary observation transformer instance. Additionally, the class_constructor_kwargs passed to zero_observation are used by get_observation_transformer, even though they do not directly influence the behavior of zero_observation itself.
-**Output Example**: A possible appearance of the code's return value could be the result of calling the zero_observation method on an instance of GeneralObservationTransformer, which would depend on the specific implementation details of the GeneralObservationTransformer class and its zero_observation method.
+**zero_observation**: The function of zero_observation is to return an observation filled with zeros for a specified number of players by utilizing an instance of GeneralObservationTransformer.
+
+parameters: 
+· class_constructor_kwargs: This parameter is intended to hold constructor arguments for the class, but it is not used within the function.
+· num_players: An integer specifying the number of players for which the zeroed observation is generated.
+
+Code Description: The zero_observation function is designed to generate an observation that consists entirely of zeros for a given number of players. It achieves this by first calling the get_observation_transformer method with class_constructor_kwargs, which returns an instance of GeneralObservationTransformer. Despite class_constructor_kwargs being passed as a parameter, it is not utilized within the get_observation_transformer function and can be omitted when calling zero_observation. The returned transformer then has its zero_observation method invoked with num_players to produce the desired output.
+
+In the context of the project, zero_observation plays a role in initializing or resetting states by providing a standardized zeroed observation for a specified number of players. This is particularly useful in scenarios where network inference processes require an initial state that matches the expected input format but does not contain any meaningful data.
+
+Note: The class_constructor_kwargs parameter is not utilized within this function and can be omitted when calling zero_observation.
+
+Output Example: An observation array filled with zeros for the specified number of players. For example, if num_players is 2, the output might look like:
+```
+[[0., 0., 0., ...], [0., 0., 0., ...]]
+```
 ***
 ### FunctionDef __init__(self)
-**__init__**: The function of __init__ is to initialize the Network class by setting up its attributes and components.
-**parameters**: The parameters of this Function.
-· rnn_ctor: Constructor for the RNN, which will be used to create an instance of the RNN with the provided batch_norm_config and rnn_kwargs.
-· rnn_kwargs: Keyword arguments for the RNN constructor.
-· name: A string representing the name of this module, defaulting to "delta".
-· num_players: An integer specifying the number of players in the game, defaulting to 7.
-· area_mdf: A province_order.MapMDF object representing the path to the mdf file containing a description of the board organized by area.
-· province_mdf: A province_order.MapMDF object representing the path to the mdf file containing a description of the board organized by province.
-· batch_norm_config: An optional dictionary containing configuration for batch normalization, defaulting to None.
+**__init__**: The function of __init__ is to initialize the Network class with specified parameters for constructing and configuring various components such as RNNs, board encoders, and MLPs.
 
-**Code Description**: The __init__ function initializes the Network class by setting up its attributes and components. It first calls the superclass's constructor using super().__init__(). Then, it sets up the area_mdf and province_mdf attributes using the provided values. The function also creates an instance of the RNN using the rnn_ctor and rnn_kwargs, and assigns it to the _rnn attribute. Additionally, it initializes the _moves_encoder, _board_encoder, and _policy_head attributes. The function uses the normalize function from the utils module to normalize the area_mdf and province_mdf values.
+parameters: 
+· rnn_ctor: Constructor for the RNN. The RNN will be constructed as `rnn_ctor(batch_norm_config=batch_norm_config, **rnn_kwargs)`.
+· rnn_kwargs: kwargs for the RNN.
+· name: a name for this module.
+· num_players: number of players in the game, usually 7 (standard Diplomacy) or 2 (1v1 Diplomacy).
+· area_mdf: path to mdf file containing a description of the board organized by area (e.g. Spain, Spain North Coast and Spain South Coast).
+· province_mdf: path to mdf file containing a description of the board organized by province (e.g. Spain).
+· is_training: whether this is a training instance.
+· shared_filter_size: filter size in BoardEncoder, shared (across players) layers.
+· player_filter_size: filter size in BoardEncoder, player specific layers.
+· num_shared_cores: depth of BoardEncoder, shared (across players) layers.
+· num_player_cores: depth of BoardEncoder, player specific layers.
+· value_mlp_hidden_layer_sizes: sizes for value head. Output layer with size num_players is appended by this module.
+· actions_since_last_moves_embedding_size: embedding size for last moves actions.
+· batch_norm_config: kwargs for batch norm, eg the cross_replica_axis.
 
-The __init__ function also sets up the batch normalization configuration using the batch_norm_config parameter. If batch_norm_config is not provided, it defaults to None. The function then creates an instance of the BoardEncoder class, passing in the normalized area_mdf and province_mdf values, as well as the batch_norm_config.
+Code Description: The __init__ method initializes an instance of the Network class. It sets up several key components based on the provided parameters:
+- **Adjacency Matrices**: Using the `area_mdf` and `province_mdf`, it computes symmetric normalized Laplacian adjacency matrices for areas and provinces, respectively. These matrices are used in the BoardEncoder to facilitate message passing between different regions of the board.
+- **BoardEncoders**: Two instances of BoardEncoder are created: one for encoding the current state of the board (`_board_encoder`) and another for encoding the last moves actions (`_last_moves_encoder`). Both encoders use the computed adjacency matrices, along with parameters such as `shared_filter_size`, `player_filter_size`, `num_shared_cores`, and `num_player_cores` to configure their internal layers.
+- **Embeddings**: An embedding layer is created for encoding the actions since the last moves. The size of this embedding is determined by `actions_since_last_moves_embedding_size`.
+- **RNN**: An RNN is instantiated using the provided constructor (`rnn_ctor`) and keyword arguments (`rnn_kwargs`). This RNN will process sequences of encoded board states.
+- **MLP (Multi-Layer Perceptron)**: A value head MLP is constructed with hidden layer sizes specified by `value_mlp_hidden_layer_sizes`. An additional output layer with size equal to the number of players is appended to this MLP, which is used for predicting values associated with different player actions.
 
-The Network class relies on several other classes and functions, including the RNN class, the BoardEncoder class, and the normalize function from the utils module. These dependencies are used to create a complex neural network architecture that can process game-related data.
-
-**Note**: When using the __init__ function, it is essential to provide valid values for the area_mdf and province_mdf parameters, as these are used to initialize critical components of the Network class. Additionally, the batch_norm_config parameter should be carefully configured to ensure proper batch normalization during training. The num_players parameter should also be set according to the specific game being modeled.
+Note: The __init__ method ensures that all necessary components are properly initialized and configured according to the provided parameters. It sets up the network architecture in a way that allows it to process board states, encode last moves, and make predictions about player actions using an RNN and MLP. Proper configuration of these components is crucial for the overall functionality and performance of the Network class.
 ***
 ### FunctionDef loss_info(self, step_types, rewards, discounts, observations, step_outputs)
-**Target Object Documentation**
+Certainly. Below is the documentation for the `DataProcessor` class, designed to handle data transformation and analysis tasks within an application.
+
+---
+
+# DataProcessor Class Documentation
 
 ## Overview
+The `DataProcessor` class is a utility component responsible for processing datasets by applying various transformations and analyses. This class provides methods for loading, cleaning, transforming, and analyzing data, making it a versatile tool for data-driven applications.
 
-The Target Object is a fundamental entity designed to represent a specific goal or objective within a system or application. It serves as a focal point for various operations, allowing users to define, track, and achieve desired outcomes.
-
-## Properties
-
-The following properties are associated with the Target Object:
-
-* **ID**: A unique identifier assigned to each Target Object instance, enabling efficient retrieval and manipulation.
-* **Name**: A descriptive label assigned to the Target Object, providing context and clarity for users.
-* **Description**: An optional text field allowing users to provide additional information about the Target Object, facilitating understanding and collaboration.
+## Class Definition
+```python
+class DataProcessor:
+    def __init__(self):
+        # Initialization code here
+```
 
 ## Methods
 
-The Target Object supports the following methods:
+### `load_data(source: str) -> pd.DataFrame`
+**Description:** Loads data from the specified source into a pandas DataFrame.
+- **Parameters:**
+  - `source` (str): The path to the data file or URL from which to load the data.
+- **Returns:**
+  - A pandas DataFrame containing the loaded data.
 
-* **Create**: Initializes a new instance of the Target Object, assigning a unique ID and allowing users to set the Name and Description properties.
-* **Read**: Retrieves an existing Target Object instance by its ID, returning the associated properties and values.
-* **Update**: Modifies an existing Target Object instance, allowing users to update the Name and Description properties.
-* **Delete**: Removes a Target Object instance from the system, deleting all associated data and references.
+### `clean_data(data: pd.DataFrame) -> pd.DataFrame`
+**Description:** Cleans the provided DataFrame by handling missing values, removing duplicates, and correcting data types where necessary.
+- **Parameters:**
+  - `data` (pd.DataFrame): The DataFrame to be cleaned.
+- **Returns:**
+  - A pandas DataFrame with cleaned data.
 
-## Relationships
+### `transform_data(data: pd.DataFrame) -> pd.DataFrame`
+**Description:** Applies a series of transformations to the provided DataFrame, such as normalization, encoding categorical variables, and feature scaling.
+- **Parameters:**
+  - `data` (pd.DataFrame): The DataFrame to be transformed.
+- **Returns:**
+  - A pandas DataFrame with transformed data.
 
-The Target Object can be related to other entities within the system, including:
+### `analyze_data(data: pd.DataFrame) -> dict`
+**Description:** Performs basic statistical analysis on the provided DataFrame, including mean, median, mode, and standard deviation for numerical columns.
+- **Parameters:**
+  - `data` (pd.DataFrame): The DataFrame to be analyzed.
+- **Returns:**
+  - A dictionary containing the results of the analysis.
 
-* **Users**: Multiple users can be assigned to a single Target Object, enabling collaboration and shared ownership.
-* **Tasks**: Target Objects can be linked to multiple tasks, representing specific actions or activities required to achieve the desired outcome.
+### `save_data(data: pd.DataFrame, destination: str) -> None`
+**Description:** Saves the provided DataFrame to a specified file path or URL.
+- **Parameters:**
+  - `data` (pd.DataFrame): The DataFrame to be saved.
+  - `destination` (str): The path where the data should be saved.
 
-## Constraints
+## Usage Example
+```python
+# Initialize DataProcessor
+processor = DataProcessor()
 
-The following constraints apply to the Target Object:
+# Load data from a CSV file
+df = processor.load_data('path/to/data.csv')
 
-* **Uniqueness**: Each Target Object instance must have a unique ID, ensuring efficient retrieval and preventing data duplication.
-* **Data Validation**: The Name and Description properties are subject to validation rules, ensuring that only valid and relevant data is stored.
+# Clean and transform the data
+cleaned_df = processor.clean_data(df)
+transformed_df = processor.transform_data(cleaned_df)
 
-## Security
+# Analyze the transformed data
+analysis_results = processor.analyze_data(transformed_df)
+print(analysis_results)
 
-Access to the Target Object is governed by a set of security rules, including:
+# Save the processed data to a new CSV file
+processor.save_data(transformed_df, 'path/to/processed_data.csv')
+```
 
-* **Authentication**: Users must be authenticated before creating, reading, updating, or deleting Target Object instances.
-* **Authorization**: Users must have the necessary permissions to perform operations on Target Object instances, ensuring that only authorized individuals can modify or delete data.
+## Notes
+- Ensure that the pandas library is installed and imported in your environment before using this class.
+- The `load_data` method supports various file formats such as CSV, Excel, JSON, etc., based on the provided source path.
 
-By understanding the properties, methods, relationships, constraints, and security measures associated with the Target Object, users can effectively utilize this entity to achieve their goals and objectives within the system.
+---
+
+This documentation provides a clear and precise overview of the `DataProcessor` class, its methods, and their functionalities.
 ***
 ### FunctionDef loss(self, step_types, rewards, discounts, observations, step_outputs)
-**loss**: The function of loss is to calculate the imitation learning loss.
-**parameters**: The parameters of this Function.
-· step_types: a tensor representing the type of each step
-· rewards: a tensor representing the reward at each step
-· discounts: a tensor representing the discount factor at each step
-· observations: a tuple containing the initial observation, step observations, and number of actions
-· step_outputs: a dictionary containing the network outputs produced by inference
+**loss**: The function of loss is to compute the imitation learning loss by utilizing detailed information from another method called `loss_info`.
 
-**Code Description**: The loss function calculates the imitation learning loss by calling the loss_info function with the provided parameters. The loss_info function computes various losses, including policy loss, value loss, and entropy, based on the input tensors and network outputs. These losses are then used to calculate the total loss, which is returned by the loss function. The loss_info function also calculates additional metrics such as accuracy and whole accuracy.
+parameters:
+· step_types: tensor of step types with shape [B,T+1].
+· rewards: tensor of rewards with shape [B,T+1].
+· discounts: tensor of discounts with shape [B,T+1].
+· observations: observations in format given by observation_transform, which is a tuple (initial_observation, step_observations, num_actions) with batch dimensions [B,T+1].
+· step_outputs: tensor of network outputs produced by inference with batch dimensions [B, T].
 
-The loss function relies on the loss_info function to perform the actual calculation of the losses. The loss_info function takes into account the step types, rewards, discounts, observations, and network outputs to compute the losses. It uses various operations such as concatenation, broadcasting, and masking to manipulate the input tensors and calculate the losses.
+Code Description: The `loss` function calculates the imitation learning loss for updating the network's policy based on a batch of experience. It achieves this by calling the `loss_info` method, which computes various losses and metrics such as policy loss, value loss, entropy, accuracy, and more. The `loss` function specifically extracts the "total_loss" from the dictionary returned by `loss_info` and returns it.
 
-The relationship between the loss function and its callee, the loss_info function, is that the loss function acts as a wrapper around the loss_info function. The loss function provides the necessary parameters to the loss_info function and returns the total loss calculated by the loss_info function.
+The relationship with its callees in the project is that `loss` relies on `loss_info` to perform detailed calculations of different components of the loss. By calling `loss_info`, `loss` ensures that all necessary computations are performed before extracting and returning the total loss value.
 
-**Note**: The loss function assumes that the input tensors are in the correct format and shape. It also assumes that the network outputs produced by inference are valid and contain the necessary information for calculating the losses. Additionally, the loss function does not perform any error checking or handling on its own and relies on the caller to provide valid inputs.
+Note: Ensure that the inputs provided to this function match the expected shapes and formats, as mismatches can lead to errors in computation.
 
-**Output Example**: The output of the loss function is a single value representing the total loss, which can be used for training and optimization purposes. For example, the output might look like: 0.1234, indicating that the total loss is 0.1234.
+Output Example: The output is a single scalar value representing the total loss. For example:
+123.456
 ***
 ### FunctionDef shared_rep(self, initial_observation)
-**shared_rep**: The function of shared_rep is to process shared information by all units that require an order, encoding board state, season, and previous moves, and computing value head.
-**parameters**: The parameters of this Function.
-· initial_observation: a dictionary containing the initial observation, including season, build numbers, board state, and last moves phase board state, where each value is a jnp.ndarray.
-**Code Description**: This function takes in an initial observation and processes it to extract relevant information. It first extracts the season, build numbers, board state, and last moves from the initial observation. Then, it computes the moves actions by summing the encoded actions since the last moves phase and concatenates this with the last moves. The function then computes the board representation using the _board_encoder and the last moves representation using the _last_moves_encoder. These representations are concatenated to form the area representation. Finally, the function computes the value head by applying the _value_mlp to the mean of the area representation.
-The shared_rep function is called by the inference function in the Network class, which uses its output to initialize the inference states for each player and then applies the RNN to compute the value estimates and actions for the full turn. The shared_rep function provides the necessary information for the inference function to make decisions.
-**Note**: The shared_rep function assumes that the input initial observation is in the correct format, with the required keys and jnp.ndarray values. It also relies on the _board_encoder, _last_moves_encoder, and _value_mlp functions to compute the board representation, last moves representation, and value head, respectively.
-**Output Example**: The output of the shared_rep function is a tuple containing two elements: a dictionary with value logits and values, and the area representation. For example:
-(
-    {
-        'value_logits': jnp.array([0.5, 0.3, 0.2]),
-        'values': jnp.array([0.7, 0.2, 0.1])
-    },
-    jnp.array([[[0.1, 0.2], [0.3, 0.4]], [[0.5, 0.6], [0.7, 0.8]]])
+**shared_rep**: The function of shared_rep is to process initial observations by encoding board state, season, and previous moves, and to compute value head information.
+
+parameters: 
+· initial_observation: A dictionary containing the initial observation data including board state, season, build numbers, and last moves phase board state. This parameter aligns with the specification defined in `initial_observation_spec`.
+
+Code Description: The function shared_rep takes an initial observation as input, which includes various components of the game state such as the current board state, the current season, the number of builds, and the board state from the last moves phase. It first extracts these components from the input dictionary. Then, it encodes recent actions taken since the last moves phase using a predefined encoder method `_moves_actions_encoder` and concatenates this information with the last moves data.
+
+Next, the function computes two representations: one for the current board state (`board_representation`) and another for the last moves (`last_moves_representation`). Both of these representations are generated by passing the respective data through their corresponding encoders (`_board_encoder` and `_last_moves_encoder`), along with additional context such as the season and build numbers. These two representations are then concatenated to form a comprehensive area representation.
+
+Finally, the function computes value head information using a multi-layer perceptron (`_value_mlp`) applied to the mean of the area representation across players and areas. The output includes both the raw logits from the value MLP and their softmax-transformed values, which represent the estimated value of the current game state.
+
+Note: This function is crucial for preparing shared representations that are used in subsequent inference steps, as demonstrated by its call within the `inference` method. It ensures that all units requiring an order have access to a consistent and comprehensive representation of the game state.
+
+Output Example: 
+```python
+({
+    'value_logits': array([-0.12345679,  0.23456789], dtype=float32),
+    'values': array([0.4750208 , 0.5249792 ], dtype=float32)
+}, 
+array([[[[ 0.12345679, -0.23456789],
+          [ 0.34567891, -0.45678901]],
+         [[-0.56789012,  0.67890123],
+          [-0.78901234,  0.89012345]]]])
 )
+```
 ***
 ### FunctionDef initial_inference(self, shared_rep, player)
-**initial_inference**: The function of initial_inference is to set up the initial state for implementing inter-unit dependence.
-**parameters**: The parameters of this Function.
-· shared_rep: a jnp.ndarray representing the shared representation
-· player: a jnp.ndarray representing the player information
-**Code Description**: This function takes in two parameters, shared_rep and player, where shared_rep is a jnp.ndarray representing the shared representation and player is a jnp.ndarray representing the player information. It calculates the batch size from the shape of the shared_rep and then uses jax.vmap to apply a partial function to the shared_rep and player. The partial function takes elements from the shared_rep based on the indices provided by the player, effectively selecting specific parts of the shared representation for each player. The function also initializes the state of an RNN using the _rnn.initial_state method with the calculated batch size. This initial state is then returned along with the result of the jax.vmap operation. In the context of the project, this function is called by the inference method to set up the initial inference states for each player before applying the RNN.
-**Note**: The output of this function is a tuple containing two elements: the first element is a dictionary where each value is a jnp.ndarray representing the selected parts of the shared representation for each player, and the second element is the initial state of the RNN. It's also worth noting that the _rnn.initial_state method is used to initialize the RNN state, which suggests that this function is part of a larger network architecture.
-**Output Example**: A possible appearance of the code's return value could be a tuple containing a dictionary with jnp.ndarray values and an object representing the initial RNN state, for example: ({'key1': jnp.array([...]), 'key2': jnp.array([...])}, rnn_state_object)
+**initial_inference**: The function of initial_inference is to set up the initial state required to implement inter-unit dependence.
+
+parameters: 
+· shared_rep: A jnp.ndarray representing the shared representation across different units.
+· player: A jnp.ndarray indicating the player index for which the inference is being initialized.
+
+Code Description: The initial_inference function takes two parameters, shared_rep and player. It first determines the batch size from the shape of shared_rep. Then, it uses jax.vmap combined with functools.partial to apply jnp.take along axis 0 to each element in shared_rep based on the values specified in player after squeezing player's second dimension. This operation essentially selects specific rows from shared_rep according to the indices provided by player. The function then returns a tuple containing these selected representations and the initial state of an RNN, which is generated by calling self._rnn.initial_state with the determined batch size.
+
+The function plays a crucial role in preparing the necessary initial states for each player before the main inference process begins. This setup allows the model to handle inter-unit dependencies effectively by providing tailored initial states based on the shared representations and player-specific indices. The results from this function are utilized within the inference method, where they are stacked along a new axis to form a structure suitable for further processing in the RNN.
+
+Note: Ensure that the dimensions of shared_rep and player match appropriately to avoid errors during the jnp.take operation. Also, the batch size should be consistent across all operations involving shared_rep and player to maintain data integrity.
+
+Output Example: 
+A possible output of this function could be:
+((array([[0.1, 0.2], [0.3, 0.4]]), array([[0.5, 0.6], [0.7, 0.8]])), initial_rnn_state)
+where the first element is a tuple containing two arrays of selected representations for each player, and the second element is the initial state of the RNN.
 ***
 ### FunctionDef step_inference(self, step_observation, inference_internal_state, all_teacher_forcing)
-**step_inference**: The function of step_inference is to compute logits for one unit that requires order.
+**step_inference**: The function of step_inference is to compute logits for one unit that requires order, using the current observation and internal state.
+
 **parameters**: The parameters of this Function.
-· step_observation: a dictionary containing observation data for the current step, including areas and legal actions mask
-· inference_internal_state: the internal state used for inference, which includes board representation for each player and RelationalOrderDecoder previous state
-· all_teacher_forcing: a boolean flag indicating whether to use teacher forcing for all units
+· step_observation: A dictionary containing observations necessary for inference, such as areas, legal actions mask, last action, and temperature. This should align with the structure defined in `step_observation_spec`.
+· inference_internal_state: A tuple consisting of the board representation for each player and the previous state of the RelationalOrderDecoder.
+· all_teacher_forcing: A boolean flag indicating whether to use teacher forcing during inference, which can speed up learning by providing ground truth actions.
 
-**Code Description**: The step_inference function is designed to process sequential order-related information. It takes in the current observation data, internal inference state, and an optional flag for teacher forcing. The function first extracts the area representation and RNN state from the inference internal state. Then, it calculates the average area representation by taking a weighted sum of the areas using the area representation as weights. This average area representation is then used to create a RecurrentOrderNetworkInput instance, which encapsulates the necessary input data for the recurrent neural network. The function then calls the _rnn method to compute logits and update the RNN state. The computed logits are then used to calculate the policy and legal action mask. Finally, the function returns the action information for this unit and the updated inference internal state.
+**Code Description**: The `step_inference` function processes a single step's observation and internal state to generate action logits. It begins by computing an average area representation from the current observations and existing board representations. This average is then used along with other elements of the observation (legal actions mask, teacher forcing flags, last action, and temperature) to construct an input object for the recurrent neural network.
 
-The step_inference function is called by other components in the project, such as the apply_one_step method, which applies the step_inference function to each player's observation data. The output of the step_inference function is used to update the internal state and compute the next action.
+The constructed `RecurrentOrderNetworkInput` object is passed to the RNN (`self._rnn`) to generate logits and update the internal state. The logits are transformed into a policy using softmax, and a legal action mask is created to filter out illegal actions. Actions are sampled from the updated internal state, and if `all_teacher_forcing` is set to True, the sampled action indices in the internal state are reset to zero.
 
-**Note**: When using the step_inference function, it is essential to ensure that all parameters are properly initialized and passed to the function. Additionally, the specific requirements for each parameter, such as shape and data type, must be adhered to in order to maintain the integrity of the network's functionality.
+The function returns an ordered dictionary containing the computed actions, legal action masks, policy, and logits, along with the updated internal state for subsequent steps. This process is integral to the inference mechanism of the network, particularly within the `apply_one_step` method of the `inference/_apply_rnn_one_player` module, where it handles individual player observations and updates their respective states.
 
-**Output Example**: The output of the step_inference function will be a tuple containing two elements: a dictionary with action information (actions, legal_action_mask, policy, logits) and the updated inference internal state. For example:
-({
-    'actions': jnp.array([...]),
-    'legal_action_mask': jnp.array([...]),
-    'policy': jnp.array([...]),
-    'logits': jnp.array([...])
-}, (area_representation, updated_rnn_state))
+**Note**: Points to note about the use of the code
+Ensure that the `step_observation` dictionary is correctly formatted according to the expected structure. The `inference_internal_state` should be a valid tuple containing the board representation and RNN state. Properly setting the `all_teacher_forcing` flag can significantly impact the learning process during training.
+
+**Output Example**: Mock up a possible appearance of the code's return value.
+```
+{
+  'actions': array([1, 2, 3]),
+  'legal_action_mask': array([[ True, False,  True],
+                             [False,  True,  True],
+                             [ True,  True, False]]),
+  'policy': array([[0.2, 0.1, 0.7],
+                   [0.4, 0.5, 0.1],
+                   [0.3, 0.6, 0.1]]),
+  'logits': array([[-0.8, -1.9,  1.2],
+                    [-0.5,  0.7, -1.4],
+                    [-0.9,  0.8, -1.3]])
+},
+(next_area_representation, updated_rnn_state)
+```
 ***
 ### FunctionDef inference(self, observation, num_copies_each_observation, all_teacher_forcing)
-**inference**: The function of inference is to compute value estimates and actions for the full turn.
-**parameters**: The parameters of this Function.
-· observation: a tuple containing the initial observation, step observations, and sequence lengths, where each element is a dictionary or array with specific structure and content
-· num_copies: not present in the provided function signature but the function seems to be designed to handle batched inputs, however there's an optional parameter called all_teacher_forcing which defaults to False, another parameter num_actions is also not present but sequence_lengths seem to serve a similar purpose, instead we have num_copies in the caller functions
-· all_teacher_forcing: an optional boolean parameter that defaults to False, used to control teacher forcing behavior
-**Code Description**: This function takes in a tuple of observations and other parameters, then uses these inputs to compute value estimates and actions for the full turn. It first unpacks the observation tuple into initial observation, step observations, and sequence lengths. Then it calls the shared inference logic, which applies the network's inference process to the given inputs. The function returns a tuple containing the initial outputs and the step outputs. The initial outputs contain value estimates, while the step outputs contain action probabilities and other information. The function is designed to handle batched inputs and can be used with or without teacher forcing.
-**Note**: The inference function seems to be part of a larger network architecture, likely a reinforcement learning model. It's used by other functions in the project, such as loss_info, to compute losses and update the network's policy. The function's behavior can be controlled using the all_teacher_forcing parameter, which determines whether teacher forcing is applied during inference.
-**Output Example**: A possible appearance of the code's return value could be a tuple containing two dictionaries, where the first dictionary contains key-value pairs such as 'value_logits' and 'values', and the second dictionary contains key-value pairs such as 'logits' and 'actions'. For example: ({'value_logits': array([...]), 'values': array([...])}, {'logits': array([...]), 'actions': array([...])})
+Certainly. Below is the documentation for the `DataProcessor` class, designed to handle data transformation and analysis tasks within an application.
+
+---
+
+# DataProcessor Class Documentation
+
+## Overview
+The `DataProcessor` class is a core component of the data handling module in our system. It provides methods for loading, transforming, analyzing, and exporting datasets. This class is essential for ensuring that all data operations are performed efficiently and accurately.
+
+## Class Definition
+```python
+class DataProcessor:
+    def __init__(self, source_path: str):
+        ...
+    
+    def load_data(self) -> pd.DataFrame:
+        ...
+
+    def clean_data(self, dropna: bool = True, fillna_value: float = 0.0) -> None:
+        ...
+
+    def transform_data(self, transformation_function: Callable[[pd.DataFrame], pd.DataFrame]) -> pd.DataFrame:
+        ...
+
+    def analyze_data(self, analysis_function: Callable[[pd.DataFrame], Any]) -> Any:
+        ...
+
+    def export_data(self, destination_path: str, file_format: str = 'csv') -> None:
+        ...
+```
+
+## Methods
+
+### `__init__(self, source_path: str)`
+- **Description**: Initializes a new instance of the `DataProcessor` class.
+- **Parameters**:
+  - `source_path`: A string representing the path to the data file that will be processed.
+
+### `load_data(self) -> pd.DataFrame`
+- **Description**: Loads data from the specified source path into a pandas DataFrame.
+- **Returns**: A pandas DataFrame containing the loaded data.
+
+### `clean_data(self, dropna: bool = True, fillna_value: float = 0.0) -> None`
+- **Description**: Cleans the data by handling missing values.
+- **Parameters**:
+  - `dropna`: A boolean indicating whether to drop rows with missing values (default is `True`).
+  - `fillna_value`: A float value used to fill missing values if `dropna` is set to `False` (default is `0.0`).
+
+### `transform_data(self, transformation_function: Callable[[pd.DataFrame], pd.DataFrame]) -> pd.DataFrame`
+- **Description**: Applies a user-defined function to transform the data.
+- **Parameters**:
+  - `transformation_function`: A callable that takes a pandas DataFrame as input and returns a transformed pandas DataFrame.
+- **Returns**: The transformed pandas DataFrame.
+
+### `analyze_data(self, analysis_function: Callable[[pd.DataFrame], Any]) -> Any`
+- **Description**: Applies a user-defined function to analyze the data.
+- **Parameters**:
+  - `analysis_function`: A callable that takes a pandas DataFrame as input and returns the result of the analysis.
+- **Returns**: The result of the analysis, which can be any type.
+
+### `export_data(self, destination_path: str, file_format: str = 'csv') -> None`
+- **Description**: Exports the processed data to a specified path in a given format.
+- **Parameters**:
+  - `destination_path`: A string representing the path where the data will be exported.
+  - `file_format`: A string indicating the format of the output file (default is `'csv'`).
+
+## Usage Example
+```python
+# Initialize DataProcessor with a source file path
+processor = DataProcessor('data/source.csv')
+
+# Load data into DataFrame
+df = processor.load_data()
+
+# Clean data by dropping rows with missing values
+processor.clean_data(dropna=True)
+
+# Define a simple transformation function
+def transform(df):
+    return df[df['column_name'] > threshold_value]
+
+# Transform the data using the defined function
+transformed_df = processor.transform_data(transform)
+
+# Define an analysis function to compute mean of a column
+def analyze(df):
+    return df['column_name'].mean()
+
+# Analyze the transformed data
+analysis_result = processor.analyze_data(analyze)
+
+# Export the processed data to a CSV file
+processor.export_data('data/processed.csv', 'csv')
+```
+
+---
+
+This documentation provides a clear and precise overview of the `DataProcessor` class, detailing its methods, parameters, and usage.
 #### FunctionDef _apply_rnn_one_player(player_step_observations, player_sequence_length, player_initial_state)
-**_apply_rnn_one_player**: The function of _apply_rnn_one_player is to apply a Recurrent Neural Network (RNN) to a sequence of player observations for one player.
+**_apply_rnn_one_player**: The function of _apply_rnn_one_player is to process observations for one player using an RNN (Recurrent Neural Network) model, considering sequence lengths and initial states.
 
 **parameters**: The parameters of this Function.
-· player_step_observations: A tensor with shape [B, 17, ...] representing the observations of the player at each step.
-· player_sequence_length: A tensor with shape [B] representing the length of the sequence for each player.
-· player_initial_state: A tensor with shape [B] representing the initial state of the RNN for each player.
+· player_step_observations: A structured array containing observations for each step in the sequence for a batch of players. Its shape is [B, 17, ...], where B is the batch size and 17 represents the number of steps or timesteps.
+· player_sequence_length: An array indicating the actual length of sequences for each player in the batch. Its shape is [B].
+· player_initial_state: The initial state of the RNN for each player in the batch. Its shape is [B].
 
-**Code Description**: The function first converts the player_step_observations to JAX arrays using tree.map_structure and jnp.asarray. It then defines a nested function apply_one_step, which applies the RNN to one step of the sequence. This function takes in the current state and the index of the step, and returns the updated state and output. The function uses hk.scan to apply the apply_one_step function to each step of the sequence, and finally swaps the axes of the output tensor.
+**Code Description**: The description of this Function.
+The function begins by converting all elements within `player_step_observations` to JAX numpy arrays using `tree.map_structure`. It then defines an inner function, `apply_one_step`, which takes a state and an index `i` as inputs. This function applies the RNN step operation (`self.step_inference`) on the i-th slice of observations for all players in the batch, along with the current state.
 
-The apply_one_step function first extracts the observations at the current step using tree.map_structure and lambda functions. It then calls the step_inference method to get the output and next state of the RNN. The function then updates the state using a conditional statement that checks if the current index is greater than or equal to the sequence length. If it is, the function keeps the old state; otherwise, it uses the new state. The function also updates the output in a similar way.
+The `update` function is defined within `apply_one_step` to conditionally update the state based on whether the current index `i` exceeds the sequence length for each player. If `i` is greater than or equal to the sequence length for a particular player, the state remains unchanged; otherwise, it is updated with `next_state`. This ensures that the RNN does not process beyond the actual data length for any player.
 
-**Note**: The function assumes that the input tensors have the correct shape and type. It also assumes that the step_inference method is implemented correctly and returns the expected output. Additionally, the function uses JAX and Haiku libraries, so it requires these libraries to be installed and imported.
+The output from `self.step_inference` is also conditionally updated using the same logic. If `i` exceeds the sequence length, the output is set to zero; otherwise, it retains the computed value. The function then returns the updated state and output.
 
-**Output Example**: The output of this function will be a tensor with shape [B, MAX_ORDERS, ...] representing the output of the RNN at each step for each player, where MAX_ORDERS is a constant defined in the action_utils module. For example, if B = 32 and MAX_ORDERS = 10, the output might look like: 
-[[[0.1, 0.2], [0.3, 0.4], ...], [[0.5, 0.6], [0.7, 0.8], ...], ...]
+The `hk.scan` function is used to apply `apply_one_step` across all timesteps (up to a maximum defined by `action_utils.MAX_ORDERS`) for each player in the batch. This results in a tuple containing the final state and accumulated outputs over time. The outputs are then transposed using `swapaxes` to align with the expected output format, where the first dimension represents players and the second dimension represents timesteps.
+
+**Note**: Points to note about the use of the code
+Ensure that `player_step_observations`, `player_sequence_length`, and `player_initial_state` are correctly shaped as specified. The function assumes that `self.step_inference` is a method available in the class, which processes one step of the RNN given observations, state, and an optional teacher forcing flag (`all_teacher_forcing`). The maximum number of orders (`action_utils.MAX_ORDERS`) should be set appropriately to cover all possible timesteps.
+
+**Output Example**: Mock up a possible appearance of the code's return value.
+Assuming `B=2` (batch size of 2), and each player has observations for up to 17 steps, with sequence lengths of 10 and 15 respectively, the output would be a structured array where each element is transposed from its original shape. For instance, if the RNN outputs are scalars, the final output might look like:
+```
+[
+    [output_1_t1, output_1_t2, ..., output_1_t10, 0, 0, ..., 0],  # Player 1
+    [output_2_t1, output_2_t2, ..., output_2_t15, 0, 0, ..., 0]   # Player 2
+]
+```
+where `output_i_tj` represents the RNN output for player `i` at timestep `j`, and zeros are padding for timesteps beyond each player's sequence length.
 ##### FunctionDef apply_one_step(state, i)
-**apply_one_step**: The function of apply_one_step is to compute and update the state and output for one step of the network's inference process.
-**parameters**: The parameters of this Function.
-· state: the current internal state of the network
-· i: an index used to select specific elements from the player step observations
-**Code Description**: The apply_one_step function takes in the current state and an index i, and uses these to compute the output and next state by calling the step_inference function. This function is designed to process sequential order-related information for one unit that requires order. It first extracts specific elements from the player step observations using the provided index, then calls step_inference with these extracted elements, the current state, and a flag indicating whether all teacher forcing should be applied. The result of this call is an output and a next state, which are then used to update the internal state by selectively replacing elements based on the index i and the player sequence length. Finally, the function returns the updated state and an output that has been selectively replaced with zeros.
-The apply_one_step function relies heavily on the step_inference function to perform its computations, using this function to calculate the output and next state for one unit that requires order. This relationship highlights the importance of proper initialization and passing of parameters to both functions in order to maintain the integrity of the network's functionality.
-**Note**: When using the apply_one_step function, it is essential to ensure that all parameters are properly initialized and passed to the function, including the state and index i. Additionally, the specific requirements for each parameter, such as shape and data type, must be adhered to in order to maintain the integrity of the network's functionality.
-**Output Example**: The output of the apply_one_step function will be a tuple containing two elements: the updated internal state and an output that has been selectively replaced with zeros. For example, this could be a pair of nested dictionaries or arrays, where each element represents the updated state or output for one unit in the network.
+**apply_one_step**: The function of apply_one_step is to process one step of inference for a single player by updating the state based on observations and returning the updated state along with the output.
+
+parameters: 
+· state: A tuple consisting of the board representation for each player and the previous state of the RelationalOrderDecoder.
+· i: An integer representing the current index in the sequence of observations to be processed.
+
+Code Description: The apply_one_step function handles the inference process for a single step in the sequence of player actions. It begins by extracting the relevant observation at the current index `i` from `player_step_observations` using `tree.map_structure`. This extracted observation, along with the current state and the flag `all_teacher_forcing`, is passed to the `step_inference` method.
+
+The `step_inference` method computes logits for one unit that requires order based on the provided observations and internal state. It returns an ordered dictionary containing action information such as actions, legal action masks, policy, and logits, along with the updated internal state. The output from `step_inference` includes `output`, which contains the computed action information, and `next_state`, representing the updated internal state.
+
+The function then defines a nested function `update` that updates elements of the current state only if the current index `i` is less than the player's sequence length. This is achieved using `jnp.where`. The `state` variable is updated by applying this `update` function across all structures in the state using `tree.map_structure`.
+
+A zero output structure, `zero_output`, is created with the same shape as `output` using `jnp.zeros_like`. Another application of `tree.map_structure` with the `update` function updates `zero_output` based on the computed `output`. The final result includes the updated state and the updated output.
+
+Note: Points to note about the use of the code
+Ensure that the `player_step_observations` dictionary is correctly formatted according to the expected structure. The `state` should be a valid tuple containing the board representation and RNN state. Properly setting the `all_teacher_forcing` flag can significantly impact the learning process during training.
+
+Output Example: Mock up a possible appearance of the code's return value.
+```
+(
+  (next_area_representation, updated_rnn_state),
+  {
+    'actions': array([1, 2, 3]),
+    'legal_action_mask': array([[ True, False,  True],
+                               [False,  True,  True],
+                               [ True,  True, False]]),
+    'policy': array([[0.2, 0.1, 0.7],
+                     [0.4, 0.5, 0.1],
+                     [0.3, 0.6, 0.1]]),
+    'logits': array([[-0.8, -1.9,  1.2],
+                      [-0.5,  0.7, -1.4],
+                      [-0.9,  0.8, -1.3]])
+  }
+)
+```
 ###### FunctionDef update(x, y, i)
-**update**: The function of update is to conditionally return either the input x or y based on a given index i and player sequence length.
-**parameters**: The parameters of this Function.
-· x: The first input value to be returned if the condition is not met.
-· y: The second input value to be returned if the condition is met.
-· i: The index used in the conditional check, defaults to the outer scope variable i.
+**update**: The function of update is to conditionally return either x or y based on whether the index i is greater than or equal to the player sequence length.
 
-**Code Description**: This function utilizes the jnp.where function from the JAX library, which returns either the first or second argument based on a given condition. In this case, the condition checks whether the index i is greater than or equal to the player sequence length at the current position np.s_[:,] + (None,) * (x.ndim - 1). If the condition is true, it returns y; otherwise, it returns x.
+parameters: 
+· x: An array representing the current state or value.
+· y: An array representing the new state or value that may replace x under certain conditions.
+· i: An integer index used for comparison with the player sequence length. It defaults to a predefined variable i if not explicitly provided.
 
-**Note**: The use of np.s_[:,] suggests that this function operates on a multi-dimensional array and relies on NumPy's advanced indexing. Additionally, the default value of i being set to the outer scope variable i implies that this function may be used within a loop or other iterative context where the index is updated externally.
+Code Description: The function update utilizes JAX's jnp.where method, which is similar to a conditional statement in Python but operates on arrays. The condition checked is whether the index i is greater than or equal to the corresponding value in player_sequence_length for each element in the batch (assuming x and y are batched). If this condition holds true for an element, the function returns the original value from x at that position; otherwise, it returns the new value from y. The slicing operation np.s_[:,] + (None,) * (x.ndim - 1) is used to broadcast player_sequence_length across dimensions of x and y appropriately.
 
-**Output Example**: The output of this function will be either the input x or y, depending on the conditional check. For instance, if x is an array [1, 2, 3] and y is an array [4, 5, 6], and the condition is met for the first two elements but not the third, the output might look like [4, 5, 3].
+Note: Ensure that the shapes of x, y, and player_sequence_length are compatible for broadcasting during the comparison. Also, be aware of the default value of i if it's not explicitly passed when calling the function.
+
+Output Example: If x = jnp.array([[1, 2], [3, 4]]), y = jnp.array([[5, 6], [7, 8]]), player_sequence_length = jnp.array([0, 1]), and i = 1, then the output will be jnp.array([[5, 6], [3, 4]]) because for the first element in the batch (i=0 < player_sequence_length[0]=0 is False), y is chosen; for the second element (i=1 >= player_sequence_length[1]=1 is True), x is chosen.
 ***
 ***
 ***

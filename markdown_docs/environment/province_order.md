@@ -1,79 +1,266 @@
 ## ClassDef MapMDF
-**MapMDF**: The function of MapMDF is to define an enumeration of map types.
-**attributes**: The attributes of this Class.
-· STANDARD_MAP: represents a standard map with a value of 0
-· BICOASTAL_MAP: represents a bicoastal map with a value of 1
-**Code Description**: The description of this Class. MapMDF is an enumeration class that defines two types of maps, namely STANDARD_MAP and BICOASTAL_MAP. This class is used in various functions throughout the project to determine which type of map to use for different operations. For instance, the get_mdf_content function uses the MapMDF enum to return the content of either a standard map or a bicoastal map based on the input parameter. Similarly, the province_name_to_id and fleet_adjacency_map functions also utilize the MapMDF enum to determine which type of map to use for their respective operations. The use of an enumeration class provides a clear and concise way to define and work with different map types, making the code more readable and maintainable.
-**Note**: Points to note about the use of the code. When using the MapMDF enum, it is essential to ensure that the correct map type is used for each operation, as this can affect the outcome of the functions that utilize it. Additionally, any new map types added to the enum should be thoroughly tested to ensure compatibility with existing functions and operations.
+**MapMDF**: The function of MapMDF is to define constants representing different types of map configurations used within the project.
+
+attributes: The attributes of this Class.
+· STANDARD_MAP: Represents the standard map configuration with an integer value of 0.
+· BICOASTAL_MAP: Represents a bicoastal map configuration with an integer value of 1.
+
+Code Description: The MapMDF class is an enumeration that defines two constants, STANDARD_MAP and BICOASTAL_MAP. These constants are used to specify which map configuration should be utilized in various functions throughout the project. The use of an enumeration ensures that only valid map configurations can be passed as arguments to functions expecting a map type.
+
+In the provided codebase, MapMDF is primarily used in the following functions:
+- get_mdf_content: This function takes a MapMDF argument and returns the corresponding MDF content string based on the specified map configuration. If an unknown MapMDF value is provided, it raises a ValueError.
+- province_name_to_id: This function also accepts a MapMDF argument to determine which map's MDF content should be used when generating a dictionary that maps province names to their respective IDs.
+- province_id_to_home_sc_power: Although this function does not explicitly accept a MapMDF argument, it internally calls get_mdf_content with the STANDARD_MAP configuration. This indicates that the home superpower mapping is based on the standard map configuration.
+- fleet_adjacency_map: Similar to province_name_to_id, this function uses the BICOASTAL_MAP configuration when calling get_mdf_content to build a mapping of valid fleet movements between areas.
+
+Note: When using MapMDF in your code, ensure that you are passing one of the predefined constants (STANDARD_MAP or BICOASTAL_MAP) to avoid runtime errors. The choice of map configuration should align with the specific requirements of the function being called and the data it processes.
 ## FunctionDef get_mdf_content(map_mdf)
-**get_mdf_content**: The function of get_mdf_content is to retrieve the content of a map based on the specified map type.
-**parameters**: The parameters of this Function.
-· map_mdf: This parameter is an instance of the MapMDF enumeration class, which defines the type of map to retrieve content for. It defaults to MapMDF.STANDARD_MAP if not provided.
-**Code Description**: The get_mdf_content function takes a map_mdf parameter and uses it to determine which type of map content to return. If the map_mdf is set to MapMDF.STANDARD_MAP, it returns the content of the standard map. If the map_mdf is set to MapMDF.BICOASTAL_MAP, it returns the content of the bicoastal map. If an unknown map_mdf value is provided, it raises a ValueError with a message indicating that the map_mdf is unknown. This function is used by other functions in the project, such as province_name_to_id, province_id_to_home_sc_power, and fleet_adjacency_map, to retrieve the necessary map content for their operations.
-**Note**: Points to note about the use of the code. When using the get_mdf_content function, it is essential to ensure that a valid MapMDF enum value is provided as the map_mdf parameter. The function's return value should be handled accordingly based on the specific requirements of the calling function. Additionally, any modifications to the MapMDF enum or the get_mdf_content function itself should be thoroughly tested to ensure compatibility with existing functions and operations in the project.
-**Output Example**: The output of this function will be a string representing the content of the specified map type, such as "_STANDARD_MAP_MDF_CONTENT" or "_BICOASTAL_MAP_MDF_CONTENT".
+**get_mdf_content**: The function of get_mdf_content is to retrieve the MDF content string based on the specified map configuration.
+
+parameters: 
+· map_mdf: Represents the type of map configuration for which the MDF content should be returned. It accepts values from the MapMDF enumeration, specifically MapMDF.STANDARD_MAP or MapMDF.BICOASTAL_MAP. The default value is MapMDF.STANDARD_MAP.
+
+Code Description: The get_mdf_content function takes a single parameter, map_mdf, which specifies the desired map configuration. If map_mdf is set to MapMDF.STANDARD_MAP, the function returns the content of _STANDARD_MAP_MDF_CONTENT. If it is set to MapMDF.BICOASTAL_MAP, it returns the content of _BICOASTAL_MAP_MDF_CONTENT. If an invalid value is provided for map_mdf, a ValueError is raised with a message indicating the unknown map configuration.
+
+In the project, get_mdf_content serves as a utility function that provides MDF content based on the specified map type. It is utilized by several other functions to fetch the appropriate MDF data:
+- province_name_to_id: This function calls get_mdf_content to obtain the MDF content for generating a dictionary that maps province names to their respective IDs.
+- province_id_to_home_sc_power: Although this function does not directly accept a map configuration, it internally uses get_mdf_content with MapMDF.STANDARD_MAP to determine which power is the home superpower for each province based on the standard map configuration.
+- fleet_adjacency_map: This function calls get_mdf_content with MapMDF.BICOASTAL_MAP to build a mapping of valid fleet movements between areas, using the bicoastal map configuration.
+
+Note: When calling get_mdf_content, ensure that you pass one of the predefined constants from the MapMDF enumeration (STANDARD_MAP or BICOASTAL_MAP) to avoid runtime errors. The choice of map configuration should align with the specific requirements of the function being called and the data it processes.
+
+Output Example: 
+If map_mdf is set to MapMDF.STANDARD_MAP, the output might be a string like:
+```
+PROVINCES
+(
+  ENG England
+  SPA Spain
+  FRA France
+)
+HOME_SC_POWERS (ENG SPA FRA)
+...
+```
+
+If map_mdf is set to MapMDF.BICOASTAL_MAP, the output might be a string like:
+```
+AREAS
+(
+  ENG England
+  SPA Spain
+  FRA France
+)
+FLEET_ADJACENCY (
+  ENG (SPA FLT)
+  SPA (ENG FLT)
+  FRA (SPA FLT)
+)
+...
+```
 ## FunctionDef _province_tag(l)
-**_province_tag**: The function of _province_tag is to extract the province tag from a given line of text.
-**parameters**: The parameters of this Function.
-· l: a string representing the line of text from which the province tag will be extracted
-**Code Description**: This function takes a string as input, splits it into words, and then iterates over each word. It checks if the word is not a parenthesis and returns the first word that meets this condition. If no such word is found after checking all words, it raises a ValueError with a message indicating that no province was found for the given line. The function is used by _tag_to_id to extract province tags from lines of text and map them to unique identifiers.
-**Note**: The function assumes that the input string contains at least one word that is not a parenthesis, and that the first such word is the province tag. It also assumes that the input string does not contain any leading or trailing whitespace. Users should be aware that this function will raise an exception if it cannot find a province tag in the input string.
-**Output Example**: If the input string is "ProvinceA (some additional text)", the output would be "ProvinceA".
+**_province_tag**: The function of _province_tag is to extract the province name from a given line string by removing any parentheses.
+
+parameters: 
+· l: A string representing a line that may contain a province tag enclosed in parentheses or as a standalone word.
+
+Code Description: The description of this Function.
+The function _province_tag takes a single argument, `l`, which is expected to be a string. It splits the string into words using space as a delimiter and iterates through each word. If a word is not an opening or closing parenthesis ('(' or ')'), it returns that word immediately as the province tag. The function assumes that the first non-parenthesis word in the line is the province name. If no such word is found, it raises a ValueError indicating that no province was found for the given line.
+
+In the context of the project, this function is called by `_tag_to_id` within the same file `province_order.py`. The `_tag_to_id` function processes lines from an mdf content string to map each province tag (extracted using _province_tag) to a unique identifier. This mapping is stored in a dictionary where keys are province tags and values are integers representing their order of appearance.
+
+Note: Points to note about the use of the code
+The input line `l` should contain at least one word that does not represent an opening or closing parenthesis for the function to return a valid province tag. If the line only contains parentheses or is empty, the function will raise a ValueError.
+
+Output Example: Mock up a possible appearance of the code's return value.
+If the input string `l` is "(province) name", the function will return "name". Similarly, if `l` is "another_name (description)", it will return "another_name". If `l` is "() ()", a ValueError will be raised.
 ## FunctionDef province_name_to_id(map_mdf)
-**province_name_to_id**: The function of province_name_to_id is to retrieve a dictionary that maps province names to their corresponding unique identifiers.
-**parameters**: The parameters of this Function.
-· map_mdf: This parameter is an instance of the MapMDF enumeration class, which defines the type of map to use for retrieving the province name to identifier mappings. It defaults to MapMDF.STANDARD_MAP if not provided.
-**Code Description**: The province_name_to_id function utilizes the get_mdf_content function to retrieve the content of a map based on the specified map_mdf parameter. This content is then passed to the _tag_to_id function, which creates a dictionary mapping province names to unique identifiers. The resulting dictionary is returned by the province_name_to_id function. The function's operation relies on the correct functioning of its callees, get_mdf_content and _tag_to_id, to produce the desired output.
-**Note**: When using the province_name_to_id function, it is essential to ensure that a valid MapMDF enum value is provided as the map_mdf parameter. Additionally, users should be aware of the assumptions made by the _tag_to_id function regarding the format of the input string and the extraction of province tags.
-**Output Example**: The output of this function will be a dictionary where each key represents a province name and its corresponding value is a unique identifier, such as {"ProvinceA": 0, "ProvinceB": 1, ...}.
+**province_name_to_id**: The function of province_name_to_id is to retrieve a dictionary mapping province names to their respective IDs based on the specified map configuration.
+
+parameters: 
+· map_mdf: Represents the type of map configuration for which the province name to ID mapping should be generated. It accepts values from the MapMDF enumeration, specifically MapMDF.STANDARD_MAP or MapMDF.BICOASTAL_MAP. The default value is MapMDF.STANDARD_MAP.
+
+Code Description: The function province_name_to_id takes a single parameter, map_mdf, which specifies the desired map configuration. It calls the get_mdf_content function with the provided map_mdf argument to obtain the MDF content string corresponding to the specified map type. This MDF content is then passed to the _tag_to_id function, which processes the content to generate a dictionary mapping province names (tags) to unique integer identifiers. The resulting dictionary is returned by province_name_to_id.
+
+In the context of the project, province_name_to_id serves as a utility function that provides a consistent way to refer to provinces using unique IDs based on the specified map configuration. This function relies on get_mdf_content to fetch the appropriate MDF data and _tag_to_id to parse this data into a usable dictionary format.
+
+Note: When calling province_name_to_id, ensure that you pass one of the predefined constants from the MapMDF enumeration (STANDARD_MAP or BICOASTAL_MAP) to avoid runtime errors. The choice of map configuration should align with the specific requirements of the function being called and the data it processes.
+
+Output Example: Mock up a possible appearance of the code's return value.
+If map_mdf is set to MapMDF.STANDARD_MAP, and the MDF content contains lines such as:
+```
+(header information)
+(province) England
+Spain (description)
+(another_province) France
+(trailing information)
+```
+The function province_name_to_id will return a dictionary like:
+```python
+{
+    'England': 0,
+    'Spain': 1,
+    'France': 2
+}
+```
 ## FunctionDef province_id_to_home_sc_power
-**province_id_to_home_sc_power**: The function of province_id_to_home_sc_power is to determine which power is associated with each province as its home supply center.
+**province_id_to_home_sc_power**: The function of province_id_to_home_sc_power is to map each province ID to its corresponding home superpower based on the standard map configuration.
 
-**parameters**: None
+parameters: This function does not accept any parameters.
 
-**Code Description**: This function retrieves the content of a standard map using the get_mdf_content function from the MapMDF enumeration class. It then extracts the third line of the map content, which contains information about the home supply centers for each power. The function splits this line into individual words and iterates over them to identify province tags and power identifiers. Province tags are mapped to their corresponding unique identifiers using the _tag_to_id function, while power identifiers are assigned a numerical value based on their order of appearance. The function returns a dictionary where each key is a province identifier and its corresponding value is the associated power.
+Code Description: The function retrieves the MDF content for the standard map configuration using the get_mdf_content function with MapMDF.STANDARD_MAP as the argument. It then extracts the line containing information about home superpowers from this content. A dictionary mapping province tags to their respective IDs is created using the _tag_to_id function, which processes the same MDF content.
 
-The get_mdf_content function is used to retrieve the map content, and the MapMDF enumeration class provides a way to specify the type of map to use. In this case, the STANDARD_MAP is used. The _tag_to_id function plays a crucial role in mapping province tags to unique identifiers, which are then used to create the dictionary returned by the province_id_to_home_sc_power function.
+The function iterates over each word in the extracted home superpower line. If a word represents a province (i.e., it exists in the tag_to_id dictionary), it assigns the current power index to this province ID in the id_to_power dictionary. The power index is incremented whenever a new power tag is encountered, which indicates the start of a new set of provinces associated with that power.
 
-**Note**: It is essential to note that this function assumes the map content has a specific format and that the get_mdf_content and _tag_to_id functions behave as expected. Any changes to these functions or the map content may affect the accuracy of the results produced by the province_id_to_home_sc_power function.
+In summary, province_id_to_home_sc_power constructs a mapping from each province's unique identifier to the home superpower it belongs to, based on the standard map configuration.
 
-**Output Example**: The output of this function would be a dictionary where each key is a unique province identifier, and its corresponding value is an integer representing the associated power, such as {1: 0, 2: 0, 3: 1, ...}, indicating that provinces with identifiers 1 and 2 are associated with power 0, while province with identifier 3 is associated with power 1.
+Note: This function relies on the correct format and content of the MDF file for accurate results. The MDF content must include a line specifying home superpowers in a format that can be parsed by this function.
+
+Output Example: A possible return value of the function could be:
+```python
+{
+    utils.ProvinceID(0): 0,
+    utils.ProvinceID(1): 0,
+    utils.ProvinceID(2): 1,
+    utils.ProvinceID(3): 1,
+    utils.ProvinceID(4): 2,
+}
+```
+In this example, provinces with IDs 0 and 1 are associated with home superpower 0, provinces with IDs 2 and 3 are associated with home superpower 1, and province with ID 4 is associated with home superpower 2.
 ## FunctionDef _tag_to_id(mdf_content)
-**_tag_to_id**: The function of _tag_to_id is to create a dictionary mapping province tags to unique identifiers based on the content of a given string.
-**parameters**: The parameters of this Function.
-· mdf_content: a string representing the content from which the province tags will be extracted and mapped to unique identifiers
-**Code Description**: This function takes the input string, splits it into lines, and then iterates over each line, excluding the first four and last lines. For each line, it extracts the province tag using the _province_tag function and assigns a unique identifier to it based on the order of appearance. The function returns a dictionary containing these mappings. The _tag_to_id function is used by various other functions in the project, including province_name_to_id, province_id_to_home_sc_power, build_adjacency, topological_index, and fleet_adjacency_map, to establish relationships between provinces and their corresponding identifiers.
-**Note**: It is essential to note that this function relies on the _province_tag function to correctly extract the province tags from each line. Additionally, the input string should have a specific format, with the first four and last lines being excluded from the processing. Users should be aware of these assumptions when using this function.
-**Output Example**: If the input string contains lines such as "ProvinceA (some additional text)", "ProvinceB (more text)", and so on, the output would be a dictionary like {"ProvinceA": 0, "ProvinceB": 1, ...}, where each province tag is mapped to a unique identifier based on its order of appearance.
+**_tag_to_id**: The function of _tag_to_id is to map province tags extracted from lines of MDF content to unique integer identifiers.
+
+parameters: 
+· mdf_content: A string representing the content of an MDF file, which includes lines with province information enclosed in parentheses or as standalone words.
+
+Code Description: The function _tag_to_id processes the input MDF content by splitting it into individual lines and iterating over all lines except for the first four and the last one. For each line, it calls the helper function `_province_tag` to extract the province tag. It then assigns a unique integer identifier to this tag, starting from 0 and incrementing by 1 for each new tag found. The mapping of tags to identifiers is stored in a dictionary where keys are the province tags and values are their corresponding integer identifiers.
+
+In the context of the project, _tag_to_id serves as a foundational function that provides a consistent way to refer to provinces using unique IDs. This function is called by several other functions within the same file `province_order.py`, including `province_name_to_id`, `province_id_to_home_sc_power`, `build_adjacency`, `topological_index`, and `fleet_adjacency_map`. These functions rely on the mapping generated by _tag_to_id to perform their specific tasks, such as building adjacency matrices or determining topological indices.
+
+Note: Points to note about the use of the code
+The input string mdf_content should be a valid MDF file content with lines that contain province tags. The function assumes that each line relevant for tag extraction follows a consistent format where the first non-parenthesis word is the province name. If the format is not adhered to, the function `_province_tag` may raise a ValueError indicating that no province was found for a given line.
+
+Output Example: Mock up a possible appearance of the code's return value.
+If the input string mdf_content contains lines such as:
+```
+(header information)
+(province) name1
+name2 (description)
+(another_province) name3
+(trailing information)
+```
+The function _tag_to_id will return a dictionary like:
+```python
+{
+    'name1': 0,
+    'name2': 1,
+    'name3': 2
+}
+```
 ## FunctionDef build_adjacency(mdf_content)
-**build_adjacency**: The function of build_adjacency is to construct an adjacency matrix from the content of a map file, indicating which provinces are adjacent to each other based on possible movements of armies or fleets.
+**build_adjacency**: The function of build_adjacency is to construct an adjacency matrix from MDF content that represents connections between provinces.
 
-**parameters**: The parameters of this Function.
-· mdf_content: a string representing the content of a map file, used as input to determine the adjacency relationships between provinces.
+parameters: 
+· mdf_content: A string representing the content of an MDF file, which includes lines with province information and their connectivity details.
 
-**Code Description**: This function initializes an empty dictionary using the _tag_to_id function to map province tags to unique identifiers. It then determines the total number of provinces based on these identifiers and creates a zero-filled adjacency matrix with dimensions equal to the number of provinces. The function proceeds to parse the input string line by line, excluding the first four and last lines, to extract information about province connections. For each connection found, it updates the corresponding entries in the adjacency matrix to indicate that the provinces are adjacent. Specifically, if a province has multiple coasts, it is considered adjacent to all provinces reachable from any of its coasts. The function ultimately returns this constructed adjacency matrix.
+Code Description: The function build_adjacency processes the input MDF content by first mapping province tags to unique integer identifiers using the _tag_to_id function. It then initializes a zero matrix of size num_provinces-by-num_provinces, where num_provinces is determined from the maximum value in the tag-to-id mapping plus one. The function iterates over each line of the MDF content (excluding the first four and last lines) to extract province connectivity information. For each line, it identifies the sender province and any receiver provinces that are reachable by either an army or a fleet, excluding keywords 'AMY' and 'FLT'. It updates the adjacency matrix to reflect these connections by setting the corresponding entries to 1.0. Additionally, if the sender province has multiple coasts (indicated by a tag longer than three characters), it establishes bidirectional connectivity between the coast-specific tag and its base land province.
 
-The _tag_to_id function plays a crucial role in this process by providing the necessary mappings between province tags and unique identifiers, which are essential for correctly populating the adjacency matrix. By leveraging this mapping, the build_adjacency function can accurately determine the relationships between different provinces based on their connections as defined in the input map file.
+Note: Points to note about the use of the code
+The input string mdf_content should be a valid MDF file content with lines that contain province tags and their connections. The function assumes that each line relevant for connectivity extraction follows a consistent format where the first word is the sender province, followed by receiver provinces or keywords 'AMY' and 'FLT'. If the format is not adhered to, the function may incorrectly interpret the data, leading to an inaccurate adjacency matrix.
 
-**Note**: It is important to note that the input string is expected to have a specific format, with certain lines being excluded from processing. Additionally, the function's reliance on the _tag_to_id function means that any errors or inconsistencies in the mapping of province tags to identifiers could potentially affect the accuracy of the resulting adjacency matrix.
-
-**Output Example**: The output of this function would be a 2D numpy array representing the adjacency matrix, where each entry [i][j] is 1.0 if province i is adjacent to province j, and 0.0 otherwise. For instance, if there are three provinces A, B, and C, and A is connected to B, while B is connected to C, the output might look like:
+Output Example: Mock up a possible appearance of the code's return value.
+If the input string mdf_content contains lines such as:
 ```
-[[0.0, 1.0, 0.0],
- [1.0, 0.0, 1.0],
- [0.0, 1.0, 0.0]]
+(header information)
+(province) SPA
+SPA (Spain) ENG FRA
+SPA.NW ENG
+SPA.NE FRA
+SPA.S EA
+ENG SPA NTH
+FRA SPA NW
+(trailing information)
 ```
+The function build_adjacency will return an adjacency matrix like:
+```python
+array([[0., 1., 1., 0.],
+       [1., 0., 1., 0.],
+       [1., 1., 0., 0.],
+       [0., 0., 0., 0.]])
+```
+In this example, the provinces are mapped as follows: SPA (Spain) -> 0, ENG (England) -> 1, FRA (France) -> 2, and EA (East) -> 3. The matrix indicates that Spain is connected to England and France through its coasts, while England is connected to Spain and the NTH province, and France is connected to Spain and its NW coast.
 ## FunctionDef topological_index(mdf_content, topological_order)
-**topological_index**: The function of topological_index is to generate a sequence of unique province identifiers based on a given topological order and content string.
-**parameters**: The parameters of this Function.
-· mdf_content: a string representing the content from which the province tags will be extracted and mapped to unique identifiers
-· topological_order: a sequence of strings representing the desired order of provinces
-**Code Description**: This function works by first creating a dictionary mapping province tags to unique identifiers using the _tag_to_id function, which takes the mdf_content string as input. The _tag_to_id function returns a dictionary where each key is a province tag and its corresponding value is a unique identifier. The topological_index function then uses this dictionary to generate a sequence of unique province identifiers based on the given topological_order. It does this by iterating over each province in the topological_order and looking up its corresponding unique identifier in the dictionary created by _tag_to_id.
-**Note**: It is essential to note that the correctness of the output depends on the accuracy of the _tag_to_id function, which relies on a specific format of the input string. Users should be aware of this assumption when using the topological_index function. Additionally, the topological_order sequence should contain valid province tags that can be found in the mdf_content string.
-**Output Example**: If the input string contains lines such as "ProvinceA (some additional text)", "ProvinceB (more text)", and so on, and the topological_order is ["ProvinceA", "ProvinceB"], the output would be a sequence of unique identifiers like [0, 1], where each identifier corresponds to a province in the given order.
+**topological_index**: The function of topological_index is to convert a list of province names into their corresponding unique integer identifiers based on an MDF content string.
+
+parameters: 
+· mdf_content: A string representing the content of an MDF file, which includes lines with province information enclosed in parentheses or as standalone words.
+· topological_order: A sequence (e.g., list) of strings where each string is a province name that needs to be converted into its unique integer identifier.
+
+Code Description: The function topological_index first calls the helper function _tag_to_id, passing it the mdf_content parameter. This call generates a dictionary mapping each province tag found in the MDF content to a unique integer identifier. The function then iterates over the provided topological_order sequence, using this dictionary to look up and retrieve the corresponding integer identifier for each province name in the order specified. These identifiers are collected into a list, which is returned as the final result.
+
+In the context of the project, topological_index relies on _tag_to_id to establish a consistent mapping between province names and their unique IDs. This mapping is essential for maintaining a standardized reference across various functions that require numerical identifiers for provinces. By leveraging this mapping, topological_index ensures that the sequence of province names provided in topological_order is accurately translated into a sequence of corresponding integer identifiers.
+
+Note: Points to note about the use of the code
+The input string mdf_content should be a valid MDF file content with lines that contain province tags formatted consistently. The function assumes that each line relevant for tag extraction follows a format where the first non-parenthesis word is the province name. If this format is not adhered to, the function _province_tag may raise a ValueError indicating that no province was found for a given line.
+
+Output Example: Mock up a possible appearance of the code's return value.
+If the input string mdf_content contains lines such as:
+```
+(header information)
+(province) name1
+name2 (description)
+(another_province) name3
+(trailing information)
+```
+And the topological_order is ['name2', 'name1', 'name3'], the function _tag_to_id will generate a dictionary like:
+```python
+{
+    'name1': 0,
+    'name2': 1,
+    'name3': 2
+}
+```
+The function topological_index will then return a list of identifiers corresponding to the order specified in topological_order:
+```python
+[1, 0, 2]
+```
 ## FunctionDef fleet_adjacency_map
-**fleet_adjacency_map**: The function of fleet_adjacency_map is to build a mapping for valid fleet movements between areas.
-**parameters**: None
-**Code Description**: This function constructs a dictionary that maps each area to a list of adjacent areas where fleets can move. It starts by retrieving the content of a bicoastal map using the get_mdf_content function with MapMDF.BICOASTAL_MAP as the argument. The retrieved content is then split into lines, and for each line (excluding the first four and last lines), it extracts the province tags and creates a mapping between these tags and their corresponding area identifiers using the _tag_to_id function. The function then iterates over the extracted provinces and checks for the presence of a 'FLT' tag, which indicates fleet movement. If the 'FLT' tag is found, the subsequent provinces are added to the list of adjacent areas for the current province. Finally, the function returns the constructed dictionary, which represents the valid fleet movements between areas.
-**Note**: It is essential to note that this function relies on the correct implementation of the get_mdf_content and _tag_to_id functions to produce accurate results. Additionally, the input map content should be in a specific format for the function to work correctly.
-**Output Example**: The output of this function will be a dictionary where each key represents an area identifier, and its corresponding value is a list of adjacent area identifiers where fleets can move, such as {AreaID1: [AreaID2, AreaID3], AreaID4: [AreaID5, AreaID6]}.
+**fleet_adjacency_map**: The function of fleet_adjacency_map is to build a mapping for valid fleet movements between areas based on the bicoastal map configuration.
+
+parameters: The parameters of this Function.
+· No explicit parameters are required as the function uses a predefined map configuration (MapMDF.BICOASTAL_MAP).
+
+Code Description: The description of this Function.
+The fleet_adjacency_map function constructs a dictionary that maps each area to a list of areas where fleets can move. It begins by retrieving the MDF content for the bicoastal map configuration using the get_mdf_content function with MapMDF.BICOASTAL_MAP as the argument. The function then creates a mapping from province tags to unique integer identifiers using the _tag_to_id function.
+
+The MDF content is split into lines, and the function processes each line except for the first four and the last one. Each relevant line represents an edge in the adjacency map, starting with a province tag followed by a list of adjacent provinces that can be reached by fleet movement. The function identifies these tags and converts them to their corresponding integer identifiers using the previously created mapping.
+
+The function iterates through each line, skipping non-relevant characters like parentheses and empty strings. It identifies the start province and initializes an empty list for its adjacency in the fleet_adjacency dictionary. As it processes each subsequent tag on the same line, it checks for the presence of the 'FLT' keyword, which indicates that the following tags represent valid fleet movement targets. Once 'FLT' is found, all subsequent tags are added to the adjacency list for the start province.
+
+Note: Points to note about the use of the code
+The function does not accept any parameters and always uses the bicoastal map configuration. Ensure that the MDF content for the bicoastal map is correctly formatted and contains the necessary information for accurate mapping. The output dictionary will only include areas that have valid fleet movement targets as specified in the MDF content.
+
+Output Example: Mock up a possible appearance of the code's return value.
+If the MDF content for the bicoastal map includes lines such as:
+```
+AREAS
+(
+  ENG England
+  SPA Spain
+  FRA France
+)
+FLEET_ADJACENCY (
+  ENG (SPA FLT)
+  SPA (ENG FLT)
+  FRA (SPA FLT)
+)
+...
+```
+The function fleet_adjacency_map will return a dictionary like:
+```python
+{
+    0: [1],  # Assuming 'ENG' is mapped to 0 and 'SPA' is mapped to 1
+    1: [0, 2],  # Assuming 'SPA' is mapped to 1, 'ENG' is mapped to 0, and 'FRA' is mapped to 2
+    2: [1]  # Assuming 'FRA' is mapped to 2 and 'SPA' is mapped to 1
+}
+```
+This dictionary indicates that fleets can move from ENG (ID 0) to SPA (ID 1), from SPA (ID 1) to both ENG (ID 0) and FRA (ID 2), and from FRA (ID 2) to SPA (ID 1).

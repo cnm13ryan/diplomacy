@@ -1,59 +1,64 @@
 ## ClassDef Policy
-**Policy**: The function of Policy is to delegate stepping and updating to a network, serving as an agent in a game environment.
+**Policy**: The function of Policy is to delegate stepping and updating actions to a network by handling observations, legal actions, and producing corresponding actions for specified slots.
 
-**attributes**: The attributes of this Class.
-· network_handler: an instance of network.network.NetworkHandler, responsible for handling network-related operations
-· num_players: the number of players in the game, which determines the scope of actions to be taken
-· temperature: the policy sampling temperature, influencing the randomness of action selection
-· calculate_all_policies: a flag indicating whether to calculate policies for all players or only those specified in the slots_list argument
-· _obs_transform_state: an internal state variable used for observation transformation
-· _str: a string representation of the Policy instance, including the temperature value
+attributes: The attributes of this Class.
+· network_handler: An instance of network.network.NetworkHandler that manages the neural network operations.
+· num_players: An integer representing the number of players in the game.
+· temperature: A float value used as the policy sampling temperature, influencing the randomness of action selection.
+· calculate_all_policies: A boolean indicating whether to compute policies for all players regardless of the slots_list argument provided to the actions method.
+· _obs_transform_state: An internal state variable used to store the transformed observation state.
+· _str: A string representation of the policy with its temperature value.
 
-**Code Description**: The description of this Class. 
-The Policy class is designed to interact with a game environment through a network handler. Upon initialization, it sets up the necessary attributes, including the network handler, number of players, temperature, and calculation flag. The reset method allows for resetting the internal state and the network handler. The actions method is the core functionality, taking in a list of slots, an observation from the environment, and legal actions for each player. It then uses the network handler to transform the observation, perform inference, and produce a list of actions for the specified slots. If calculate_all_policies is True, it calculates policies for all players; otherwise, it only considers the slots provided.
+Code Description: The Policy class is designed to interact with a neural network through a NetworkHandler instance. It manages the transformation of observations and legal actions into actionable outputs for specified players in a game setting. Upon initialization, it sets up essential parameters including the number of players, sampling temperature, and whether all policies should be calculated. The reset method clears the internal observation state and resets the network handler. The actions method takes a list of slots (player indices), an observation from the environment, and legal actions for each player to produce corresponding actions for the specified slots. It also returns additional step outputs containing values, policy details, and actions.
 
-**Note**: Points to note about the use of the code. 
-When using the Policy class, it is essential to provide a valid network handler and specify the correct number of players in the game. The temperature value should be chosen based on the desired level of randomness in action selection. Additionally, the calculate_all_policies flag should be set according to whether policies for all players or only specific slots are required.
+Note: Points to note about the use of the code
+- Ensure that the network_handler provided during initialization is properly configured and trained.
+- The temperature parameter affects the randomness of action selection; a lower value results in more deterministic actions.
+- Setting calculate_all_policies to True will increase computational overhead as policies for all players are calculated regardless of the slots_list argument.
 
-**Output Example**: 
-The actions method returns a tuple containing a list of lists of actions and a dictionary with step outputs, including values, policy, and actions. For instance, if there are two slots (0 and 1) and the game has three possible actions (A, B, C), the output might look like this: ([[[A], [B]], [[C], [A]]], {'values': [...], 'policy': [...], 'actions': [...]})
+Output Example: Mock up a possible appearance of the code's return value.
+([1, 3], {'values': [0.85, 0.76], 'policy': [[0.2, 0.4, 0.4], [0.1, 0.3, 0.6]], 'actions': [[1, 2, 3], [0, 1, 2]]})
+- The first element is a list of actions for the specified slots.
+- The second element is a dictionary containing values, policy distributions, and actions for each player.
 ### FunctionDef __init__(self, network_handler, num_players, temperature, calculate_all_policies)
-**__init__**: The function of __init__ is to initialize the Policy object with necessary parameters.
-**parameters**: The parameters of this Function.
-· network_handler: an instance of network.network.NetworkHandler, which handles network-related operations
-· num_players: the number of players in a game, represented as an integer value
-· temperature: the policy sampling temperature, typically a float value, where 0.1 was used for evaluation purposes
-· calculate_all_policies: a boolean flag indicating whether to calculate policies for all players, regardless of other factors
+**__init__**: The function of __init__ is to initialize an instance of the Policy class with specified parameters.
 
-**Code Description**: The __init__ function is responsible for setting up the Policy object by assigning the provided parameters to instance variables. It takes in four key parameters: network_handler, num_players, temperature, and calculate_all_policies. These parameters are then assigned to corresponding instance variables, including _network_handler, _num_players, _temperature, and _calculate_all_policies. Additionally, it initializes other instance variables such as _obs_transform_state to None and creates a string representation of the Policy object based on the temperature value.
+parameters:
+· network_handler: An instance of network.network.NetworkHandler that handles the neural network operations.
+· num_players: An integer representing the number of players in the game, such as 7 for a typical setup.
+· temperature: A float value used as the policy sampling temperature; this parameter influences the randomness of the policy selection process. For evaluation purposes, a temperature of 0.1 was utilized according to the paper.
+· calculate_all_policies: A boolean flag indicating whether to compute policies for all players regardless of the slots_list argument provided to the actions method. This does not impact the sampled policy but enriches the step_outputs with additional data.
 
-**Note**: When using this function, it is essential to provide a valid network_handler instance and appropriate values for num_players and temperature. The calculate_all_policies flag should be set according to the specific requirements of the application, as it affects the calculation of policies for all players. The correct usage of this function will ensure proper initialization of the Policy object, which is crucial for its subsequent functionality.
+Code Description:
+The __init__ function initializes a Policy object by setting up its internal state based on the provided parameters. It assigns the network_handler, num_players, and temperature to their respective instance variables. The _obs_transform_state is initialized as None, which suggests it might be used later in the class for transforming observations into states. The string representation of the policy, stored in _str, includes the temperature value formatted within a template string 'OnPolicy(t={self._temperature})'. Lastly, the calculate_all_policies flag is assigned to an instance variable, indicating whether all player policies should be calculated during action generation.
+
+Note: It is crucial to ensure that the network_handler provided is correctly configured and compatible with the Policy class. The num_players parameter must accurately reflect the number of players in the game environment being simulated or analyzed. The temperature value plays a significant role in determining the exploration-exploitation trade-off; hence, it should be set according to the desired behavior of the policy during training or evaluation. The calculate_all_policies flag can be used to gather more comprehensive data about player policies but does not affect the primary sampled policy output.
 ***
 ### FunctionDef __str__(self)
-**__str__**: The function of __str__ is to return a string representation of the object.
-**parameters**: The parameters of this Function are none, as it is a special method that takes no explicit parameters other than the implicit self reference to the instance of the class.
-· self: a reference to the current instance of the class
-**Code Description**: This function is a special method in Python classes that returns a string representation of the object. When called, it simply returns the value of the _str attribute of the instance, which presumably contains a string that represents the object in a human-readable format. The implementation of this method is straightforward and does not involve any complex logic or operations.
-**Note**: It's worth noting that the _str attribute is not defined within this function, so it must be set elsewhere in the class definition. This suggests that the string representation of the object is determined at some other point in the code, and this function simply provides a way to access that representation as a string.
-**Output Example**: The output of this function would be a string, such as "Policy: example_policy", although the exact format and content would depend on how the _str attribute is defined and set elsewhere in the class.
+**__str__**: The function of __str__ is to return a string representation of the Policy object.
+parameters: This Function does not take any parameters.
+Code Description: The __str__ method is a special method in Python used to define a human-readable string representation of an object. In this implementation, it simply returns the value stored in the instance variable _str. This means that whenever an instance of the Policy class is converted to a string (e.g., via print() or str()), the content of _str will be returned.
+Note: The method relies on the existence and correct initialization of the _str attribute within the Policy class instances. If _str is not properly set, this method may return unexpected results or raise an AttributeError if _str does not exist.
+Output Example: Assuming that the _str attribute of a Policy instance has been set to "Allow all traffic from 192.168.1.0/24", calling str(policy_instance) would output "Allow all traffic from 192.168.1.0/24".
 ***
 ### FunctionDef reset(self)
-**reset**: The function of reset is to restore the policy to its initial state by resetting its observation transformation state and network handler.
-**parameters**: The parameters of this Function.
-· self: A reference to the current instance of the class
-**Code Description**: This function resets the policy by setting the _obs_transform_state attribute to None, effectively removing any existing observation transformation state. Additionally, it calls the reset method on the _network_handler object, which is responsible for managing the network's state. By resetting both the observation transformation state and the network handler, this function ensures that the policy is returned to its initial state, ready for new inputs or processing.
-**Note**: When using this function, it is essential to be aware that all existing observation transformation states will be lost, and the network handler will also be reset. This function should be used when the policy needs to be reinitialized or restarted, such as at the beginning of a new episode or when changing tasks.
+**reset**: The function of reset is to reinitialize certain internal states within the Policy class.
+parameters: This Function does not accept any parameters.
+Code Description: The reset method sets the _obs_transform_state attribute to None, effectively clearing its current value. It then calls the reset method on the _network_handler object, presumably to perform a similar reinitialization or cleanup operation within that component. This function is likely used to prepare the Policy instance for a new sequence of operations or to return it to a known initial state.
+Note: Points to note about the use of the code include ensuring that the _network_handler object has a reset method defined, as this method is called directly on it. Additionally, developers should be aware that calling reset will clear any stored state in _obs_transform_state and may have additional side effects within the _network_handler, depending on its implementation.
 ***
 ### FunctionDef actions(self, slots_list, observation, legal_actions)
 **actions**: The function of actions is to produce a list of lists of actions based on given slots, observations, and legal actions.
-**parameters**: The parameters of this Function.
-· slots_list: a sequence of integers representing the slots for which the policy should produce actions
-· observation: an object of type utils.Observation containing observations from the environment
-· legal_actions: a sequence of numpy arrays representing the legal actions for every player in the game
 
-**Code Description**: This function first determines which slots to calculate actions for, either using the provided slots_list or all players if self._calculate_all_policies is True. It then transforms the observation using the _network_handler's observation_transform method, passing in the observation, legal actions, slots to calculate, previous state, and temperature. The transformed observation is then used for inference by the _network_handler, producing initial outputs and step outputs, as well as final actions. Finally, the function returns a list of final actions for each slot in the original slots_list, along with a dictionary containing additional information about the step, including values, policy, and actions.
+**parameters**: 
+· slots_list: A sequence of integers representing the slots for which this policy should generate actions.
+· observation: An instance of utils.Observation containing data from the environment.
+· legal_actions: A sequence of numpy arrays indicating the legal actions available to each player in the game.
 
-**Note**: The function relies on several instance variables, including self._num_players, self._calculate_all_policies, self._network_handler, self._obs_transform_state, and self._temperature. It also assumes that the _network_handler has methods for observation transformation and inference. The output of this function is a tuple containing a list of lists of actions and a dictionary with additional step information.
+**Code Description**: The function begins by determining whether it needs to calculate policies for all players or just those specified in slots_list. It then transforms the observation using a network handler, taking into account the legal actions, the slots to calculate, the previous state of the observation transformation, and a temperature parameter. Following this, the function performs inference on the transformed observations to generate initial outputs, step outputs, and final actions. The final actions are filtered according to the slots_list provided as input, and these actions along with some additional information from the step outputs (values, policy, and actions) are returned.
 
-**Output Example**: The return value of this function could be a tuple where the first element is a list of lists of integers, such as [[1, 2, 3], [4, 5, 6]], representing the final actions for each slot, and the second element is a dictionary like {'values': [0.1, 0.2, 0.3], 'policy': [0.4, 0.5, 0.6], 'actions': [0.7, 0.8, 0.9]}, containing additional information about the step.
+**Note**: Ensure that the observation and legal_actions parameters are correctly formatted as expected by the network handler's methods. The temperature parameter influences the randomness of the action selection process during inference.
+
+**Output Example**: 
+([array([1, 2]), array([3])], {'values': [0.5, 0.7], 'policy': [[0.1, 0.9], [0.4, 0.6]], 'actions': [array([1, 2]), array([3])]})
 ***

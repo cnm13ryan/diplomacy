@@ -1,224 +1,322 @@
 ## FunctionDef apply_unbatched(f)
-**apply_unbatched**: The function of apply_unbatched is to apply a given function to unbatched input arguments and keyword arguments, then remove the batch dimension from the output.
-**parameters**: The parameters of this Function.
-· f: the function to be applied to the unbatched input
-· *args: variable number of non-keyword arguments to be passed to the function
-· **kwargs: variable number of keyword arguments to be passed to the function
-**Code Description**: This function first applies the given function f to the input arguments and keyword arguments after expanding their dimensions using tree_utils.tree_expand_dims. The result is stored in the batched variable. Then, it uses tree.map_structure to remove the batch dimension (axis 0) from each array in the batched output using np.squeeze. This process effectively "unbatches" the output of the function f. In the context of the project, this function is used by the SequenceNetworkHandler's inference method to apply the batch_inference function to unbatched input and obtain the outputs and final actions.
-**Note**: The function assumes that the input arguments and keyword arguments can be expanded using tree_utils.tree_expand_dims, and that the output of the function f has a batch dimension that can be removed using np.squeeze. Additionally, the function relies on the tree.map_structure function to apply the np.squeeze operation to each array in the batched output.
-**Output Example**: The return value of this function will be the result of applying the function f to the unbatched input arguments and keyword arguments, with the batch dimension removed from the output. For example, if the function f returns a tuple of arrays, the output might look like (array([1, 2, 3]), array([4, 5, 6])), where each array has had its batch dimension removed.
+**apply_unbatched**: The function of apply_unbatched is to process a batched input by expanding its dimensions, applying a given function, and then squeezing the output back to its original unbatched form.
+
+**parameters**: 
+· f: A callable function that expects batched inputs.
+· *args: Variable length argument list representing positional arguments for the function `f`.
+· **kwargs: Arbitrary keyword arguments for the function `f`.
+
+**Code Description**: The apply_unbatched function is designed to handle scenarios where a function `f` is intended to work with batched data but needs to be applied to unbatched inputs. It achieves this by first expanding the dimensions of both positional and keyword arguments using `tree_utils.tree_expand_dims`. This expansion effectively simulates a batch size of 1 for each input, making it compatible with functions that expect batched data. The function `f` is then called with these expanded arguments. After processing, the output from `f`, which includes an additional batch dimension, is squeezed back to its original shape using `tree.map_structure` and `np.squeeze`. This squeezing operation removes the leading dimension (axis 0), thus returning the result in an unbatched form.
+
+In the context of the project, apply_unbatched is utilized within the `inference` method of the `SequenceNetworkHandler` class. Specifically, it is used to call `self.batch_inference`, which presumably processes data in batches. By wrapping this call with `apply_unbatched`, the `inference` method can handle unbatched inputs seamlessly, ensuring that the underlying batch processing function operates correctly without requiring modifications.
+
+**Note**: It is crucial that the function `f` provided to apply_unbatched expects and handles batched data appropriately. Additionally, ensure that all elements within `args` and `kwargs` are compatible with the operations performed by `tree_utils.tree_expand_dims` and `np.squeeze`.
+
+**Output Example**: If `f` processes a single input array of shape `(3,)` and returns an output array of shape `(3,)`, calling `apply_unbatched(f, np.array([1, 2, 3]))` would result in the same output array of shape `(3,)`. The function internally handles the temporary expansion to `(1, 3)` and subsequent squeezing back to `(3,)`.
 ## FunctionDef fix_waives(action_list)
-**fix_waives**: The function of fix_waives is to modify an action list so that it contains at most one waive action, which is moved to the end of the list.
-**parameters**: The parameters of this Function.
-· action_list: a list of actions that may contain waive actions and needs to be modified.
-**Code Description**: This function works by first separating the input action_list into two lists: non_waive_actions and waive_actions. The non_waive_actions list contains all actions from the original list that are not waive actions, while the waive_actions list contains all actions that are waive actions. If there are any waive actions in the original list, the function then returns a new list that combines all non-waive actions with only one waive action, which is taken from the beginning of the waive_actions list and moved to the end of the resulting list. If there are no waive actions in the original list, the function simply returns the list of non-waive actions. This function is used by fix_actions to ensure that the output of a network is compatible with game runners, specifically by modifying the actions for each power in a board state to have at most one waive action at the end.
-**Note**: It's important to note that this function modifies the input list by truncating any consecutive waive actions to a single waive action and moving it to the end. This ensures that build lists are invariant to order and can be of fixed length, which is necessary for compatibility with game runners.
-**Output Example**: If the input action_list is [action1, action2, waive, action3, waive], the output of fix_waives would be [action1, action2, action3, waive]. If the input list is [action1, action2, action3] with no waive actions, the output would be [action1, action2, action3].
+**fix_waives**: The function of fix_waives is to modify an action list so that there is at most one waive action, which is moved to the end of the list.
+
+**parameters**: 
+· action_list: A list of actions that may include waive actions.
+
+**Code Description**: The function processes an input list of actions by separating non-waive and waive actions. It uses a helper function `action_utils.is_waive` to identify waive actions. Non-waive actions are collected in one list, while waive actions are collected in another. If there are any waive actions present, the function returns a new list consisting of all non-waive actions followed by at most one waive action. This ensures that the order of non-waive actions is preserved and that the presence of waive actions does not affect the length or structure of the list beyond ensuring there is only one waive action at the end.
+
+In the context of the project, `fix_waives` is called within the `fix_actions` function. The `fix_actions` function processes a list of actions for all powers in a single board state, filtering out zero actions and converting remaining actions to their corresponding possible actions using `action_utils.POSSIBLE_ACTIONS`. After this conversion, `fix_waives` is applied to each power's action list to ensure that the conditions specified by `fix_waives` are met. This step is crucial for maintaining consistency in the environment's state transitions and ensuring compatibility with game runners.
+
+**Note**: The function modifies the order of actions but ensures that non-waive actions remain in their original sequence, and waive actions are consolidated to a single instance at the end of the list if multiple waive actions were present.
+
+**Output Example**: Given an input `action_list` of `[action1, waive_action, action2, waive_action]`, the function would return `[action1, action2, waive_action]`. If there were no waive actions in the input, the output would simply be the list of non-waive actions.
 ## FunctionDef fix_actions(actions_lists)
-**fix_actions**: The function of fix_actions is to modify network action outputs to be compatible with game runners by filtering out zero actions and fixing waive actions.
-**parameters**: The parameters of this Function.
-· actions_lists: A list of actions for all powers in a single board state, where each action is a shrunk action.
-**Code Description**: This function works by first iterating over the input actions_lists and filtering out any zero actions. It then appends the non-zero actions to a new list called non_zero_actions. After that, it fixes waive actions in each power's action list by calling the fix_waives function. The fix_waives function ensures that there is at most one waive action in each power's action list and moves it to the end of the list. Finally, the function returns a list of fixed action lists for all powers.
-The function is used by the SequenceNetworkHandler's batch_inference method to process the output of a network inference call. The batch_inference method calls fix_actions to modify the actions for each board state in the output, ensuring that they are compatible with game runners.
-**Note**: It's essential to note that this function modifies the input action lists by removing zero actions and fixing waive actions. This modification is necessary to ensure compatibility with game runners, which require a specific format for action inputs.
-**Output Example**: If the input actions_lists is a list of lists containing shrunk actions, such as [[0, 1, 2], [3, 0, 4]], the output of fix_actions would be a list of lists where each inner list contains only non-zero actions and at most one waive action at the end. For example, if the input is [[action1, 0, action2], [action3, waive, action4]], the output might be [[action1, action2], [action3, action4, waive]].
+**fix_actions**: The function of fix_actions is to process network action outputs to ensure they are compatible with game_runners by filtering out zero actions and converting remaining actions to their corresponding possible actions.
+
+**parameters**: 
+· actions_lists: Actions for all powers in a single board state (i.e., output of a single inference call). Note that these are shrunk actions (see action_utils.py).
+
+**Code Description**: The function iterates over the list of actions for each power, filtering out any zero actions and converting non-zero actions to their corresponding possible actions using `action_utils.POSSIBLE_ACTIONS`. After this conversion, it applies the `fix_waives` function to each power's action list. The `fix_waives` function ensures that there is at most one waive action in the list, which is moved to the end of the list if necessary. This step is crucial for maintaining consistency in the environment's state transitions and ensuring compatibility with game runners.
+
+In the context of the project, `fix_actions` is called within the `batch_inference` method of the `SequenceNetworkHandler` class. The `batch_inference` method performs inference on unbatched observations and states, generating initial outputs and step outputs. The step outputs include actions for each board state, which are then processed by `fix_actions`. This ensures that the actions are sanitized and ready to be used for stepping the environment.
+
+**Note**: The function modifies the order of actions but ensures that non-waive actions remain in their original sequence, and waive actions are consolidated to a single instance at the end of the list if multiple waive actions were present. It is important to ensure that the input `actions_lists` contains valid shrunk actions as expected by `action_utils.POSSIBLE_ACTIONS`.
+
+**Output Example**: Given an input `actions_lists` of `[[0, 123456, 0], [789012, 0]]`, where `123456 >> 16` corresponds to a valid action in `action_utils.POSSIBLE_ACTIONS`, the function would return `[[action_utils.POSSIBLE_ACTIONS[123456 >> 16]], [action_utils.POSSIBLE_ACTIONS[789012 >> 16]]]`. If there were waive actions present, they would be moved to the end of each power's action list as per the `fix_waives` function.
 ## ClassDef ParameterProvider
 **ParameterProvider**: The function of ParameterProvider is to load and expose network parameters that have been saved to disk.
-**attributes**: The attributes of this Class.
-· _params: stores the loaded network parameters
-· _net_state: stores the state of the network
-· _step: stores the step counter of the network
-· file_handle: an input/output stream used to load the network parameters from disk
 
-**Code Description**: The ParameterProvider class is designed to load and provide access to network parameters that have been saved to disk. When an instance of this class is created, it takes a file handle as input and uses it to load the network parameters, state, and step counter using the dill.load function. These loaded values are then stored in the _params, _net_state, and _step attributes of the class, respectively. The params_for_actor method returns these loaded values as a tuple, which can be used by other classes, such as SequenceNetworkHandler, to initialize their own network parameters. In the context of the project, the ParameterProvider class is used by the SequenceNetworkHandler class to load and provide access to the network parameters, which are then used for inference and other network-related operations.
+attributes:
+· _params: Stores the loaded network parameters.
+· _net_state: Stores the state of the network.
+· _step: Represents the step counter or iteration number associated with the parameters.
 
-**Note**: When using this class, it is essential to ensure that the file handle provided as input is a valid stream that contains the saved network parameters. Additionally, the dill.load function is used to deserialize the network parameters from disk, so it is crucial to ensure that the serialized data is in the correct format and can be safely deserialized.
+Code Description: 
+The ParameterProvider class is designed to handle the loading and exposure of pre-saved network parameters, network state, and a step counter from a file. The constructor (`__init__`) takes an `io.IOBase` object as input, which represents a file handle. It uses the `dill.load()` method to deserialize the contents of the file into three attributes: `_params`, `_net_state`, and `_step`. These attributes are then accessible through the class methods.
 
-**Output Example**: The output of the params_for_actor method would be a tuple containing three values: the network parameters (_params), the network state (_net_state), and the step counter (_step). For example, the output might look like this: (hk.Params(...), hk.Params(...), jnp.ndarray(...)), where the actual values depend on the specific network architecture and training data used to generate the saved network parameters.
+The primary method provided by this class is `params_for_actor()`, which returns a tuple containing the network parameters (`_params`), network state (`_net_state`), and step counter (`_step`). This method is intended to be used by other components of the system, such as the SequenceNetworkHandler, to obtain the necessary parameters for their operations.
+
+In the context of the project, the ParameterProvider class is utilized by the `SequenceNetworkHandler` during its initialization. Specifically, an instance of ParameterProvider is passed to the `SequenceNetworkHandler` constructor via the `parameter_provider` argument. The `SequenceNetworkHandler` then uses this provider to obtain the network parameters and state through the `params_for_actor()` method. These parameters are crucial for setting up the network's initial state and ensuring that it operates with the correct weights and configurations.
+
+Note: It is essential to ensure that the file handle provided to the ParameterProvider constructor points to a valid file containing serialized data in the expected format (i.e., a tuple of `_params`, `_net_state`, and `_step`). Failure to do so may result in errors during deserialization or incorrect behavior of the network.
+
+Output Example: 
+A possible appearance of the code's return value from `params_for_actor()` could be:
+(({'layer1': {'w': array([...]), 'b': array([...])}, ...}), ({'layer1': {'running_mean': array([...]), 'running_var': array([...])}, ...}), 42)
+This output represents a tuple where the first element is a dictionary of network parameters, the second element is a dictionary representing the state of the network layers, and the third element is an integer indicating the step counter.
 ### FunctionDef __init__(self, file_handle)
-**__init__**: The function of __init__ is to initialize the ParameterProvider object by loading parameters from a file handle.
-**parameters**: The parameters of this Function.
-· file_handle: an instance of io.IOBase, which represents a file or other IO device that can be used for reading the parameters.
-**Code Description**: The description of this Function. 
-The __init__ function is a special method in Python classes known as a constructor, which is automatically called when an object of the class is instantiated. In this case, it takes one parameter, file_handle, which is expected to be a file or other IO device that can be read from. The function uses the dill.load method to deserialize the parameters, network state, and step from the file handle and assigns them to the instance variables self._params, self._net_state, and self._step respectively.
-**Note**: Points to note about the use of the code. 
-When using this function, it is essential to ensure that the provided file handle is a valid IO device that can be read from, and that it contains the serialized parameters in the correct format, as expected by the dill.load method. Failure to do so may result in errors or unexpected behavior. Additionally, the dill library is used for serialization, which may pose security risks if used with untrusted input, as it can execute arbitrary Python code. Therefore, it is crucial to only use this function with trusted input sources.
+**__init__**: The function of __init__ is to initialize a ParameterProvider instance by loading parameters, network state, and step from a given file handle.
+
+parameters: 
+· file_handle: An IOBase object representing an open file from which the parameters, network state, and step will be loaded.
+
+Code Description: The __init__ method takes a single parameter, `file_handle`, which is expected to be an instance of `io.IOBase`. This could include any subclass such as `io.FileIO` or `io.StringIO`, provided it supports file-like operations. Inside the method, the `dill.load()` function is used to deserialize and load data from the file handle into three attributes of the class: `_params`, `_net_state`, and `_step`. The `dill` library is a robust serialization tool that can serialize complex Python objects, making it suitable for loading potentially intricate network states or parameters.
+
+Note: Points to note about the use of the code
+- Ensure that the file handle passed to this method is properly opened in read-binary mode ('rb') if it points to a binary file.
+- The file must contain data serialized by `dill` and structured as a tuple (or list) with three elements corresponding to parameters, network state, and step. Failure to meet these conditions will result in errors during deserialization.
+- It is the caller's responsibility to manage the lifecycle of the file handle, including opening and closing it appropriately. This method does not close the file after loading the data.
 ***
 ### FunctionDef params_for_actor(self)
-**params_for_actor**: The function of params_for_actor is to provide parameters for a SequenceNetworkHandler.
-**parameters**: The parameters of this Function.
-· self: a reference to the current instance of the class
-**Code Description**: This function returns a tuple containing three values: self._params, self._net_state, and self._step. These values are likely used to initialize or update the state of a SequenceNetworkHandler. The function is called by the reset method of the SequenceNetworkHandler class, where it is used to retrieve the learner state from the parameter provider and assign it to the handler's attributes. The specific usage of these parameters depends on the implementation of the SequenceNetworkHandler, but in general, they seem to be related to the network's parameters, state, and step counter.
-**Note**: It is essential to ensure that the parameter provider has been properly initialized and configured before calling this function, as it relies on the internal state of the provider. Additionally, the return values of this function should be handled correctly by the caller to avoid any potential errors or inconsistencies.
-**Output Example**: A possible appearance of the code's return value could be a tuple containing a set of network parameters, a network state, and a step counter value, such as (hk.Params(...), hk.Params(...), jnp.ndarray([1, 2, 3])). The actual values would depend on the specific implementation and configuration of the parameter provider and the SequenceNetworkHandler.
+**params_for_actor**: The function of params_for_actor is to provide parameters required by a SequenceNetworkHandler.
+
+parameters: This Function does not take any parameters.
+
+Code Description: The params_for_actor method returns a tuple containing three elements: self._params, self._net_state, and self._step. These elements represent the parameters, network state, and step counter respectively, which are essential for the operation of a SequenceNetworkHandler. Specifically, this function is called within the reset method of the SequenceNetworkHandler class to initialize or reinitialize its internal states with the values provided by the ParameterProvider instance.
+
+Note: This function should be used in conjunction with a SequenceNetworkHandler instance that has been properly configured with a ParameterProvider. The returned parameters are expected to be used for setting up or resetting the network's state and step counter.
+
+Output Example: (array([[[0.1, 0.2], [0.3, 0.4]]]), {'optimizer_state': {'count': DeviceArray(0, dtype=int32)}}, DeviceArray(0, dtype=int32))
 ***
 ## ClassDef SequenceNetworkHandler
-**SequenceNetworkHandler**: The function of SequenceNetworkHandler is to turn a Network into a Diplomacy bot by forwarding observations and receiving policy outputs, handling network parameters, batching, and observation processing.
+**SequenceNetworkHandler**: The function of SequenceNetworkHandler is to integrate a neural network as a policy for playing Diplomacy by handling network parameters, batching, and observation processing.
 
-**attributes**: The attributes of this Class.
-· _rng_key: a random number generator key used for various purposes
-· _network_cls: the class of the network being handled
-· _network_config: the configuration of the network being handled
-· _observation_transformer: an object responsible for transforming observations
-· _parameter_provider: an object that provides parameters to the handler
-· _params: the current parameters of the network
-· _state: the current state of the network
-· _step_counter: a counter keeping track of the number of steps taken
+attributes:
+· _rng_key: A JAX random number generator key used for generating random numbers.
+· _network_cls: The class of the neural network used in the handler.
+· _network_config: Configuration dictionary for the neural network.
+· _observation_transformer: An instance of an observation transformer created from the network class and configuration.
+· _parameter_provider: An instance of ParameterProvider that provides parameters to the actor.
+· _network_inference: A JIT-compiled function for performing inference using the network's "inference" method.
+· _network_shared_rep: A JIT-compiled function for computing shared representations using the network's "shared_rep" method.
+· _network_initial_inference: A JIT-compiled function for initial inference using the network's "initial_inference" method.
+· _network_step_inference: A JIT-compiled function for step-wise inference using the network's "step_inference" method.
+· _network_loss_info: A JIT-compiled function for computing loss information using the network's "loss_info" method.
+· _params: Parameters of the neural network, initialized to None.
+· _state: State of the neural network, initialized to None.
+· _step_counter: Counter tracking the number of steps taken by the handler, initialized to -1.
 
-**Code Description**: The SequenceNetworkHandler class is designed to interact with a Network and facilitate its use as a Diplomacy bot. Upon initialization, it sets up the necessary components, including the random number generator key, network class, network configuration, observation transformer, and parameter provider. It also defines several methods for transforming observations, computing losses, performing inference, and retrieving variables. The _apply_transform method is used to apply transformations to the network's outputs, while the batch_inference method performs inference on unbatched observations and states. The compute_losses method computes losses based on given inputs, and the inference method applies the network to a single observation or state.
+Code Description:
+The SequenceNetworkHandler class is designed to facilitate the use of a neural network as a policy in the game Diplomacy. It initializes with a specified network class and configuration, setting up an observation transformer for processing observations and compiling several methods of the network (inference, shared_rep, initial_inference, step_inference, loss_info) using JAX's transform_with_state and jit functionalities to optimize performance.
 
-The class also provides several properties and methods for accessing and manipulating the network's parameters, state, and step counter. For example, the reset method resets the handler's parameters, state, and step counter using the parameter provider, while the variables method returns the current parameters of the network. The observation_transform method applies the observation transformer to given observations, and the zero_observation method returns a zero-valued observation.
+The reset method retrieves parameters, state, and step counter from a ParameterProvider instance. The _apply_transform method applies a given transformation function with current parameters, state, and a new random key, converting the output to numpy arrays for compatibility.
 
-**Note**: When using this class, it is essential to ensure that the network class and configuration are compatible with the handler's requirements. Additionally, the parameter provider should be properly configured to provide the necessary parameters to the handler. The _rng_key attribute is used for various purposes, including splitting the random number generator key, so it should not be modified directly.
+The batch_inference method performs inference on unbatched observations, optionally creating multiple copies of each observation based on num_copies_each_observation. It returns both initial outputs and step outputs from the network, along with final actions derived from step outputs.
 
-**Output Example**: When calling the batch_inference method, the output might look like a tuple containing two dictionaries, where each dictionary represents the initial and step outputs of the network, respectively. For example: (({'actions': [...], 'values': [...]}, {'actions': [...], 'values': [...]}), [final_actions])
+The compute_losses method computes loss information using the _network_loss_info function. The inference method applies batch_inference to unbatched inputs and returns outputs and final actions.
+
+The batch_loss_info method calculates loss information for a batch of data points by applying the _network_loss_info function and converting the result to numpy arrays. Additional methods (observation_transform, zero_observation, observation_spec) are provided for transforming observations, creating zero observations, and obtaining observation specifications respectively.
+
+Note: The handler relies on external components such as ParameterProvider and JAX functionalities. Ensure that these dependencies are correctly set up before using SequenceNetworkHandler.
+
+Output Example:
+A call to batch_inference might return a tuple containing initial outputs and step outputs from the network, along with final actions derived from step outputs. For example:
+
+(((initial_output_1, initial_output_2), {'actions': [action_1, action_2]}), [final_action_1, final_action_2])
 ### FunctionDef __init__(self, network_cls, network_config, rng_seed, parameter_provider)
-**__init__**: The function of __init__ is to initialize the SequenceNetworkHandler class by setting up the network configuration, random number generator, and parameter provider.
+**__init__**: The function of __init__ is to initialize the SequenceNetworkHandler with necessary configurations and components.
 
-**parameters**: The parameters of this Function.
-· network_cls: The class of the network to be used.
-· network_config: A dictionary containing the configuration for the network.
-· rng_seed: An optional integer seed for the random number generator, which defaults to a random value if not provided.
-· parameter_provider: An instance of the ParameterProvider class that provides access to saved network parameters.
+parameters:
+· network_cls: The class of the network that will be used.
+· network_config: A dictionary containing configuration parameters for the network.
+· rng_seed: An optional integer representing the seed for random number generation. If not provided, a random seed will be generated.
+· parameter_provider: An instance of ParameterProvider to load and expose network parameters.
 
-**Code Description**: The __init__ function initializes the SequenceNetworkHandler class by first checking if a random seed is provided. If not, it generates a random seed and logs this value. It then sets up the random number generator using the provided or generated seed. The function also stores the network class and configuration for later use. Additionally, it creates an observation transformer using the provided network class and configuration. The function then defines a helper function called transform that is used to create jitted versions of various network methods, including inference, shared representation, initial inference, step inference, and loss information. These jitted methods are stored as instance variables for later use. Finally, the function initializes several instance variables, including params, state, and step counter, which are set to None or default values.
+Code Description: The __init__ function initializes the SequenceNetworkHandler with the specified network class, configuration, and parameter provider. It sets up a random number generator key using the provided or randomly generated seed. The function then creates an observation transformer by calling the get_observation_transformer method of the network class with the configuration and a subkey derived from the main rng_key.
 
-**Note**: When using this class, it is essential to provide a valid ParameterProvider instance that has access to saved network parameters. Additionally, the random seed used by the class can affect the behavior of the network, so it may be necessary to carefully select a seed value for reproducibility.
+A nested function named transform is defined within __init__. This function takes a function name and optional static argument numbers, and returns a JIT-compiled version of the specified network function. The transform function creates an instance of the network using the provided configuration, retrieves the specified function by name, and applies it to the arguments. It uses Haiku's transform_with_state method to handle stateful computations and JAX's jit method for just-in-time compilation.
 
-**Output Example**: This function does not return any output, as it is an initializer method that sets up the state of the SequenceNetworkHandler instance. However, the instance variables set by this function can be accessed and used later in the program, such as the jitted network methods or the parameter provider.
+The __init__ function initializes several network methods (inference, shared_rep, initial_inference, step_inference, loss_info) using the transform function with appropriate static argument numbers where applicable. It also initializes attributes for parameters (_params), state (_state), and a step counter (_step_counter).
+
+Note: The rng_seed parameter is optional, and if not provided, a random seed will be generated and logged. The network_config dictionary must contain all necessary configuration parameters required by the specified network class.
+
+Output Example: No direct output from __init__, but the initialized SequenceNetworkHandler object will have attributes such as _rng_key, _network_cls, _network_config, _observation_transformer, _parameter_provider, and several JIT-compiled network methods. The _params and _state attributes are initially set to None and will be populated later when parameters are loaded through the parameter provider.
 #### FunctionDef transform(fn_name, static_argnums)
-**transform**: The function of transform is to create a just-in-time compiled version of a given network function with optional static argument numbers.
-**parameters**: The parameters of this Function.
-· fn_name: The name of the network function to be transformed.
-· static_argnums: A tuple of argument indices that should be treated as static, defaulting to an empty tuple.
+**transform**: The function of transform is to create a JIT-compiled JAX function that applies a specified method from a network instance.
 
-**Code Description**: This function works by first defining a forward pass function `fwd` that creates an instance of the network class with the provided configuration, retrieves the specified function from the network instance using `getattr`, and then applies this function to the given arguments. The `hk.transform_with_state` function is then used to transform the `fwd` function into a stateful function, which is subsequently compiled just-in-time by `jax.jit`. The resulting compiled function is then returned.
+**parameters**:
+· fn_name: A string representing the name of the method to be called on an instance of `network_cls`.
+· static_argnums: An optional tuple specifying which arguments should be treated as static (i.e., not traced by JAX). Default is an empty tuple, indicating no static arguments.
 
-**Note**: It's essential to note that the network class and configuration should be defined in the scope where this function is called. Additionally, the static argument numbers specified by `static_argnums` will be treated as compile-time constants, which can improve performance but may also limit flexibility.
+**Code Description**: The function `transform` takes a method name (`fn_name`) and an optional tuple of argument indices (`static_argnums`). It defines an inner function `fwd` that initializes an instance of `network_cls` using the provided `network_config`, retrieves the specified method from this instance, and calls it with the given arguments. The `hk.transform_with_state(fwd).apply` is then used to create a JAX-compatible apply function, which is subsequently JIT-compiled with `jax.jit`. The static argument numbers are passed to ensure that certain arguments are not traced during compilation, optimizing performance for those parameters.
 
-**Output Example**: The output of this function would be a compiled version of the specified network function, which could be applied to input arguments to produce an output, for example: `compiled_fn = transform('my_network_function'); output = compiled_fn(input_args)`.
+**Note**: Ensure that `network_cls` and `network_config` are defined in the scope where this function is called. The method specified by `fn_name` must exist on instances of `network_cls`. Incorrect values for `static_argnums` can lead to errors or suboptimal performance.
+
+**Output Example**: If `transform('forward', static_argnums=(0,))` is called and `fn_name='forward'` corresponds to a method that takes two arguments, the output will be a JIT-compiled function that applies the `forward` method of an instance of `network_cls`, treating the first argument as static.
 ##### FunctionDef fwd
-**fwd**: The function of fwd is to invoke a specific method on an instance of a network class with given arguments. 
-**parameters**: The parameters of this Function.
-· *args: variable number of non-keyword arguments to be passed to the invoked method
-· **kwargs: variable number of keyword arguments to be passed to the invoked method
-**Code Description**: This function initializes an instance of a network class using the provided network configuration, retrieves a specific method from the network instance based on the fn_name attribute, and then invokes this method with the given arguments. The result of the method invocation is returned as the output of the fwd function. The network instance is created using the network_cls and network_config, which are expected to be defined in the context where the fwd function is used.
-**Note**: The correct usage of this function relies on the availability of network_cls, network_config, and fn_name in the scope where it is called. Additionally, the method specified by fn_name should exist in the network instance and accept the provided arguments.
-**Output Example**: The return value will depend on the specific method invoked on the network instance, but for example, if the method is a forward pass through a neural network, the output might be a tensor or an array representing the predicted values.
+**fwd**: The function of fwd is to instantiate a network using a specified configuration and then call a designated method on this network instance with provided arguments.
+
+parameters: 
+· *args: Variable length argument list that will be passed to the method specified by fn_name.
+· **kwargs: Arbitrary keyword arguments that will also be passed to the method specified by fn_name.
+
+Code Description: The function fwd begins by creating an instance of a network class (network_cls) using the provided configuration dictionary (network_config). It then retrieves a method from this network instance using the getattr function, where the name of the method is stored in the variable fn_name. Finally, it calls this retrieved method with all positional and keyword arguments that were passed to fwd.
+
+Note: The variables network_cls, network_config, and fn_name must be defined in the scope where fwd is called for the function to work correctly. Ensure that these variables are properly initialized before invoking fwd.
+
+Output Example: Assuming network_cls is a class representing a neural network model with a method named 'predict', and network_config contains all necessary parameters to initialize this model, calling fwd with appropriate arguments would return the output of the predict method. For instance, if the predict method returns predictions for input data, then fwd would return these predictions.
 ***
 ***
 ***
 ### FunctionDef reset(self)
-**reset**: The function of reset is to reinitialize the state of the SequenceNetworkHandler by retrieving the learner state from the parameter provider.
-**parameters**: The parameters of this Function.
-· self: a reference to the current instance of the class
-**Code Description**: This function checks if a parameter provider is available, and if so, it calls the params_for_actor method of the parameter provider to retrieve the learner state. The retrieved state is then unpacked into three attributes of the SequenceNetworkHandler: _params, _state, and _step_counter. This process effectively resets the handler's state to the current learner state provided by the parameter provider.
-**Note**: It is essential to ensure that the parameter provider has been properly initialized and configured before calling this function, as it relies on the internal state of the provider. The params_for_actor method of the parameter provider returns a tuple containing three values: parameters, network state, and step counter, which are then assigned to the corresponding attributes of the SequenceNetworkHandler.
+**reset**: The function of reset is to reinitialize the internal states of a SequenceNetworkHandler using parameters provided by its associated ParameterProvider.
+
+parameters: This Function does not take any parameters.
+
+Code Description: The reset method checks if a _parameter_provider instance is available. If it is, the method calls the params_for_actor function on this provider to obtain a tuple containing three elements: self._params, self._net_state, and self._step. These elements represent the network's parameters, its state, and a step counter respectively. The reset method then assigns these values back to the corresponding attributes of the SequenceNetworkHandler instance (self._params, self._state, and self._step_counter). This process effectively resets or initializes the internal states of the SequenceNetworkHandler with the latest values provided by the ParameterProvider.
+
+Note: This function should be used in conjunction with a properly configured SequenceNetworkHandler that has been associated with a ParameterProvider. The reset method is crucial for ensuring that the network's state and parameters are correctly set up before starting a new sequence or after completing a previous one, thereby maintaining consistency and accuracy in the network's operations.
 ***
 ### FunctionDef _apply_transform(self, transform)
-**_apply_transform**: The function of _apply_transform is to apply a given transformation to the network parameters and state, utilizing a random key for the process.
-**parameters**: The parameters of this Function.
-· transform: A function that defines the transformation to be applied to the network parameters and state.
-· *args: Variable number of positional arguments to be passed to the transformation function.
-· **kwargs: Variable number of keyword arguments to be passed to the transformation function.
-**Code Description**: This function is a crucial component in the SequenceNetworkHandler class, responsible for applying transformations to the network's parameters and state. It first splits the current random key into two subkeys, one of which is used for the transformation process. The transformation function is then called with the network parameters, state, subkey, and any additional arguments provided. The output of the transformation function is processed using tree.map_structure to convert it into a numpy array format. This function is utilized by other methods in the class, such as batch_inference and compute_losses, to perform specific tasks like inference and loss computation.
-**Note**: It is essential to note that this function relies on the jax.random.split function to generate subkeys for the transformation process, ensuring randomness in the computations. Additionally, the transform function passed to _apply_transform should be designed to handle the network parameters, state, and random key appropriately.
-**Output Example**: The return value of _apply_transform will depend on the specific transformation applied, but it is expected to be a numpy array or a structure of numpy arrays, representing the result of the transformation process. For instance, in the context of batch_inference, the output might include initial and step outputs, which are further processed to obtain final actions.
+**_apply_transform**: The function of _apply_transform is to apply a given transformation to the parameters and state using a random key, and then convert the output to numpy arrays.
+
+parameters: 
+· transform: A callable that takes parameters, state, a random subkey, and additional arguments or keyword arguments. This callable performs some computation or transformation.
+· *args: Additional positional arguments passed to the transform function.
+· **kwargs: Additional keyword arguments passed to the transform function.
+
+Code Description: The _apply_transform method first splits the current random key (self._rng_key) into two parts, retaining one part and passing the other as a subkey to the transformation. This ensures that each call to _apply_transform uses a different random seed for reproducibility and randomness in computations. The transform function is then called with the parameters (self._params), state (self._state), the new subkey, and any additional arguments or keyword arguments provided. The output of the transform function is expected to be a tuple where the first element is the result of the transformation and the second element is an unused state. Finally, the method converts all elements in the output structure to numpy arrays using tree.map_structure(np.asarray) before returning it.
+
+The _apply_transform method is used by other methods within the SequenceNetworkHandler class to apply specific transformations that require randomness and parameter/state management. For example, in batch_inference, it applies a network inference function (self._network_inference) with observations and optional num_copies_each_observation arguments to perform inference on unbatched data. In compute_losses, it applies a network loss computation function (self._network_loss_info) with any provided arguments or keyword arguments to calculate losses.
+
+Note: The transform function must return a tuple where the first element is the output of interest and the second element is an unused state. This method assumes that the transform function can handle additional positional and keyword arguments.
+
+Output Example: If the transform function returns a tuple (result, _), where result is a dictionary {'actions': [[1, 2], [3, 4]]}, the output of _apply_transform would be {'actions': array([[1, 2], [3, 4]])}.
 ***
 ### FunctionDef batch_inference(self, observation, num_copies_each_observation)
-**batch_inference**: The function of batch_inference is to perform inference on unbatched observations and states.
-**parameters**: The parameters of this Function.
-· observation: The input observation to be used for inference.
-· num_copies_each_observation: An optional parameter that specifies the number of copies to make for each observation. If provided, it will be converted to a tuple to avoid recompilation.
+**batch_inference**: The function of batch_inference is to perform inference on unbatched observations and states, generating initial outputs and step outputs, and then process the actions from the step outputs.
 
-**Code Description**: This function is designed to handle batch inference on unbatched observations and states. It first checks if the num_copies_each_observation parameter is provided, and if so, converts it to a tuple. Then, it calls the _apply_transform method, passing in the _network_inference function, observation, and num_copies_each_observation as arguments. The _apply_transform method applies a transformation to the network parameters and state using a random key, and returns the output of the transformation. The batch_inference function then extracts the initial and step outputs from the result, and processes the step_output to obtain the final actions by calling the fix_actions function for each set of actions in the step_output.
+parameters: 
+· observation: Unbatched observation data used for inference.
+· num_copies_each_observation: Optional parameter specifying the number of copies for each observation. If provided, it should be a list or tuple indicating how many times each corresponding observation should be copied.
 
-The fix_actions function is used to modify the network action outputs to be compatible with game runners by filtering out zero actions and fixing waive actions. The batch_inference function returns a tuple containing the initial and step outputs, as well as the final actions.
+Code Description: The batch_inference method starts by checking if the num_copies_each_observation parameter is not None. If it is provided, it converts this parameter to a tuple to ensure that static_argnums recognizes it as unchanged and avoids recompilation during JAX operations. The method then calls _apply_transform with the network inference function (self._network_inference), passing in the observation and num_copies_each_observation. This call performs the actual inference, returning initial outputs and step outputs.
 
-It's worth noting that this function is called by the inference method of the SequenceNetworkHandler class, which applies the unbatched function to the input arguments using the apply_unbatched function. This suggests that the batch_inference function is designed to work with unbatched inputs, and is used as part of a larger inference process.
+The step outputs include actions for each board state, which are then processed by the fix_actions function. The fix_actions function filters out zero actions from these lists and converts remaining actions to their corresponding possible actions using action_utils.POSSIBLE_ACTIONS. It also ensures that there is at most one waive action in each power's action list, moving it to the end if necessary.
 
-**Note**: The num_copies_each_observation parameter should be provided as an integer or a list of integers, which will be converted to a tuple internally. Additionally, the observation input should be in a format that can be processed by the _network_inference function.
+The method returns a tuple containing the initial outputs and step outputs, along with the processed final actions. This ensures that the actions are sanitized and ready for use in stepping the environment.
 
-**Output Example**: The return value of batch_inference will be a tuple containing two elements: the initial and step outputs, and the final actions. For example, if the input observation is a single board state, the output might look like ((initial_output, step_output), [final_actions]), where final_actions is a list of lists containing the fixed action lists for each power in the board state.
+Note: The function modifies the order of actions but maintains the sequence of non-waive actions and consolidates waive actions to a single instance at the end of each power's action list if multiple waive actions were present. It is important to ensure that the input observation contains valid data as expected by the network inference function.
+
+Output Example: Given an input observation with two board states, where one state has actions [0, 123456, 0] and the other has actions [789012, 0], the batch_inference method would return a tuple containing the initial outputs and step outputs. The processed final actions for these states would be [[action_utils.POSSIBLE_ACTIONS[123456 >> 16]], [action_utils.POSSIBLE_ACTIONS[789012 >> 16]]], with any waive actions moved to the end of each power's action list as per the fix_waives function.
 ***
 ### FunctionDef compute_losses(self)
-**compute_losses**: The function of compute_losses is to calculate losses by applying a transformation to network loss information.
-**parameters**: The parameters of this Function.
-· *args: A variable number of positional arguments that are passed to the transformation function.
-· **kwargs: A variable number of keyword arguments that are passed to the transformation function.
-**Code Description**: This function utilizes the _apply_transform method to compute losses. It takes in a variable number of arguments and keyword arguments, which are then passed to the _apply_transform method along with the network loss information. The _apply_transform method applies a given transformation to the network parameters and state, utilizing a random key for the process, and returns the result. In this context, the transformation is applied to the network loss information, allowing the compute_losses function to calculate the losses.
-**Note**: It is essential to note that the compute_losses function relies on the _apply_transform method to perform the actual calculation of losses. The transformation applied to the network loss information should be designed to handle the network parameters, state, and random key appropriately.
-**Output Example**: The return value of compute_losses will depend on the specific transformation applied to the network loss information, but it is expected to be a result representing the calculated losses, which could be a numpy array or a structure of numpy arrays.
+**compute_losses**: The function of compute_losses is to calculate losses by applying a predefined network loss computation function with any additional arguments or keyword arguments.
+
+parameters: 
+· *args: Additional positional arguments passed to the network loss computation function.
+· **kwargs: Additional keyword arguments passed to the network loss computation function.
+
+Code Description: The compute_losses method is designed to facilitate the calculation of losses within the SequenceNetworkHandler class. It achieves this by leveraging the _apply_transform method, which applies a specified transformation (in this case, the network loss computation function stored in self._network_loss_info) to the parameters and state managed by the handler. The method ensures that each invocation uses a unique random seed for reproducibility and randomness in computations. By passing any additional positional or keyword arguments provided to compute_losses, it allows flexibility in specifying the necessary inputs for the loss computation. The output of the transformation is converted to numpy arrays before being returned.
+
+Note: The network loss computation function must return a tuple where the first element is the computed losses and the second element is an unused state. This method assumes that the network loss computation function can handle additional positional and keyword arguments.
+
+Output Example: If the network loss computation function returns a tuple (losses, _), where losses is a dictionary {'mse_loss': 0.5, 'ce_loss': 1.2}, the output of compute_losses would be {'mse_loss': array(0.5), 'ce_loss': array(1.2)}.
 ***
 ### FunctionDef inference(self)
-**inference**: The function of inference is to perform inference on input data using the batch_inference method and return the outputs and final actions.
-**parameters**: The parameters of this Function.
-· *args: variable number of non-keyword arguments to be passed to the batch_inference function
-· **kwargs: variable number of keyword arguments to be passed to the batch_inference function
-**Code Description**: This function utilizes the apply_unbatched function to apply the batch_inference method to unbatched input arguments and keyword arguments. The apply_unbatched function expands the dimensions of the input arguments and keyword arguments, applies the batch_inference function, and then removes the batch dimension from the output. The result is stored in the outputs and final_actions variables, which are then returned by the inference function. The batch_inference function performs inference on unbatched observations and states, and returns a tuple containing the initial and step outputs, as well as the final actions.
-**Note**: The inference function relies on the apply_unbatched function to handle the expansion and removal of batch dimensions, and on the batch_inference function to perform the actual inference. The input arguments and keyword arguments should be in a format that can be processed by the batch_inference function.
-**Output Example**: The return value of this function will be a tuple containing two elements: the outputs and the final actions. For example, if the input data is a single observation, the output might look like (outputs, [final_actions]), where final_actions is a list of lists containing the fixed action lists for each power in the observation.
+**inference**: The function of inference is to perform unbatched inference using batched processing capabilities.
+
+parameters: 
+· *args: Variable length argument list representing positional arguments for the `self.batch_inference` method.
+· **kwargs: Arbitrary keyword arguments for the `self.batch_inference` method.
+
+Code Description: The inference method is designed to handle unbatched inputs by leveraging the batch processing capabilities of the `self.batch_inference` method. It achieves this by utilizing the `apply_unbatched` function, which temporarily expands the dimensions of the input arguments to simulate a batch size of 1 for each input. This allows the `self.batch_inference` method, which is intended to work with batched data, to process unbatched inputs seamlessly.
+
+The `apply_unbatched` function first expands the dimensions of both positional and keyword arguments using `tree_utils.tree_expand_dims`. It then calls `self.batch_inference` with these expanded arguments. After processing, the output from `self.batch_inference`, which includes an additional batch dimension, is squeezed back to its original shape using `tree.map_structure` and `np.squeeze`. This squeezing operation removes the leading dimension (axis 0), thus returning the result in an unbatched form.
+
+The method returns a tuple containing the outputs from `self.batch_inference` and the final actions processed by the `fix_actions` function within `self.batch_inference`.
+
+Note: It is crucial that the inputs provided to the inference method are compatible with the operations performed by `tree_utils.tree_expand_dims` and `np.squeeze`. Additionally, ensure that the `self.batch_inference` method handles batched data appropriately.
+
+Output Example: Given an input observation with a single board state and actions [0, 123456, 0], the inference method would return a tuple containing the initial outputs and step outputs from `self.batch_inference`, along with the processed final actions. The processed final actions for this state might be [[action_utils.POSSIBLE_ACTIONS[123456 >> 16]]], with any waive actions moved to the end of the action list as per the fix_waives function.
 ***
 ### FunctionDef batch_loss_info(self, step_types, rewards, discounts, observations, step_outputs)
-**batch_loss_info**: The function of batch_loss_info is to compute and return loss information for a batch of data.
-**parameters**: The parameters of this Function.
-· step_types: This parameter represents the types of steps in the batch, which can be used to determine the type of loss calculation to perform.
-· rewards: This parameter represents the rewards obtained for each step in the batch, which is a crucial component in calculating the loss.
-· discounts: This parameter represents the discount factors applied to the rewards, which helps to calculate the cumulative reward.
-· observations: This parameter represents the observations or states of the environment at each step, which is used as input to the network.
-· step_outputs: This parameter represents the outputs of the network for each step, which is used to calculate the loss.
+**batch_loss_info**: The function of batch_loss_info is to compute loss information for a batch of data by converting the output into numpy arrays.
 
-**Code Description**: The description of this Function. 
-The batch_loss_info function takes in several parameters including step_types, rewards, discounts, observations, and step_outputs. It then calls a helper function self._network_loss_info, passing these parameters to it. This helper function performs the actual calculation of the loss information for the batch. The result from the helper function is then passed to tree.map_structure, which applies the np.asarray function to each element in the result structure, effectively converting them into numpy arrays. This ensures that the returned loss information is in a consistent and usable format.
+parameters: 
+· step_types: Represents the type of each transition (e.g., first, mid, last) within the sequence.
+· rewards: Contains the reward values received after taking actions in the environment.
+· discounts: Specifies the discount factors applied to future rewards for each step.
+· observations: Holds the observation data from the environment at each step.
+· step_outputs: Includes the outputs generated by the network for each step.
 
-**Note**: Points to note about the use of the code. 
-It is essential to ensure that the input parameters are correctly formatted and contain the necessary information for the loss calculation. Additionally, the self._network_loss_info function should be implemented correctly to perform the actual loss calculation.
+Code Description: The batch_loss_info function is designed to process a batch of sequence data, which includes information about transitions (step_types), rewards received, discount factors, observations from the environment, and outputs from the network. It calls an internal method _network_loss_info with these parameters to compute the loss information for the batch. The result from _network_loss_info is then converted into numpy arrays using tree.map_structure, ensuring that all elements of the nested structure are in a consistent numerical format suitable for further processing or analysis.
 
-**Output Example**: Mock up a possible appearance of the code's return value.
-The output of the batch_loss_info function will be a structured object containing loss information for each step in the batch, with each element converted into a numpy array. For example, it could be a dictionary with keys representing different types of losses and values being numpy arrays representing the loss values for each step. The exact structure and content of the output will depend on the implementation of the self._network_loss_info function.
+Note: This function assumes that the _network_loss_info method exists and returns a structure compatible with tree.map_structure. It also requires that the inputs (step_types, rewards, discounts, observations, step_outputs) are structured in a way that aligns with the expectations of _network_loss_info.
+
+Output Example: 
+Assuming _network_loss_info returns a dictionary with keys 'loss' and 'accuracy', the output might look like:
+{'loss': array([0.12345679, 0.23456789]), 'accuracy': array([0.9, 0.85])}
 ***
 ### FunctionDef step_counter(self)
-**step_counter**: The function of step_counter is to return the current step counter value.
-**parameters**: The parameters of this Function are none, as it is an instance method that relies on the state of the object it belongs to.
-· self: a reference to the current instance of the class
-**Code Description**: This function appears to be part of a class, likely used in a network or sequence handling context. It simply returns the value of an internal variable named _step_counter, which suggests that this variable is being updated elsewhere in the class. The purpose of this function seems to be providing access to the current step counter value, allowing other parts of the program to track progress or make decisions based on this value.
-**Note**: When using this function, it's essential to ensure that the _step_counter variable has been properly initialized and updated within the class, as its value is directly returned without any validation or modification. Additionally, since this function does not take any parameters, its behavior is entirely dependent on the state of the object it belongs to.
-**Output Example**: The return value could be an integer representing the current step number, such as 0, 1, 2, etc., depending on how the _step_counter variable is being updated within the class. For instance, if the sequence handling involves iterating over a list, the step counter might reflect the current index in that iteration.
+**step_counter**: The function of step_counter is to return the current value of the internal step counter.
+
+parameters: This Function does not take any parameters.
+· No additional parameters are required or accepted by this function.
+
+Code Description: The description of this Function involves a simple retrieval operation. When called, the function accesses and returns the value stored in the private attribute `_step_counter` of the class instance. This attribute is presumably incremented elsewhere within the class to keep track of steps or iterations, such as during training loops in a neural network.
+
+Note: Points to note about the use of the code
+- Ensure that `_step_counter` has been properly initialized and updated within the class before calling `step_counter`.
+- The function does not modify the state of the object; it only retrieves the current value of `_step_counter`.
+
+Output Example: Mock up a possible appearance of the code's return value.
+Assuming `_step_counter` holds the integer value 10, calling `step_counter()` would return:
+10
 ***
 ### FunctionDef observation_transform(self)
-**observation_transform**: The function of observation_transform is to transform observations using a predefined transformer.
-**parameters**: The parameters of this Function.
-· *args: variable number of non-keyword arguments
-· **kwargs: variable number of keyword arguments
-**Code Description**: This function takes in a variable number of arguments and keyword arguments, which are then passed to the observation_transform method of the _observation_transformer object. The _observation_transformer object is assumed to have an observation_transform method that performs the actual transformation on the observations. The result of this transformation is then returned by the observation_transform function.
-**Note**: The specific implementation details of the observation transformation depend on the _observation_transformer object and its observation_transform method, which are not defined in this function. Users should ensure that the _observation_transformer object is properly initialized and configured before calling this function.
-**Output Example**: The return value of this function will be the result of the observation transformation performed by the _observation_transformer object, which could be a modified version of the input observations or a completely new set of data. For example, if the _observation_transformer object is designed to normalize observations, the output might be a normalized array of values.
+**observation_transform**: The function of observation_transform is to delegate the transformation of observations to an internal transformer.
+
+parameters: This Function accepts any number of positional arguments (*args) and keyword arguments (**kwargs).
+· *args: Positional arguments that are passed through to the internal _observation_transformer's observation_transform method.
+· **kwargs: Keyword arguments that are passed through to the internal _observation_transformer's observation_transform method.
+
+Code Description: The observation_transform function is a simple pass-through method designed to forward its arguments to another method, specifically the observation_transform method of an object stored in the instance variable _observation_transformer. This design allows for modular and flexible handling of observation transformations by deferring the actual transformation logic to a separate component.
+
+Note: Users should ensure that the _observation_transformer attribute is properly initialized with an object that has an observation_transform method capable of handling the provided arguments. Misconfiguration can lead to AttributeError if _observation_transformer does not have the required method or if the method signature does not match the expected parameters.
+
+Output Example: The return value will depend on the implementation of the observation_transform method in the _observation_transformer object. For instance, if _observation_transformer.observation_transform returns a transformed observation dictionary, then the output might look like:
+{'position': [10, 20], 'velocity': [5, -3]}
 ***
 ### FunctionDef zero_observation(self)
-**zero_observation**: The function of zero_observation is to return the result of calling the zero_observation method on the _observation_transformer object.
-**parameters**: The parameters of this Function.
-· *args: variable number of non-keyword arguments
-· **kwargs: variable number of keyword arguments
-**Code Description**: This function appears to be a wrapper around the zero_observation method of the _observation_transformer object, passing any provided arguments directly to that method. It does not perform any additional operations or transformations on the input arguments. The actual implementation and behavior of this function are dependent on the definition of the zero_observation method in the _observation_transformer object.
-**Note**: The usage of this function is tightly coupled with the implementation of the _observation_transformer object, and its behavior may change if the underlying object's method is modified. It is essential to understand the functionality of the _observation_transformer object to use this function effectively.
-**Output Example**: The return value of this function will be the result of calling the zero_observation method on the _observation_transformer object, which could be any type of object or value depending on the implementation of that method. For example, it might return a numerical value, a data structure, or an object instance.
+**zero_observation**: The function of zero_observation is to return a zeroed observation by delegating the call to the _observation_transformer's zero_observation method.
+parameters: This Function accepts any number of positional and keyword arguments, which are passed directly to the _observation_transformer's zero_observation method.
+· *args: Any number of additional positional arguments that are forwarded to the _observation_transformer's zero_observation method.
+· **kwargs: Any number of additional keyword arguments that are forwarded to the _observation_transformer's zero_observation method.
+Code Description: The zero_observation function is a simple pass-through method designed to abstract the process of obtaining a zeroed observation. It does not perform any operations itself but instead relies on the underlying _observation_transformer object, which presumably contains the logic for generating or transforming observations into their zeroed form. By using *args and **kwargs, this method ensures that it can accommodate any parameters required by the _observation_transformer's zero_observation method without needing to explicitly define them.
+Note: Users of this function should ensure that the _observation_transformer object has a zero_observation method defined, as this function directly relies on its existence. Additionally, the types and meanings of *args and **kwargs should align with what is expected by the _observation_transformer's zero_observation method to avoid runtime errors.
+Output Example: The return value will depend on how the _observation_transformer's zero_observation method is implemented. For instance, if it returns a numpy array filled with zeros, the output might look like this:
+array([0., 0., 0., ..., 0., 0., 0.])
 ***
 ### FunctionDef observation_spec(self, num_players)
-**observation_spec**: The function of observation_spec is to return the observation specification based on the number of players.
-**parameters**: The parameters of this Function.
-· num_players: This parameter specifies the number of players and is used to determine the observation specification.
-· self: A reference to the current instance of the class, which provides access to its attributes and methods, including _observation_transformer.
-**Code Description**: The description of this Function. 
-This function takes in the number of players as input and returns the observation specification by calling the observation_spec method on the _observation_transformer object, passing num_players as an argument. The _observation_transformer object is assumed to have its own implementation of the observation_spec method, which handles the actual logic for determining the observation specification based on the number of players.
-**Note**: Points to note about the use of the code. 
-The function relies on the _observation_transformer object having a properly implemented observation_spec method, and it does not perform any error checking or handling on its own. Therefore, users should ensure that the _observation_transformer object is correctly initialized and configured before calling this function.
-**Output Example**: A possible appearance of the code's return value could be a data structure containing information about the observation space, such as its shape, size, and data type, which would depend on the specific implementation of the observation_spec method in the _observation_transformer object.
+**observation_spec**: The function of observation_spec is to retrieve the specification of observations for a given number of players.
+
+parameters: 
+· num_players: An integer representing the number of players in the game or environment.
+
+Code Description: The observation_spec method is designed to provide the structure and format of the observations that will be used by the network. It takes one parameter, num_players, which indicates how many players are involved in the scenario for which the observation specification is being requested. The method then delegates this request to an internal component, _observation_transformer, which presumably contains the logic or data necessary to define and return the appropriate observation specification based on the number of players.
+
+Note: Ensure that num_players is a valid integer representing the actual number of players in your game or environment setup. Providing an incorrect value may lead to unexpected behavior or errors if _observation_transformer relies on this parameter for generating the correct observation spec.
+
+Output Example: The return value could be a dictionary specifying the shape, data type, and other relevant details about the observations. For example:
+{'player_observations': {'shape': (10,), 'dtype': 'float32'}, 'global_state': {'shape': (5,), 'dtype': 'int32'}}
 ***
 ### FunctionDef variables(self)
-**variables**: The function of variables is to return the parameters stored in the instance variable _params.
-**parameters**: The parameters of this Function.
-· self: a reference to the current instance of the class
-**Code Description**: This function appears to be part of a class, likely used for handling network parameters. It simply returns the value of the instance variable _params, which suggests that it is being used to provide access to the parameters stored in the instance. The function does not perform any error checking or modification of the parameters, it merely returns them as they are.
-**Note**: The use of this function assumes that the instance variable _params has been previously set with the desired parameters. If _params has not been initialized, this function will return its default value, which could potentially be None or an empty data structure, depending on how it was defined in the class.
-**Output Example**: The output of this function would be the actual value stored in _params, for example, if _params is a dictionary containing network parameters, the output might look like {'param1': value1, 'param2': value2, ...}.
+**variables**: The function of variables is to return the parameters stored within the SequenceNetworkHandler instance.
+
+parameters: This Function does not take any parameters.
+· No additional parameters are required or accepted by this method.
+
+Code Description: The description of this Function involves accessing and returning an internal attribute named _params. The _params attribute, which is presumably a dictionary or list containing configuration settings or model parameters, is directly returned to the caller without any modification or processing. This function serves as a simple accessor for these stored parameters, allowing other parts of the codebase to retrieve them easily.
+
+Note: Points to note about the use of the code include understanding that this method does not perform any validation or transformation on the data it returns. The caller is responsible for interpreting and using the returned parameters appropriately based on their context within the application.
+
+Output Example: Mock up a possible appearance of the code's return value.
+The output could be a dictionary like {'learning_rate': 0.01, 'batch_size': 32} or a list such as [0.01, 32], depending on how _params is defined and populated within the SequenceNetworkHandler class.
 ***
