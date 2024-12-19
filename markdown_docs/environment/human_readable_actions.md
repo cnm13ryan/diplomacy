@@ -1,54 +1,157 @@
 ## FunctionDef area_string(area_tuple)
-**area_string**: The function of area_string is to convert an area tuple into its corresponding human-readable string representation based on province tags.
+**area_string**: The function of area_string is to convert a province tuple into its corresponding string tag.
 
-parameters: 
-· area_tuple: This parameter is expected to be of type `utils.ProvinceWithFlag`, which is essentially a tuple containing the province ID and a flag (coast number).
+**Parameters:**
 
-Code Description: The function takes an input tuple, `area_tuple`, which includes a province ID and a coast number. It then retrieves the corresponding string tag for the province from the `_province_id_to_tag` dictionary using the province ID as the key. This function is primarily used to convert internal identifiers (province IDs) into more human-readable format (province tags). The function does not consider the coast number in its output, which makes it suitable for scenarios where the specific coast information is not necessary.
+- `area_tuple`: This parameter is expected to be an instance of `utils.ProvinceWithFlag`, which likely represents a province along with some flag or additional information.
 
-The `area_string` function is called by other functions within the same module to generate parts of human-readable action strings. Specifically, it is used in `action_string` when the board information is not available or when the unit type does not require coast specification (e.g., armies). Additionally, it is utilized in `area_string_with_coast_if_fleet` when the unit type is an army or when the province is single-coasted.
+**Code Description:**
 
-Note: The function assumes that `_province_id_to_tag` is a predefined dictionary mapping province IDs to their respective string tags. It does not handle cases where the province ID might be missing from this dictionary, which could lead to a KeyError if such a scenario occurs.
+The `area_string` function takes a single argument, `area_tuple`, which is expected to be a tuple representing a province along with some flag or additional data. This tuple should conform to the type definition `utils.ProvinceWithFlag`. The function's purpose is to extract the province identifier from this tuple and map it to a string tag using a predefined dictionary `_province_id_to_tag`.
 
-Output Example: If `area_tuple` is `(1034, 0)`, and `_province_id_to_tag[1034]` is `'STP'`, then the function will return `'STP'`.
+Here's a step-by-step breakdown of what the function does:
+
+1. **Parameter Extraction:** The function expects `area_tuple` to be a tuple where the first element is the province ID.
+2. **Mapping to Tag:** It uses the province ID to look up the corresponding tag in the `_province_id_to_tag` dictionary.
+3. **Return the Tag:** The function returns the string tag associated with the given province ID.
+
+This function is utilized in other parts of the codebase, such as in `area_string_with_coast_if_fleet` and `action_string`, to convert province identifiers into their human-readable string representations.
+
+**Note:**
+
+- Ensure that the `area_tuple` provided to this function is correctly formatted and contains a valid province ID, otherwise, the function may raise a KeyError if the ID is not found in `_province_id_to_tag`.
+- This function does not handle cases where the tuple does not contain the expected elements or when the province ID is invalid. It assumes that the input is correctly formatted and valid.
+
+**Output Example:**
+
+Suppose `_province_id_to_tag` contains entries like `{1: 'LON', 2: 'EDIN'}`, and `area_tuple` is `(1, 0)`. Then, `area_string(area_tuple)` would return `'LON'`.
+
+**Relationship with Callers:**
+
+- **area_string_with_coast_if_fleet:** This function uses `area_string` to get the base province tag and then appends coast information based on the unit type and coast number. It handles scenarios where units are fleets in bicoastal provinces, adding 'NC' or 'SC' suffixes to indicate north or south coasts.
+
+- **action_string:** This function constructs a human-readable string representation of an action in the game, using `area_string` to convert province identifiers to their tags. It handles various types of actions like hold, move, support, retreat, build, remove, and waive, formatting each according to the game's notation rules.
+
+In both these caller functions, `area_string` plays a crucial role in translating internal province representations into external, human-readable tags, ensuring that the output is understandable to users familiar with the game's terminology.
 ## FunctionDef area_string_with_coast_if_fleet(area_tuple, unit_type)
-**area_string_with_coast_if_fleet**: The function of area_string_with_coast_if_fleet is to generate a human-readable string representation of an area tuple, including coast information when the unit type is a fleet and the province is bicoastal.
+**area_string_with_coast_if_fleet**: The function of `area_string_with_coast_if_fleet` is to generate a string representation of a province area, including coast information if the unit type is a fleet and it's located in a bicoastal province.
 
-parameters: 
-· area_tuple: This parameter is expected to be of type `utils.ProvinceWithFlag`, which is essentially a tuple containing the province ID and a flag (coast number).
-· unit_type: This parameter is an optional argument that specifies the type of the unit, either `utils.UnitType.ARMY` or `utils.UnitType.FLEET`. If not provided, it defaults to `None`.
+### Parameters
 
-Code Description: The function takes two parameters: `area_tuple`, which includes a province ID and a coast number, and `unit_type`, which indicates whether the unit is an army or a fleet. It first checks if the province is single-coasted (province_id less than `utils.SINGLE_COASTED_PROVINCES`) or if the unit type is an army. In either case, it calls the `area_string` function to return the human-readable string representation of the area without coast information.
+- **area_tuple**: A tuple representing the province and its associated flag or additional information, expected to be of type `utils.ProvinceWithFlag`.
+- **unit_type**: An optional parameter indicating the type of the unit, which can be `None`, `utils.UnitType.ARMY`, or `utils.UnitType.FLEET`.
 
-If the unit type is a fleet and the province is bicoastal (province_id greater than or equal to `utils.SINGLE_COASTED_PROVINCES`), the function retrieves the corresponding province tag from the `_province_id_to_tag` dictionary using the province ID as the key. It then appends 'NC' for North Coast or 'SC' for South Coast based on the coast number (0 for North Coast, non-zero for South Coast) to the province tag and returns this string.
+### Code Description
 
-If the unit type is unknown (`None`), indicating that the caller does not have information about the unit type, the function still retrieves the province tag from `_province_id_to_tag`. It appends 'maybe_NC' or 'SC' based on the coast number to indicate possible North Coast or South Coast and returns this string.
+The function `area_string_with_coast_if_fleet` is designed to provide a human-readable string representation of a province area, with special handling for fleets in bicoastal provinces. It takes two parameters: `area_tuple`, which contains the province ID and a coast number, and `unit_type`, which specifies the type of the unit located in that province.
 
-In all other cases, where the unit type is neither an army nor a fleet (or invalid), the function raises a `ValueError`.
+The function begins by unpacking the `area_tuple` into `province_id` and `coast_num`. It then checks the `unit_type` to determine how to format the output string.
 
-This function is primarily used in generating human-readable action strings when the board information is available and the unit type requires coast specification. It is called by the `action_string` function for actions that involve movement (`MOVE_TO`, `RETREAT_TO`) or building fleets (`BUILD_FLEET`), where specifying the correct coast is crucial.
+1. **Single-coasted provinces or armies:** If the `province_id` is less than a predefined threshold for single-coasted provinces or if the `unit_type` is an army, the function calls another function, `area_string`, to get the basic string representation of the province without any coast specification.
 
-Note: The function assumes that `_province_id_to_tag` is a predefined dictionary mapping province IDs to their respective string tags. It does not handle cases where the province ID might be missing from this dictionary, which could lead to a KeyError if such a scenario occurs.
+2. **Fleets in bicoastal provinces:** If the `unit_type` is a fleet and the `province_id` indicates a bicoastal province, the function appends 'NC' (North Coast) or 'SC' (South Coast) to the province tag based on the `coast_num` value.
 
-Output Example: If `area_tuple` is `(1034, 0)` and `_province_id_to_tag[1034]` is `'STP'`, and `unit_type` is `utils.UnitType.FLEET`, then the function will return `'STPMC'`. If `unit_type` is `None`, it will return `'STPmaybe_NC'`. If `area_tuple` is `(102, 0)` (a single-coasted province) and `unit_type` is `utils.UnitType.FLEET`, it will return `'STP'`.
+3. **Unknown unit type:** If the `unit_type` is `None`, indicating that the unit type is unknown, the function appends 'maybe_NC' or 'SC' to the province tag, depending on the `coast_num`.
+
+4. **Invalid unit type:** If the `unit_type` does not match any recognized types, the function raises a `ValueError`.
+
+This function is crucial for generating accurate and informative representations of game states in scenarios where coast information is necessary for fleets in certain provinces.
+
+### Note
+
+- Ensure that the `area_tuple` is correctly formatted and contains valid province ID and coast number.
+- The `_province_id_to_tag` dictionary must be properly initialized and contain entries for all possible `province_id` values used with this function.
+- This function assumes that the `utils.UnitType` enum includes constants for army and fleet, and that `utils.ProvinceWithFlag` is appropriately defined to hold the province ID and coast number.
+
+### Output Example
+
+Suppose `_province_id_to_tag` contains `{1: 'LON', 2: 'EDI'}`, and we have:
+
+- `area_tuple = (1, 0)` (Province ID 1, North Coast)
+- `unit_type = utils.UnitType.FLEET`
+
+Then, `area_string_with_coast_if_fleet(area_tuple, unit_type)` would return `'LONNC'`.
+
+If `unit_type` is `None`, it would return `'LONmaybe_NC'`.
 ## FunctionDef action_string(action, board)
-**action_string**: The function of action_string is to convert an action into its human-readable string representation based on the game's rules.
+**action_string**: The function of `action_string` is to convert an action into a human-readable string format.
 
-parameters: 
-· action: This parameter represents the action to be converted and is expected to be of type `Union[action_utils.Action, action_utils.ActionNoIndex]`. It contains details about the order, starting position, target position, and additional information as needed.
-· board: This optional parameter is a numpy array representing the game board. It provides context about the units' types (army or fleet) to ensure accurate coast annotations in certain actions.
+### Parameters
 
-Code Description: The function `action_string` takes an action and optionally a board to generate a human-readable string that describes the action in a concise format. It first breaks down the action into its components using `action_utils.action_breakdown(action)` which returns the order type and positions involved (p1, p2, p3). 
+- **action**: An action to be converted into a string. It can be either of type `action_utils.Action` or `action_utils.ActionNoIndex`.
+- **board**: An optional parameter representing the game board as part of the observation. It is used to determine whether units are fleets for coast annotations.
 
-The function then determines the unit's location by calling `area_string(p1)`. If a board is provided, it also identifies whether the unit at position p1 is an army or fleet using `utils.unit_type(p1[0], board)`.
+### Code Description
 
-Depending on the order type (e.g., HOLD, CONVOY, MOVE_TO), the function constructs the human-readable string by combining the unit's location with the appropriate action notation. For example:
-- For a HOLD order, it returns '{unit_string} H'.
-- For a CONVOY order, it returns '{unit_string} C {area_string(p3)} - {area_string(p2)}'.
-- For a MOVE_TO order, it uses `area_string_with_coast_if_fleet` to ensure the correct coast is specified if the unit is a fleet and the province is bicoastal.
+The `action_string` function takes an action and optionally a board as input and returns a string representation of the action in a abbreviated human notation. This function is essential for making actions understandable to humans, especially in the context of a game like Diplomacy, where actions involve units holding positions, moving, supporting, convoying, building, retreating, or disbanding.
 
-The function handles various action types including support actions (SUPPORT_HOLD, SUPPORT_MOVE_TO), retreats (RETREAT_TO), disbands (DISBAND), builds (BUILD_ARMY, BUILD_FLEET), removals (REMOVE), and waives (WAIVE). If an unrecognized order type is encountered, it raises a `ValueError`.
+The function starts by breaking down the action using `action_utils.action_breakdown`, which likely decomposes the action into its constituent parts: the order type and the provinces involved. These are stored in variables `order`, `p1`, `p2`, and `p3`.
 
-Note: The function relies on the correctness of the input action format and optionally the board to provide accurate human-readable strings. It assumes that the necessary utility functions (`action_utils.action_breakdown`, `area_string`, `utils.unit_type`, `area_string_with_coast_if_fleet`) are correctly implemented and available.
+Next, it determines the string representation of the unit involved using `area_string(p1)`, which converts the province tuple of the unit to its corresponding string tag.
 
-Output Example: If the action is a move order for a fleet from province (1034, 0) to province (1035, 1), and the board indicates that the unit at (1034, 0) is a fleet, then `action_string` will return 'STPMC - STPSC'. Here, 'STPMC' represents the starting location with coast specification for a fleet, and 'STPSC' represents the target location with coast specification.
+If a board is provided, the function determines the type of the unit (army or fleet) using `utils.unit_type(p1[0], board)`. This is useful for annotating coast information for fleets in bicoastal provinces.
+
+Based on the order type, the function constructs the appropriate human-readable string:
+
+- **Hold (H)**: The unit holds its position.
+- **Convoy (C)**: The unit convies another unit from one province to another.
+- **Convoy To (VC)**: The unit is being convoyed to a province.
+- **Move To (-)**: The unit moves to another province, with coast annotations if applicable.
+- **Support Hold (SH)**: The unit supports another unit to hold its position.
+- **Support Move To (S)**: The unit supports another unit moving from one province to another.
+- **Retreat To (-)**: The unit retreats to another province, with coast annotations if applicable.
+- **Disband (D)**: The unit disbands.
+- **Build Army (B A)**: A new army is built in the specified province.
+- **Build Fleet (B F)**: A new fleet is built in the specified province.
+- **Remove (R)**: A unit is removed from the game.
+- **Waive (W)**: The player waives their turn.
+
+For each order type, the function constructs a string that concisely represents the action, using standard abbreviations and notations. For example, moves include a dash ('-'), convoys include 'C', supports include 'S' or 'SH', and builds include 'B A' or 'B F'.
+
+In cases where coast information is necessary (for fleets in bicoastal provinces), the function uses `area_string_with_coast_if_fleet` to append the appropriate coast notation ('NC' for North Coast, 'SC' for South Coast).
+
+If the order type does not match any recognized types, the function raises a `ValueError`, indicating an unrecognised order.
+
+### Relationship with Callees
+
+- **area_string**: This function is used to convert province tuples to their string tags. It is crucial for constructing the human-readable action strings, providing the names of provinces involved in actions.
+  
+- **area_string_with_coast_if_fleet**: Used when dealing with moves and retreats of fleets in bicoastal provinces. This function appends coast information to the province tag, ensuring that the action string accurately reflects the unit's position and movement.
+
+- **utils.unit_type**: This function determines the type of a unit (army or fleet) based on the province ID and the board state. It is used to decide whether coast annotations are necessary for a unit's action.
+
+These callee functions work in concert with `action_string` to produce accurate and informative action representations, taking into account the specific rules andnotations of the game.
+
+### Note
+
+- Ensure that the action provided is of the correct type (`action_utils.Action` or `action_utils.ActionNoIndex`).
+- If the board is provided, it should be correctly formatted to allow unit type determination.
+- The function assumes that all order types are covered; if new order types are added, the function will need to be updated accordingly.
+
+### Output Example
+
+Suppose an action represents a fleet moving from London to Edinburgh. The output might look like:
+
+```
+'F LON - EDINNC'
+```
+
+If it's a hold action for an army in Paris:
+
+```
+'A PAR H'
+```
+
+For a support action where an army in Munich supports Brest holding:
+
+```
+'A MUN SH A BRE'
+```
+
+And for a convoy action where a fleet in Edinburgh convoys Liverpool to Yorkshire:
+
+```
+'F EDI C LPL - YOR'
+```
+
+These examples illustrate how the function condenses complex actions into succinct, human-readable strings, leveraging the helper functions to manage province names and unit types appropriately.

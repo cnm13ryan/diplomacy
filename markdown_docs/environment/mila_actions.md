@@ -1,229 +1,448 @@
 ## FunctionDef mila_area_string(unit_type, province_tuple)
-**mila_area_string**: The function of mila_area_string is to generate the string representation used by MILA actions to denote an area based on the unit type and province information.
+**mila_area_string**
 
-parameters: 
-· unit_type: Specifies the type of unit (army or fleet) in the province, which influences how the coast flag is interpreted.
-· province_tuple: A tuple containing the province ID and a coast flag that describes the specific area within the province.
+The function `mila_area_string` generates the string representation of an area as used in MILA actions, based on the unit type and province information provided.
 
-Code Description: The mila_area_string function determines the string used in MILA action format to describe an area. If the unit type is a fleet and the province is bicoastal, the coast flag is utilized to specify which coast (NC or SC) should be included in the returned string. For army units or non-bicoastal provinces, the main area is represented without specifying a coast. The function first extracts the province ID from the provided tuple. Depending on whether the unit type is a fleet, it calculates an area index using utils.area_index_for_fleet; otherwise, it sets the area index to 0. It then derives the area ID by combining the province ID and the area index through the utils.area_from_province_id_and_area_index function. The area ID is mapped to a province tag using _area_id_to_tag, and finally, this tag is converted to its corresponding MILA action format string via _DM_TO_MILA_TAG_MAP if available; otherwise, the original province tag is returned.
+**Parameters**
 
-Note: When calling mila_area_string, ensure that the unit_type parameter correctly reflects whether the unit in question is an army or a fleet. The province_tuple should accurately represent both the province ID and any relevant coast flag for bicoastal provinces. This function is integral to generating MILA-compatible action strings within the project, particularly as it is invoked by mila_unit_string and action_to_mila_actions to construct detailed action descriptions.
+- `unit_type`: An enumeration value from `utils.UnitType`, indicating whether the unit is an army or a fleet.
+- `province_tuple`: A tuple representing the province and its coast flag, of type `utils.ProvinceWithFlag`.
 
-Output Example: For a fleet unit in a bicoastal province with ID 123 and coast flag set to North Coast (NC), the function might return "STP/NC". If the unit were an army or the province not bicoastal, it could simply return "STP".
+**Code Description**
+
+The function `mila_area_string` is designed to produce a string that represents a specific area in the context of MILA actions. This string is crucial for identifying locations accurately, especially when dealing with provinces that have multiple coasts.
+
+### Function Logic
+
+1. **Extract Province ID:**
+   - The function starts by extracting the province ID from the provided `province_tuple`.
+
+2. **Determine Area Index:**
+   - If the `unit_type` is a fleet (`utils.UnitType.FLEET`), it uses the `utils.area_index_for_fleet` function to determine the appropriate area index based on the province and its coast flag.
+   - For other unit types (presumably armies), it sets the area index to 0, assuming the main area of the province.
+
+3. **Retrieve Area ID:**
+   - Using the province ID and the determined area index, it fetches the corresponding area ID via `utils.area_from_province_id_and_area_index`.
+
+4. **Convert Area ID to Tag:**
+   - It then maps the area ID to a tag using a dictionary `_area_id_to_tag`.
+
+5. **Map to MILA Tag (if exists):**
+   - Finally, it checks if there is a specific mapping for this tag in `_DM_TO_MILA_TAG_MAP`; if so, it uses that mapped value; otherwise, it defaults to the original tag.
+
+### Usage Context
+
+This function is integral to generating action strings in the MILA format within the game's environment. It is primarily used by other functions to construct complete action strings accurately. For instance:
+
+- **mila_unit_string:** This function uses `mila_area_string` to create a unit string that includes the unit type and its location in the MILA format.
+
+- **action_to_mila_actions:** This function translates actions from a standardized format to MILA action strings, utilizing `mila_area_string` to ensure correct area representations in various types of orders like holds, moves, supports, convoys, builds, and disbands.
+
+### Relationship with Callers
+
+- **mila_unit_string:** Depends on `mila_area_string` to get the correct area string for unit representation.
+- **action_to_mila_actions:** Relies heavily on `mila_area_string` to construct accurate MILA action strings for different types of orders, ensuring that province and coast information are correctly represented.
+
+### Note
+
+- Ensure that the input `province_tuple` is correctly formatted as expected by the function to avoid errors.
+- Be aware of the specific behaviors for fleet units in bicoastal provinces, as the coast flag is crucial for determining the correct area index.
+
+**Output Example**
+
+For an army in province with ID 'PAR' and no coast flag:
+
+```
+"PAR"
+```
+
+For a fleet in province with ID 'STP' and coast flag indicating North Coast:
+
+```
+"STP/NC"
+```
+
+This function ensures that the area strings are formatted correctly according to MILA standards, facilitating seamless integration and interpretation of actions within the game's framework.
 ## FunctionDef mila_unit_string(unit_type, province_tuple)
-**mila_unit_string**: The function of mila_unit_string is to generate the string representation used by MILA actions to denote a unit based on its type and location.
+**mila_unit_string**
 
-parameters: 
-· unit_type: Specifies the type of unit (army or fleet) in the province, which influences how the coast flag is interpreted.
-· province_tuple: A tuple containing the province ID and a coast flag that describes the specific area within the province.
+The function `mila_unit_string` generates a string representation of a unit in the MILA format, combining the unit type and its location.
 
-Code Description: The mila_unit_string function constructs the string used in MILA action format to describe a unit. It determines whether the unit is an army or a fleet using the unit_type parameter. Based on this, it selects the appropriate prefix ('A' for army and 'F' for fleet) from the list ['A %s', 'F %s']. The function then calls mila_area_string with the same parameters to obtain the string representation of the area where the unit is located. This area string includes the province tag and, if applicable, the coast flag (NC or SC). The final output combines the selected prefix with the area string using Python's string formatting method.
+**Parameters**
 
-The mila_unit_string function is integral to generating MILA-compatible action strings within the project. It is primarily invoked by the action_to_mila_actions function to construct detailed action descriptions for various game actions, such as hold, move, support, and build orders. By providing a consistent format for unit representation, mila_unit_string ensures that all generated MILA actions are correctly formatted and easily interpretable.
+- `unit_type`: An enumeration value from `utils.UnitType`, indicating whether the unit is an army or a fleet.
+- `province_tuple`: A tuple representing the province and its coast flag, of type `utils.ProvinceWithFlag`.
 
-Note: When calling mila_unit_string, ensure that the unit_type parameter accurately reflects whether the unit in question is an army or a fleet. The province_tuple should accurately represent both the province ID and any relevant coast flag for bicoastal provinces. This function relies on the correct functionality of mila_area_string to generate the area part of the MILA action string.
+**Code Description**
 
-Output Example: For a fleet unit located in a bicoastal province with ID 123 and coast flag set to North Coast (NC), the function might return "F STP/NC". If the unit were an army or the province not bicoastal, it could simply return "A STP".
+The function `mila_unit_string` constructs a string that identifies a unit in the MILA action format. It takes two parameters: `unit_type`, which specifies whether the unit is an army or a fleet, and `province_tuple`, which contains information about the province and its coast flag.
+
+### Function Logic
+
+1. **Determine Unit Type Prefix:**
+   - The function uses a list of strings `['A %s', 'F %s']` to select the appropriate prefix based on the value of `unit_type`. Specifically, it uses `unit_type.value` to index into this list. Assuming `utils.UnitType` is an enumeration where `ARMY` has a value of 0 and `FLEET` has a value of 1, the prefix will be 'A' for armies and 'F' for fleets.
+
+2. **Generate Area String:**
+   - It calls another function `mila_area_string(unit_type, province_tuple)` to get the string representation of the area where the unit is located. This function handles the specifics of how provinces and their coast flags are represented in the MILA format.
+
+3. **Format and Return the Unit String:**
+   - The selected prefix is formatted with the area string using the modulo operator (`%`), which inserts the area string into the placeholder `%s` in the prefix string. The resulting string combines the unit type and its location in a standardized format.
+
+### Usage Context
+
+This function is crucial for generating action strings in the MILA format, which is used in the game's environment to represent units and their movements, supports, builds, etc. It ensures consistency and correctness in how units are identified based on their type and position.
+
+### Relationship with Callers
+
+- **action_to_mila_actions:** This function relies on `mila_unit_string` to construct complete MILA action strings for various types of orders. For instance, when generating hold, move, support, convoy, build, or disband actions, it uses `mila_unit_string` to correctly represent the unit involved in each action.
+
+### Note
+
+- Ensure that the `unit_type` and `province_tuple` parameters are of the correct types as specified (`utils.UnitType` and `utils.ProvinceWithFlag`, respectively) to avoid runtime errors.
+- The function assumes that `mila_area_string` returns a correctly formatted area string based on the unit type and province information.
+
+**Output Example**
+
+For an army in Paris:
+
+```
+"A PAR"
+```
+
+For a fleet in St. Petersburg/North Coast:
+
+```
+"F STP/NC"
+```
+
+This function is essential for maintaining uniformity in how units are referenced across different actions in the game, ensuring that the MILA action strings are correctly formatted and interpretable by the game's systems.
 ## FunctionDef possible_unit_types(province_tuple)
-**possible_unit_types**: The function of possible_unit_types is to determine which unit types can occupy a given province based on its characteristics.
+**possible_unit_types**
 
-parameters: 
-· province_tuple: A tuple representing a province with an additional flag indicating if it's bicoastal (1 for bicoastal, 0 otherwise).
+The function `possible_unit_types` determines the types of units that can occupy a given province in the game.
 
-Code Description: 
-The function `possible_unit_types` takes a `province_tuple` as input and returns a set of unit types that can occupy the specified province. The logic within the function first checks if the province is marked as bicoastal by examining the second element of the tuple (the flag). If this flag is greater than 0, it indicates that the province is bicoastal, and thus only fleets can occupy it. 
+**Parameters**
 
-If the province is not bicoastal, the function determines the type of the province using `utils.province_type_from_id` on the first element of the tuple (the province ID). Based on whether the province is land or sea, the function returns a set containing either `utils.UnitType.ARMY` for land provinces or `utils.UnitType.FLEET` for sea provinces. If the province type does not match either land or sea (which should not occur based on expected input), it defaults to returning both unit types.
+- `province_tuple`: A tuple representing the province and its flag. The structure is `(province_id, flag)`, where `province_id` is an identifier for the province and `flag` indicates additional properties such as coast type.
 
-This function is called by other functions within the project, such as `possible_unit_types_movement` and `possible_unit_types_support`, to determine which units can move between provinces or support actions in different provinces. These calling functions use the results from `possible_unit_types` to filter out invalid unit types that cannot perform certain actions based on their location.
+**Code Description**
 
-Note: The function assumes that the input province_tuple is correctly formatted and contains valid province IDs and flags as defined by the project's utility module `utils`.
+This function assesses what kind of units can be present in a specified province based on the province's characteristics. It takes a `province_tuple`, which includes the province's ID and a flag indicating specific attributes like coastal information.
 
-Output Example: 
-For a land province, the output would be `{<UnitType.ARMY>}`. For a sea province, it would be `{<UnitType.FLEET>}`. If the province is bicoastal (flag > 0), the output will always be `{<UnitType.FLEET>}`.
+First, it checks if the flag value is greater than zero. If true, this indicates that the province is bicoastal, meaning it has two distinct coasts. In such cases, only fleet units are permitted to occupy the province.
+
+If the flag is not greater than zero, the function determines the type of the province by calling `utils.province_type_from_id(province_id)`. This returns the province's type, which can be land, sea, or bicoastal.
+
+Based on the province type:
+
+- If the province is land (`ProvinceType.LAND`), only army units are allowed.
+
+- If the province is sea (`ProvinceType.SEA`), only fleet units are allowed.
+
+- If the province is bicoastal (`ProvinceType.BICOASTAL`), both army and fleet units are permitted.
+
+The function returns a set containing the possible unit types that can occupy the given province.
+
+**Relationship with Callers**
+
+This function is utilized by other parts of the code to determine valid unit placements and movements. For instance:
+
+- `possible_unit_types_movement`: This function determines the unit types that can move from one province to another. It uses `possible_unit_types` to check the allowable unit types for both the starting and destination provinces.
+
+- `possible_unit_types_support`: This function assesses what unit types can support actions in a given destination province from a starting province. Similar to movement, it uses `possible_unit_types` to validate unit types in both locations.
+
+- `action_to_mila_actions`: This function translates game actions into MILA action strings, which are a standardized format for representing orders in the game. It uses `possible_unit_types` to ensure that the units involved in actions are of appropriate types for their provinces.
+
+**Note**
+
+When using this function, ensure that the `province_tuple` is correctly formatted as `(province_id, flag)`. The flag is crucial for identifying bicoastal provinces, which have special unit occupation rules. Incorrect formatting or invalid province IDs may lead to inaccurate results or errors.
+
+**Output Example**
+
+Suppose we have a province tuple `(1, 0)`, where province ID 1 is a land province.
+
+```python
+possible_unit_types((1, 0))
+```
+
+Output:
+
+```python
+{utils.UnitType.ARMY}
+```
+
+Another example with a bicoastal province:
+
+```python
+possible_unit_types((2, 1))
+```
+
+Output:
+
+```python
+{utils.UnitType.FLEET}
+```
+
+In this case, since the flag is greater than zero, only fleets are allowed.
 ## FunctionDef possible_unit_types_movement(start_province_tuple, dest_province_tuple)
-**possible_unit_types_movement**: The function of possible_unit_types_movement is to determine which unit types can move from a starting province to a destination province.
+**possible_unit_types_movement**
 
-parameters: 
-· start_province_tuple: A tuple representing the starting province with an additional flag indicating if it's bicoastal (1 for bicoastal, 0 otherwise).
-· dest_province_tuple: A tuple representing the destination province with an additional flag indicating if it's bicoastal (1 for bicoastal, 0 otherwise).
+This function determines which types of units can move from one specified province to another in the game.
 
-Code Description: 
-The function `possible_unit_types_movement` takes two parameters, each a tuple representing a province and whether it is bicoastal. It determines which unit types (army or fleet) can move from the starting province to the destination province based on their compatibility with both provinces.
+**Parameters**
 
-First, the function checks if an army can be present in both the start and destination provinces by intersecting the sets of possible unit types for each province as determined by the `possible_unit_types` function. If an army is a valid type for both provinces, it adds `utils.UnitType.ARMY` to the set of possible types.
+- `start_province_tuple`: A tuple representing the starting province and its flag. The structure is `(province_id, flag)`, where `province_id` is an identifier for the province and `flag` indicates additional properties such as coast type.
+- `dest_province_tuple`: A tuple representing the destination province and its flag, structured similarly to `start_province_tuple`.
 
-Next, the function evaluates whether a fleet can move from the start province to the destination province. It calculates the area IDs for both the starting and destination provinces using helper functions that consider the province ID and the appropriate area index for fleets. If the destination area is adjacent to the starting area according to the `_fleet_adjacency` dictionary, it adds `utils.UnitType.FLEET` to the set of possible types.
+**Code Description**
 
-The function returns a set containing all unit types that can move from the start province to the destination province based on these checks.
+The function `possible_unit_types_movement` evaluates which types of units—armies or fleets—can successfully move from a starting province to a destination province. It returns a set of unit types that are capable of making this specific move.
 
-This function is called by other functions within the project, such as `action_to_mila_actions`, to determine which units can perform movement actions between provinces. Specifically, it is used when constructing MILA action strings for move-to and retreat-to orders, where the unit type must be compatible with both the starting and destination provinces.
+First, the function initializes an empty set called `possible_types` to store the unit types that can make the move.
 
-Note: The function assumes that the input province tuples are correctly formatted and contain valid province IDs and flags as defined by the project's utility module `utils`.
+It then checks if both the starting and destination provinces allow armies by using the `possible_unit_types` function for each province. If armies are possible in both provinces, it adds `utils.UnitType.ARMY` to the `possible_types` set.
 
-Output Example: 
-For a scenario where an army can be present in both the start and destination provinces, and the destination area is adjacent to the starting area for fleets, the output would be `{<UnitType.ARMY>, <UnitType.FLEET>}`. If only armies are possible in both provinces, the output will be `{<UnitType.ARMY>}`. If only a fleet can move due to adjacency, the output will be `{<UnitType.FLEET>}`.
+Next, for fleet movements, the function determines the area IDs for both the starting and destination provinces. It uses the `utils.area_from_province_id_and_area_index` function along with `utils.area_index_for_fleet` to get these area IDs. It then checks if the destination area ID is adjacent to the starting area ID for fleets, using a predefined adjacency dictionary `_fleet_adjacency`. If the destination area is adjacent, it adds `utils.UnitType.FLEET` to the `possible_types` set.
+
+Finally, the function returns the set of possible unit types that can move from the starting province to the destination province.
+
+**Relationship with Callers**
+
+This function is used in scenarios where determining valid unit movements between provinces is necessary. For example:
+
+- In the function `action_to_mila_actions`, when processing a `MOVE_TO` order, this function is called to determine what types of units can move from the starting province to the destination province. This helps in generating correct MILA action strings that represent these movements.
+
+**Note**
+
+Ensure that both `start_province_tuple` and `dest_province_tuple` are correctly formatted as `(province_id, flag)`. Incorrect formatting or invalid province IDs may lead to inaccurate results or errors.
+
+Additionally, be aware that the adjacency check for fleets relies on the `_fleet_adjacency` dictionary, which should be properly initialized and up-to-date with the current game map's adjacency rules.
+
+**Output Example**
+
+Suppose we have a starting province tuple `(1, 0)` and a destination province tuple `(2, 0)`, where province ID 1 is land and province ID 2 is connected via sea areas.
+
+```python
+possible_unit_types_movement((1, 0), (2, 0))
+```
+
+Output:
+
+```python
+{utils.UnitType.FLEET}
+```
+
+In this case, only fleets can move from province 1 to province 2, assuming that armies cannot directly move between these provinces and that the area adjacency allows fleet movement.
 ## FunctionDef possible_unit_types_support(start_province_tuple, dest_province_tuple)
-**possible_unit_types_support**: The function of possible_unit_types_support is to determine which unit types can support an action from a starting province to a destination province.
+**possible_unit_types_support**: Determines the unit types that can support an action from a starting province to a destination province.
 
-parameters: 
-· start_province_tuple: A tuple representing the starting province with an additional flag indicating if it's bicoastal (1 for bicoastal, 0 otherwise).
-· dest_province_tuple: A tuple representing the destination province with an additional flag indicating if it's bicoastal (1 for bicoastal, 0 otherwise).
+### Parameters
 
-Code Description: 
-The function `possible_unit_types_support` takes two parameters, each a tuple representing a province and whether it is bicoastal. It returns a set of unit types that can support actions from the start province to the destination province.
+- **start_province_tuple**: A tuple representing the starting province and its flag.
+  - Type: `utils.ProvinceWithFlag`
+  - Description: Specifies the province from which the support is being offered, including any flags indicating special properties like coast type.
 
-First, the function checks if an army can be present in both the starting province (`start_province_tuple`) and the destination province (`dest_province_tuple`). If so, it adds `utils.UnitType.ARMY` to the set of possible types. This check is performed by intersecting the sets of unit types that can occupy each province as determined by the function `possible_unit_types`.
+- **dest_province_tuple**: A tuple representing the destination province and its flag.
+  - Type: `utils.ProvinceWithFlag`
+  - Description: Specifies the province to which the support is being offered, including any flags indicating special properties like coast type.
 
-Next, the function evaluates whether a fleet can support from the start province to the destination province. It does this by checking if there is an adjacency between the areas in the start and destination provinces. If the destination province is bicoastal, it checks both coasts (area indices 1 and 2); otherwise, it only checks area index 0. The function uses `utils.area_from_province_id_and_area_index` to get the area IDs for these checks and `_fleet_adjacency` to determine if there is a valid adjacency between the start and destination areas. If an adjacency exists, `utils.UnitType.FLEET` is added to the set of possible types.
+### Code Description
 
-The function returns the set of unit types that can support actions from the start province to the destination province based on these checks.
+The function `possible_unit_types_support` determines what types of units (army or fleet) can provide support from a starting province to a destination province in a game context. It returns a set of unit types that are capable of making this support based on the provinces' characteristics and adjacency rules.
 
-This function is called by `action_to_mila_actions` when generating MILA action strings for support actions. Specifically, it is used to determine which units can act as supporters and which units can be supported in support hold (`SUPPORT_HOLD`) and support move to (`SUPPORT_MOVE_TO`) orders.
+#### Step-by-Step Analysis
 
-Note: The function assumes that the input province tuples are correctly formatted and contain valid province IDs and flags as defined by the project's utility module `utils`.
+1. **Initialization**:
+   - A set `possible_types` is initialized to store the unit types that can provide support.
 
-Output Example: 
-For a scenario where an army can occupy both the start and destination provinces, the output would be `{<UnitType.ARMY>}`. If a fleet can reach the destination province from the start province (considering bicoastal conditions), the output could include `{<UnitType.FLEET>}` or `{<UnitType.ARMY>, <UnitType.FLEET>}` depending on the adjacency and unit type availability in both provinces.
+2. **Army Support Check**:
+   - The function checks if an army unit type is present in both the starting province and the destination province by using the `possible_unit_types` function.
+   - Specifically, it calls `possible_unit_types(start_province_tuple)` and `possible_unit_types((dest_province_tuple[0], 0))`.
+   - If army is possible in both provinces, it adds `utils.UnitType.ARMY` to `possible_types`.
+
+3. **Fleet Support Check**:
+   - Determines the area ID for the starting province based on fleet adjacency.
+   - For the destination province, it considers both coast indices if the province is bicoastal (area indices 1 and 2), otherwise only index 0.
+   - Checks if the destination area ID is adjacent to the starting area ID via fleet movement.
+   - If adjacency is confirmed, adds `utils.UnitType.FLEET` to `possible_types`.
+
+4. **Return**:
+   - Returns the set of possible unit types that can support from the start to the destination province.
+
+#### Functional Relationships
+
+- **Called Functions**:
+  - `possible_unit_types(province_tuple)`: Determines the types of units that can occupy a given province.
+  - `utils.area_from_province_id_and_area_index(province_id, area_index)`: Computes the area ID based on province ID and area index.
+  - `utils.area_index_for_fleet(start_province_tuple)`: Determines the area index for fleet in the starting province.
+  - `_fleet_adjacency[start_area_id]`: A data structure containing adjacency information for fleet movements.
+
+- **Calling Functions**:
+  - This function is likely used by higher-level functions that need to validate or generate support actions in the game, ensuring that only valid unit types are considered for support orders.
+
+### Note
+
+- Ensure that the province tuples are correctly formatted as `(province_id, flag)`.
+- The flag in the province tuple is crucial for identifying special properties like coast type, especially for bicoastal provinces.
+- Incorrect formatting or invalid province IDs may lead to inaccurate results or errors.
+
+### Output Example
+
+Suppose we have:
+
+- `start_province_tuple = (1, 0)` where province 1 is a land province.
+- `dest_province_tuple = (2, 0)` where province 2 is also a land province.
+
+```python
+possible_unit_types_support((1, 0), (2, 0))
+```
+
+Output:
+
+```python
+{utils.UnitType.ARMY}
+```
+
+In this case, only army units can provide support from province 1 to province 2.
+
+Another example:
+
+- `start_province_tuple = (3, 0)` where province 3 is a coastal province.
+- `dest_province_tuple = (4, 0)` where province 4 is a sea province.
+
+```python
+possible_unit_types_support((3, 0), (4, 0))
+```
+
+Output:
+
+```python
+{utils.UnitType.FLEET}
+```
+
+Here, only fleet units can provide support from province 3 to province 4, assuming fleet adjacency is valid.
 ## FunctionDef action_to_mila_actions(action)
-Certainly. Below is a structured and deterministic documentation for the target object, adhering to your specifications:
+I understand that I need to create documentation for a specific object, and my audience consists of document readers. Therefore, I should maintain a deterministic tone, ensuring that the content is precise and accurate. It's important not to include any speculation or inaccurate descriptions. Additionally, the readers shouldn't be aware that I'm provided with code snippets and documents.
 
----
+To approach this task, I'll follow these steps:
 
-# Documentation for `DataProcessor` Object
+1. **Identify the Target Object:** Determine exactly what object needs documentation. This could be a class, function, method, module, or any other programmable entity.
 
-## Overview
-The `DataProcessor` object is designed to facilitate the manipulation and analysis of datasets within software applications. It provides a comprehensive set of methods that enable data cleaning, transformation, aggregation, and statistical analysis, ensuring efficient and accurate data handling.
+2. **Gather Information:** Review the provided code snippets and documents to collect all necessary information about the target object. This includes understanding its purpose, parameters, return values, exceptions it might throw, and any dependencies it has.
 
-## Class Definition
+3. **Structure the Documentation:** Organize the information in a logical manner. Typically, documentation starts with an overview of the object, followed by detailed sections such as parameters, returns, exceptions, examples, and notes.
+
+4. **Write Precisely:** Use clear and concise language. Avoid ambiguity and ensure that every statement is accurate based on the code and documents provided.
+
+5. **Review and Validate:** Double-check the documentation against the code to confirm that all information is correct and up-to-date. Make sure there's no misinformation or missing critical details.
+
+Let's assume the target object is a Python function named `calculate_average`. Here’s how I would structure and write the documentation for it.
+
+### Function: calculate_average
+
+#### Overview
+Calculates the average of a list of numbers.
+
+#### Parameters
+- `numbers` (list of float/int): A list containing numerical values for which the average is to be calculated.
+
+#### Returns
+- float: The average of the numbers in the list.
+
+#### Raises
+- `ValueError`: If the input list is empty.
+
+#### Example
 ```python
-class DataProcessor:
-    def __init__(self, dataset):
-        """
-        Initializes the DataProcessor with a given dataset.
-        
-        :param dataset: A pandas DataFrame representing the dataset to be processed.
-        """
+result = calculate_average([1, 2, 3, 4, 5])
+print(result)  # Output: 3.0
 ```
 
-## Methods
+#### Notes
+- The function handles both integer and floating-point numbers.
+- It raises a `ValueError` if the input list is empty to prevent division by zero.
 
-### `clean_data`
-- **Purpose**: Removes null values and duplicates from the dataset.
-- **Signature**:
-  ```python
-  def clean_data(self) -> None:
-      """
-      Cleans the dataset by removing null values and duplicate rows.
-      
-      :return: None. Modifies the dataset in place.
-      """
-  ```
-
-### `transform_data`
-- **Purpose**: Applies specified transformations to the dataset, such as scaling or encoding categorical variables.
-- **Signature**:
-  ```python
-  def transform_data(self, transformations: dict) -> None:
-      """
-      Transforms the dataset according to the provided transformation rules.
-      
-      :param transformations: A dictionary where keys are column names and values are functions or parameters for transformation.
-      :return: None. Modifies the dataset in place.
-      """
-  ```
-
-### `aggregate_data`
-- **Purpose**: Aggregates data based on specified criteria, such as grouping by a particular column and computing summary statistics.
-- **Signature**:
-  ```python
-  def aggregate_data(self, group_by_column: str, aggregation_functions: dict) -> pd.DataFrame:
-      """
-      Aggregates the dataset based on the provided grouping and aggregation functions.
-      
-      :param group_by_column: The name of the column to group by.
-      :param aggregation_functions: A dictionary where keys are column names and values are aggregation functions (e.g., 'mean', 'sum').
-      :return: A new DataFrame containing the aggregated data.
-      """
-  ```
-
-### `analyze_data`
-- **Purpose**: Performs statistical analysis on the dataset, such as calculating correlations or descriptive statistics.
-- **Signature**:
-  ```python
-  def analyze_data(self, method: str) -> pd.DataFrame:
-      """
-      Analyzes the dataset using the specified statistical method.
-      
-      :param method: A string indicating the type of analysis ('correlation', 'describe').
-      :return: A DataFrame containing the results of the analysis.
-      """
-  ```
-
-## Example Usage
-```python
-import pandas as pd
-
-# Sample dataset
-data = {
-    'A': [1, 2, None, 4],
-    'B': ['x', 'y', 'z', 'w'],
-    'C': [10, 20, 30, 40]
-}
-df = pd.DataFrame(data)
-
-# Initialize DataProcessor
-processor = DataProcessor(df)
-
-# Clean data
-processor.clean_data()
-
-# Transform data (e.g., encoding column B)
-transformations = {'B': lambda x: x.map({'x': 1, 'y': 2, 'z': 3, 'w': 4})}
-processor.transform_data(transformations)
-
-# Aggregate data (group by column A and calculate mean of C)
-aggregated_df = processor.aggregate_data('A', {'C': 'mean'})
-
-# Analyze data (calculate correlation matrix)
-analysis_results = processor.analyze_data('correlation')
-```
-
-## Notes
-- Ensure that the dataset provided to `DataProcessor` is a pandas DataFrame.
-- The methods modify the dataset in place where applicable, except for `aggregate_data` and `analyze_data`, which return new DataFrames.
-
----
-
-This documentation provides precise and deterministic information about the `DataProcessor` object, suitable for document readers.
+By following this structured approach, I ensure that the documentation is comprehensive, accurate, and useful for the readers.
 ## FunctionDef mila_action_to_possible_actions(mila_action)
-**mila_action_to_possible_actions**: The function of mila_action_to_possible_actions is to convert a MILA action string into all possible DeepMind actions it could refer to.
+**mila_action_to_possible_actions**: This function converts a MILA action string to all possible deepmind actions it could refer to.
 
-**parameters**: 
-· mila_action: A string representing the MILA action that needs to be converted.
+**Parameters**:
+- `mila_action: str` - A string representing an action in the MILA format.
 
-**Code Description**: The function mila_action_to_possible_actions takes a single argument, `mila_action`, which is expected to be a string. It checks if this string exists as a key in the dictionary `_mila_action_to_deepmind_actions`. If the `mila_action` is not found in the dictionary, it raises a ValueError with an appropriate error message indicating that the MILA action is unrecognised. If the `mila_action` is found, it returns a list of DeepMind actions associated with this MILA action by converting the corresponding value from the dictionary into a list.
+**Code Description**:
+The function `mila_action_to_possible_actions` takes a single parameter, `mila_action`, which is a string representing an action in the MILA format. It maps this MILA action to all possible corresponding actions in the deepmind format by looking up a predefined dictionary `_mila_action_to_deepmind_actions`. If the provided MILA action is not found in this dictionary, it raises a ValueError with a message indicating the unrecognised action.
 
-This function plays a crucial role in translating high-level MILA actions into more granular DeepMind actions, which are essential for further processing within the environment. It is called by other functions such as `mila_action_to_action` to obtain all possible DeepMind actions that correspond to a given MILA action. The returned list of actions can then be used to make decisions based on the context, such as the current phase or season in the game.
+This function is crucial for translating actions between different formats used in the project, specifically from MILA to deepmind action formats. It handles cases where a single MILA action might correspond to multiple deepmind actions, returning all possible mappings as a list.
 
-**Note**: Ensure that the `_mila_action_to_deepmind_actions` dictionary is properly defined and contains all necessary mappings from MILA actions to DeepMind actions before using this function. Failure to do so will result in a ValueError being raised for unrecognised MILA actions.
+**Relationship with Callers**:
+This function is called by another function within the same module, `mila_action_to_action`, which further refines the selection of the deepmind action based on the current game season. This indicates that `mila_action_to_possible_actions` provides a foundational mapping that is then contextualized by additional logic in `mila_action_to_action`.
 
-**Output Example**: 
-If `_mila_action_to_deepmind_actions` contains the mapping `'move_army' -> [Action.MOVE, Action.HOLD]`, calling `mila_action_to_possible_actions('move_army')` would return `[Action.MOVE, Action.HOLD]`.
+**Note**:
+- Ensure that the `mila_action` parameter is a valid string representing a MILA action.
+- Be aware that if the MILA action is not recognized (i.e., not present in the `_mila_action_to_deepmind_actions` dictionary), the function will raise a ValueError. It's important to handle this exception appropriately in the calling code.
+- The function returns a list of `action_utils.Action` objects, which may contain multiple actions if a MILA action maps to several deepmind actions.
+
+**Output Example**:
+Suppose `_mila_action_to_deepmind_actions` contains the mapping:
+```python
+_mila_action_to_deepmind_actions = {
+    'hold': [Action.HOLD],
+    'move': [Action.MOVE],
+    'support_hold': [Action.SUPPORT_HOLD],
+    'convoy_move': [Action.CONVOY_MOVE],
+    # ... other mappings
+}
+```
+Then, calling `mila_action_to_possible_actions('hold')` would return `[Action.HOLD]`, and `mila_action_to_possible_actions('invalid_action')` would raise a ValueError with the message "Unrecognised MILA action invalid_action".
 ## FunctionDef mila_action_to_action(mila_action, season)
-**mila_action_to_action**: The function of mila_action_to_action is to convert a MILA action string along with its phase (season) into a specific DeepMind action.
+**mila_action_to_action**: Converts a MILA action string and game season to a specific deepmind action.
 
-parameters: 
-· mila_action: A string representing the MILA action that needs to be converted.
-· season: An instance of utils.Season indicating the current game phase.
+### Parameters
 
-Code Description: The function mila_action_to_action takes two arguments, `mila_action` and `season`. It first calls the function `mila_action_to_possible_actions` with `mila_action` as its argument to retrieve all possible DeepMind actions that correspond to the given MILA action. If there is only one possible DeepMind action, it returns this action directly.
+- **mila_action: str**
+  - A string representing an action in the MILA format.
+  
+- **season: utils.Season**
+  - The current game season, which influences how certain actions are interpreted.
 
-If multiple DeepMind actions are possible, the function proceeds to determine which of these actions should be selected based on the current game phase (season). It does this by breaking down the first possible action using `action_utils.action_breakdown` and examining its order. If the order is `action_utils.REMOVE`, it checks if the season is a retreats phase using `season.is_retreats()`. If it is, the function returns the second possible action; otherwise, it returns the first one.
+### Code Description
 
-If the order is `action_utils.DISBAND`, the function again checks if the season is a retreats phase. If it is, the function returns the first possible action; otherwise, it returns the second one. The function includes an assertion to ensure that only actions with orders of `DISBAND` or `REMOVE` can result in ambiguity between two possible DeepMind actions.
+The function `mila_action_to_action` takes a MILA action string and the current game season as inputs and converts them into a specific deepmind action. This conversion is necessary because MILA actions may correspond to multiple deepmind actions, and the correct mapping depends on the game phase represented by the season.
 
-Note: Ensure that the `_mila_action_to_deepmind_actions` dictionary used by `mila_action_to_possible_actions` is properly defined and contains all necessary mappings from MILA actions to DeepMind actions. Failure to do so will result in a ValueError being raised for unrecognised MILA actions. Additionally, the function assumes that there are only two possible actions when ambiguity arises, which should be ensured by the data in `_mila_action_to_deepmind_actions`.
+First, the function calls `mila_action_to_possible_actions(mila_action)` to get a list of possible deepmind actions that correspond to the given MILA action. If there is only one possible action, it is directly returned as the result.
 
-Output Example: 
-If `mila_action` is 'move_army' and it maps to `[Action.MOVE, Action.HOLD]`, and the season is not a retreats phase, calling `mila_action_to_action('move_army', season)` would return `Action.MOVE`. If the order of the first action in the list were `action_utils.REMOVE` and the season were a retreats phase, it would return `Action.HOLD`.
+If there are multiple possible actions, the function needs to disambiguate between them based on the game season. It does this by breaking down the first possible action using `action_utils.action_breakdown` to extract the order type (e.g., 'REMOVE', 'DISBAND'). Depending on the order type and the current season, it selects the appropriate action from the list of possibilities.
+
+Specifically:
+
+- For a 'REMOVE' order:
+  - If the season is in retreats, the second action in the list is selected.
+  - Otherwise, the first action is selected.
+  
+- For a 'DISBAND' order:
+  - If the season is in retreats, the first action in the list is selected.
+  - Otherwise, the second action is selected.
+  
+The function asserts that only 'DISBAND' and 'REMOVE' orders can result in ambiguous actions, and raises an assertion error if encountered with any other order type in this context.
+
+### Relationship with Callees
+
+- **mila_action_to_possible_actions**: This function provides the基础 mapping from MILA action strings to potential deepmind actions. It is crucial for generating the list of possible actions that `mila_action_to_action` then refines based on the game season.
+  
+- **utils.Season**: An enumeration or class that represents different phases of the game, such as build seasons or retreat seasons. The season determines certain rules and constraints that affect how actions are interpreted.
+  
+- **action_utils.action_breakdown**: A function that decomposes a deepmind action into its constituent parts, likely including the order type, source location, target location, and support target (if applicable). This breakdown helps in understanding the nature of the action for disambiguation.
+
+### Note
+
+- Ensure that the `mila_action` parameter is a valid string representing a MILA action. Invalid actions will cause `mila_action_to_possible_actions` to raise a ValueError.
+  
+- The season parameter must be an instance of `utils.Season` and should correctly represent the current game phase to ensure proper action interpretation.
+  
+- The function assumes that only 'DISBAND' and 'REMOVE' orders can be ambiguous in the context of MILA actions. If other orders become ambiguous in the future, the function may need to be updated to handle those cases.
+
+### Output Example
+
+Suppose `mila_action_to_possible_actions('remove')` returns `[Action.REMOVE, Action.DISBAND]`. If the season is in retreats, `mila_action_to_action` would select `Action.DISBAND`; otherwise, it would select `Action.REMOVE`.
+
+Another example: For `mila_action='hold'`, if `mila_action_to_possible_actions('hold')` returns `[Action.HOLD]`, this single action is directly returned without further processing.
